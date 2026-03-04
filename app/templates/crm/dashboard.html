@@ -1,15 +1,133 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="card p-4">
-    <h2>Bem-vindo, {{ usuario_logado.email }}</h2>
-    <hr>
-    <h3>Total de Apoiadores: {{ resumo.total_apoiadores }}</h3>
-    <ul class="list-group mt-3">
-        {% for bairro, qtd in resumo.bairros.items() %}
-        <li class="list-group-item d-flex justify-content-between">
-            {{ bairro }} <span>{{ qtd }}</span>
-        </li>
-        {% endfor %}
-    </ul>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold text-dark">Painel B.I. Estratégico</h2>
+    <button class="btn btn-outline-primary btn-sm"><i class="fa-solid fa-download me-2"></i>Exportar Relatório</button>
 </div>
+
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card p-3 shadow-sm border-start border-4 border-primary">
+            <span class="text-muted fw-bold text-uppercase" style="font-size: 0.8rem;">Total de Apoiadores</span>
+            <h2 class="mt-2 mb-0 fw-bold">{{ resumo.kpis.total }}</h2>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card p-3 shadow-sm border-start border-4 border-success">
+            <span class="text-muted fw-bold text-uppercase" style="font-size: 0.8rem;">Multiplicadores (Apoio Forte)</span>
+            <h2 class="mt-2 mb-0 fw-bold">{{ resumo.kpis.multiplicadores }}</h2>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card p-3 shadow-sm border-start border-4 border-warning">
+            <span class="text-muted fw-bold text-uppercase" style="font-size: 0.8rem;">Ativos de Campanha Mapeados</span>
+            <h2 class="mt-2 mb-0 fw-bold">{{ resumo.kpis.ativos_total }}</h2>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card p-4 h-100 shadow-sm">
+            <h5 class="fw-bold mb-4">Densidade por Bairros</h5>
+            <canvas id="graficoBairros"></canvas>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card p-4 h-100 shadow-sm">
+            <h5 class="fw-bold mb-4">Patrimônio da Campanha (Ativos)</h5>
+            <canvas id="graficoAtivos"></canvas>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card p-4 h-100 shadow-sm">
+            <h5 class="fw-bold mb-3"><i class="fa-solid fa-ranking-star text-warning me-2"></i>Maiores Multiplicadores</h5>
+            <p class="text-muted small mb-3">Apoiadores que trouxeram mais pessoas para a base.</p>
+            <ul class="list-group list-group-flush">
+                {% for nome, quantidade in resumo.top_influenciadores.items() %}
+                <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                    <span class="fw-bold text-dark">{{ nome }}</span>
+                    <span class="badge bg-primary rounded-pill">{{ quantidade }} indicados</span>
+                </li>
+                {% else %}
+                <li class="list-group-item text-muted px-0 text-center border-0">Ainda não há dados de indicações.</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card p-4 h-100 shadow-sm">
+            <h5 class="fw-bold mb-3"><i class="fa-regular fa-clock text-info me-2"></i>Últimas Interações (Timeline)</h5>
+            <div class="border-start border-2 border-info ms-2 ps-3 mt-3">
+                {% for t in resumo.timeline %}
+                <div class="mb-3">
+                    <div class="fw-bold text-dark" style="font-size: 0.9rem;">
+                        {{ t.tipo }} com {{ t.apoiador_nome }}
+                    </div>
+                    <div class="text-muted small">{{ t.descricao }}</div>
+                </div>
+                {% else %}
+                <div class="text-muted small">Nenhuma interação registrada recentemente.</div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    // INJETANDO DADOS DO PYTHON PARA O JAVASCRIPT
+    const dadosBairros = {{ resumo.grafico_bairros | tojson }};
+    const dadosAtivos = {{ resumo.grafico_ativos | tojson }};
+
+    // 1. Configurando Gráfico de Bairros (Rosca / Doughnut)
+    const ctxBairros = document.getElementById('graficoBairros').getContext('2d');
+    new Chart(ctxBairros, {
+        type: 'doughnut',
+        data: {
+            labels: Object.keys(dadosBairros),
+            datasets: [{
+                data: Object.values(dadosBairros),
+                backgroundColor: ['#4f46e5', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'],
+                borderWidth: 0,
+                cutout: '70%'
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { position: 'right' }
+            }
+        }
+    });
+
+    // 2. Configurando Gráfico de Ativos Físicos (Barras / Bar)
+    const ctxAtivos = document.getElementById('graficoAtivos').getContext('2d');
+    new Chart(ctxAtivos, {
+        type: 'bar',
+        data: {
+            labels: Object.keys(dadosAtivos),
+            datasets: [{
+                label: 'Quantidade Cadastrada',
+                data: Object.values(dadosAtivos),
+                backgroundColor: '#4f46e5',
+                borderRadius: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: { beginAtZero: true, ticks: { stepSize: 1 } }
+            },
+            plugins: {
+                legend: { display: false }
+            }
+        }
+    });
+</script>
 {% endblock %}

@@ -85,3 +85,26 @@ def concluir_tarefa(id):
     
     # Redireciona para a mesma página que o usuário estava (refresh)
     return redirect(request.referrer)
+
+from ..utils.json_helper import load_data
+
+@crm_bp.route('/mapa')
+def mapa_bairros():
+    if 'user_id' not in session: 
+        return redirect(url_for('auth.login'))
+    
+    # Verificação de Permissão do Plano
+    cliente_id = session.get('cliente_id')
+    clientes = load_data('clientes')
+    planos = load_data('planos')
+    
+    cliente = next((c for c in clientes if c['id'] == cliente_id), None)
+    plano = next((p for p in planos if p['id'] == cliente['plano_id']), None)
+    
+    if not plano or not plano.get('permite_mapa'):
+        return render_template('crm/erro_plano.html', modulo="Mapa Interativo"), 403
+
+    # Busca os dados agrupados
+    dados_mapa = CRMService.get_dados_mapa(cliente_id)
+    
+    return render_template('crm/mapa.html', dados_mapa=dados_mapa)
