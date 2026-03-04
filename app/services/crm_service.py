@@ -157,3 +157,54 @@ class CRMService:
                 })
                 
         return pontos_exatos
+
+# ================= LOGICA DE EQUIPE =================
+    @staticmethod
+    def listar_equipe(cliente_id):
+        return filter_by_client('equipe', cliente_id)
+
+    @staticmethod
+    def adicionar_membro_equipe(cliente_id, dados):
+        equipe = load_data('equipe')
+        novo_membro = {
+            "id": get_next_id('equipe'),
+            "cliente_id": int(cliente_id),
+            "nome": dados.get('nome'),
+            "telefone": dados.get('telefone'),
+            "cargo": dados.get('cargo'), # Coordenador, Assessor, Voluntário
+            "meta_apoiadores": int(dados.get('meta_apoiadores', 0)),
+            "data_cadastro": datetime.now().strftime("%d/%m/%Y")
+        }
+        equipe.append(novo_membro)
+        save_data('equipe', equipe)
+        return novo_membro
+
+    @staticmethod
+    def excluir_membro_equipe(cliente_id, membro_id):
+        delete_item('equipe', membro_id, cliente_id)
+
+    @staticmethod
+    def get_progresso_equipe(cliente_id):
+        """Calcula quantos apoiadores cada membro já trouxe em relação à meta"""
+        equipe = filter_by_client('equipe', cliente_id)
+        apoiadores = filter_by_client('apoiadores', cliente_id)
+        
+        resultados = []
+        for membro in equipe:
+            # Conta quantos apoiadores têm este membro como "indicado_por" (match exato de nome por enquanto)
+            # No futuro, o ideal é salvar o ID do membro no apoiador
+            captados = sum(1 for a in apoiadores if a.get('indicado_por') == membro['nome'])
+            
+            meta = membro.get('meta_apoiadores', 1)
+            if meta == 0: meta = 1 # Evita divisão por zero
+            
+            percentual = int((captados / meta) * 100)
+            if percentual > 100: percentual = 100
+            
+            resultados.append({
+                "membro": membro,
+                "captados": captados,
+                "percentual": percentual
+            })
+            
+        return resultados

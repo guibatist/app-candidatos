@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold text-dark mb-0"><i class="fa-solid fa-users-gear text-primary me-2"></i>Gestão de Equipe</h2>
+        <p class="text-muted small">Acompanhe as metas de captação dos seus assessores e coordenadores.</p>
+    </div>
+    <button type="button" class="btn btn-primary rounded-pill px-4 shadow-sm fw-medium" data-bs-toggle="modal" data-bs-target="#modalNovaEquipe">
+        <i class="fa-solid fa-plus me-2"></i>Novo Assessor
+    </button>
+</div>
+
+<div class="row g-4">
+    {% for item in equipe %}
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm rounded-4 h-100 position-relative">
+            
+            <form action="/crm/equipe/excluir/{{ item.membro.id }}" method="POST" class="position-absolute top-0 end-0 m-3">
+                <button type="submit" class="btn btn-sm text-danger opacity-50 hover-opacity-100 p-0" onclick="return confirm('Deseja remover este assessor da equipe?');" title="Excluir">
+                    <i class="fa-solid fa-trash"></i>
+                </button>
+            </form>
+
+            <div class="card-body p-4 text-center">
+                <div class="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center text-primary fw-bold mx-auto mb-3" style="width: 70px; height: 70px; font-size: 2rem;">
+                    {{ item.membro.nome[0] | upper }}
+                </div>
+                
+                <h5 class="fw-bold text-dark mb-1">{{ item.membro.nome }}</h5>
+                <span class="badge bg-light text-secondary border px-3 py-1 mb-3">{{ item.membro.cargo }}</span>
+                
+                <p class="text-muted small mb-4"><i class="fa-brands fa-whatsapp me-1"></i> {{ item.membro.telefone }}</p>
+
+                <div class="text-start mb-1 d-flex justify-content-between align-items-end">
+                    <span class="fw-bold text-muted" style="font-size: 0.75rem; text-transform: uppercase;">Meta de Captação</span>
+                    <span class="fw-bold text-dark">{{ item.captados }} / {{ item.membro.meta_apoiadores }}</span>
+                </div>
+                
+                <div class="progress" style="height: 10px; border-radius: 10px;">
+                    <div class="progress-bar {% if item.percentual >= 100 %}bg-success{% else %}bg-primary{% endif %}" 
+                         role="progressbar" 
+                         style="width: {{ item.percentual }}%;" 
+                         aria-valuenow="{{ item.percentual }}" aria-valuemin="0" aria-valuemax="100">
+                    </div>
+                </div>
+                
+                {% if item.percentual >= 100 %}
+                <div class="mt-2 text-success small fw-bold"><i class="fa-solid fa-trophy me-1"></i> Meta Batida!</div>
+                {% else %}
+                <div class="mt-2 text-muted small">{{ item.percentual }}% concluído</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="col-12 text-center py-5">
+        <i class="fa-solid fa-users text-muted mb-3" style="font-size: 3rem; opacity: 0.3;"></i>
+        <h5 class="fw-bold text-dark">Sua equipe está vazia</h5>
+        <p class="text-muted">Cadastre seus assessores e comece a medir o desempenho da campanha.</p>
+    </div>
+    {% endfor %}
+</div>
+
+<div class="modal fade" id="modalNovaEquipe" tabindex="-1" aria-labelledby="modalNovaEquipeLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow rounded-4">
+      <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title fw-bold text-dark" id="modalNovaEquipeLabel">Cadastrar Assessor</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form action="/crm/equipe/novo" method="POST">
+          <div class="modal-body">
+              <div class="mb-3">
+                  <label class="form-label text-muted small fw-bold text-uppercase">Nome do Assessor</label>
+                  <input type="text" name="nome" class="form-control bg-light border-0 py-2" required>
+              </div>
+              <div class="mb-3">
+                  <label class="form-label text-muted small fw-bold text-uppercase">Telefone / WhatsApp</label>
+                  <input type="text" name="telefone" class="form-control bg-light border-0 py-2" required>
+              </div>
+              <div class="row">
+                  <div class="col-md-6 mb-3">
+                      <label class="form-label text-muted small fw-bold text-uppercase">Cargo / Função</label>
+                      <select name="cargo" class="form-select bg-light border-0 py-2" required>
+                          <option value="Coordenador">Coordenador</option>
+                          <option value="Assessor">Assessor de Rua</option>
+                          <option value="Voluntário">Voluntário</option>
+                          <option value="Digital">Mobilizador Digital</option>
+                      </select>
+                  </div>
+                  <div class="col-md-6 mb-3">
+                      <label class="form-label text-muted small fw-bold text-uppercase">Meta (Apoiadores)</label>
+                      <input type="number" name="meta_apoiadores" class="form-control bg-light border-0 py-2" value="50" min="1" required>
+                  </div>
+              </div>
+          </div>
+          <div class="modal-footer border-0 pt-0">
+            <button type="button" class="btn btn-light rounded-pill px-4 fw-medium" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm">Salvar Membro</button>
+          </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

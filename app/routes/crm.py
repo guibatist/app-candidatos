@@ -123,3 +123,37 @@ def api_busca_apoiadores():
         
     resultados = CRMService.buscar_apoiadores_por_nome(cliente_id, termo)
     return jsonify(resultados)
+
+# ================= ROTAS DE EQUIPE =================
+
+@crm_bp.route('/equipe')
+def listar_equipe():
+    if 'user_id' not in session: 
+        return redirect(url_for('auth.login'))
+    
+    cliente_id = session.get('cliente_id')
+    # Traz a equipe já com o cálculo de metas batidas
+    dados_equipe = CRMService.get_progresso_equipe(cliente_id)
+    
+    return render_template('crm/equipe.html', equipe=dados_equipe)
+
+@crm_bp.route('/equipe/novo', methods=['POST'])
+def nova_equipe():
+    if 'user_id' not in session: 
+        return redirect(url_for('auth.login'))
+    
+    cliente_id = session.get('cliente_id')
+    CRMService.adicionar_membro_equipe(cliente_id, request.form)
+    
+    return redirect(url_for('crm.listar_equipe'))
+
+@crm_bp.route('/equipe/excluir/<int:id>', methods=['POST'])
+def excluir_equipe(id):
+    if 'user_id' not in session: 
+        return redirect(url_for('auth.login'))
+    
+    cliente_id = session.get('cliente_id')
+    CRMService.excluir_membro_equipe(cliente_id, id)
+    
+    return redirect(url_for('crm.listar_equipe'))
+    return redirect(url_for('crm.listar_equipe'))
