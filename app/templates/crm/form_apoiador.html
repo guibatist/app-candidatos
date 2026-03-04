@@ -1,95 +1,153 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h2>Cadastrar Novo Apoiador</h2>
-    <a href="/crm/apoiadores" class="btn btn-outline-secondary">Voltar</a>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold text-dark mb-0">Cadastrar Apoiador</h2>
+        <p class="text-muted small">Preencha os dados para adicionar ao CRM da campanha.</p>
+    </div>
+    <a href="/crm/apoiadores" class="btn btn-outline-secondary rounded-pill px-4 shadow-sm bg-white fw-medium">
+        <i class="fa-solid fa-arrow-left me-2"></i>Voltar
+    </a>
 </div>
 
-<div class="card p-4 shadow-sm">
-    <form action="/crm/apoiadores/novo" method="POST">
-        <h5 class="text-primary mb-3">Dados Pessoais</h5>
-        <div class="row mb-4">
-            <div class="col-md-6">
-                <label>Nome Completo</label>
-                <input type="text" name="nome" class="form-control" required>
+<form action="/crm/apoiadores/novo" method="POST">
+    <div class="row">
+        <div class="col-md-8">
+            
+            <div class="card border-0 shadow-sm rounded-4 mb-4 p-4">
+                <h5 class="fw-bold text-dark mb-4"><i class="fa-solid fa-user text-primary me-2"></i>Dados Pessoais</h5>
+                
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label text-muted small fw-bold text-uppercase">Nome Completo</label>
+                        <input type="text" name="nome" class="form-control bg-light border-0 py-2" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-muted small fw-bold text-uppercase">WhatsApp / Celular</label>
+                        <input type="text" name="telefone" id="telefone" class="form-control bg-light border-0 py-2" placeholder="(00) 00000-0000" maxlength="15" required>
+                    </div>
+                    <div class="col-md-12 mt-3">
+                        <label class="form-label text-muted small fw-bold text-uppercase">Indicado na campanha por (Opcional)</label>
+                        <div class="position-relative">
+                            <input type="text" name="indicado_por" id="indicado_por" class="form-control bg-light border-0 py-2" placeholder="Digite o nome para buscar..." autocomplete="off">
+                            <ul id="sugestoes_indicacao" class="list-group position-absolute w-100 shadow-sm" style="z-index: 1000; display: none; max-height: 200px; overflow-y: auto;">
+                            </ul>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="col-md-6">
-                <label>Telefone / WhatsApp</label>
-                <input type="text" name="telefone" class="form-control" placeholder="(00) 00000-0000" required>
+
+            <div class="card border-0 shadow-sm rounded-4 mb-4 p-4">
+                <h5 class="fw-bold text-dark mb-4"><i class="fa-solid fa-map-location-dot text-danger me-2"></i>Base Geográfica</h5>
+                
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label text-muted small fw-bold text-uppercase">CEP</label>
+                        <input type="text" name="cep" id="cep" class="form-control bg-light border-0 py-2" placeholder="00000-000" maxlength="9" required>
+                    </div>
+                    <div class="col-md-8">
+                        <label class="form-label text-muted small fw-bold text-uppercase">Logradouro (Rua, Av.)</label>
+                        <input type="text" name="logradouro" id="logradouro" class="form-control bg-light border-0 py-2" required>
+                    </div>
+                    
+                    <div class="col-md-4 mt-3">
+                        <label class="form-label text-muted small fw-bold text-uppercase">Número</label>
+                        <input type="text" name="numero" class="form-control bg-light border-0 py-2" required>
+                    </div>
+                    <div class="col-md-8 mt-3">
+                        <label class="form-label text-muted small fw-bold text-uppercase">Complemento (Opcional)</label>
+                        <input type="text" name="complemento" class="form-control bg-light border-0 py-2" placeholder="Apto, Bloco, Casa 2...">
+                    </div>
+
+                    <div class="col-md-5 mt-3">
+                        <label class="form-label text-muted small fw-bold text-uppercase">Bairro</label>
+                        <input type="text" name="bairro" id="bairro" class="form-control bg-light border-0 py-2" required>
+                    </div>
+                    <div class="col-md-5 mt-3">
+                        <label class="form-label text-muted small fw-bold text-uppercase">Cidade</label>
+                        <input type="text" name="cidade" id="cidade" class="form-control bg-light border-0 py-2" readonly required>
+                    </div>
+                    <div class="col-md-2 mt-3">
+                        <label class="form-label text-muted small fw-bold text-uppercase">UF</label>
+                        <input type="text" name="uf" id="uf" class="form-control bg-light border-0 py-2" readonly required>
+                    </div>
+                </div>
             </div>
+
         </div>
 
-        <h5 class="text-primary mb-3">Endereço e Base Eleitoral</h5>
-        <div class="row mb-3">
-            <div class="col-md-3">
-                <label>CEP</label>
-                <input type="text" name="cep" id="cep" class="form-control" placeholder="Apenas números" required>
-            </div>
-            <div class="col-md-7">
-                <label>Logradouro (Rua, Av.)</label>
-                <input type="text" name="logradouro" id="logradouro" class="form-control" required>
-            </div>
-            <div class="col-md-2">
-                <label>Número</label>
-                <input type="text" name="numero" class="form-control" required>
-            </div>
-        </div>
-
-        <div class="row mb-4">
-            <div class="col-md-4">
-                <label>Bairro</label>
-                <input type="text" name="bairro" id="bairro" class="form-control" required>
-            </div>
-            <div class="col-md-6">
-                <label>Cidade</label>
-                <input type="text" name="cidade" id="cidade" class="form-control" readonly required>
-            </div>
-            <div class="col-md-2">
-                <label>UF</label>
-                <input type="text" name="uf" id="uf" class="form-control" readonly required>
-            </div>
-        </div>
-
-        <h5 class="text-primary mb-3">Engajamento</h5>
-        <div class="row mb-4">
-            <div class="col-md-6">
-                <label>Grau de Apoio</label>
-                <select name="grau_apoio" class="form-select" required>
-                    <option value="forte">Forte (Multiplicador)</option>
-                    <option value="medio">Médio (Simpatizante)</option>
-                    <option value="fraco">Indeciso / Fraco</option>
+        <div class="col-md-4">
+            
+            <div class="card border-0 shadow-sm rounded-4 mb-4 p-4">
+                <h5 class="fw-bold text-dark mb-4"><i class="fa-solid fa-fire text-warning me-2"></i>Estratégia</h5>
+                
+                <label class="form-label text-muted small fw-bold text-uppercase">Grau de Apoio</label>
+                <select name="grau_apoio" class="form-select bg-light border-0 py-2 mb-4" required>
+                    <option value="forte">🟢 Forte (Multiplicador)</option>
+                    <option value="medio">🟡 Médio (Simpatizante)</option>
+                    <option value="fraco">🔴 Indeciso / Fraco</option>
                 </select>
-            </div>
-        </div>
 
-        <button type="submit" class="btn btn-success w-100">Salvar Apoiador no CRM</button>
-    </form>
-</div>
+                <label class="form-label text-muted small fw-bold text-uppercase mb-3">Ativos da Campanha (O que oferece?)</label>
+                
+                <div class="form-check form-switch mb-3">
+                    <input class="form-check-input fs-5" type="checkbox" name="oferece_muro" id="muro">
+                    <label class="form-check-label ms-2 mt-1 text-dark" for="muro"><i class="fa-solid fa-paint-roller text-muted me-1"></i> Muro para Placa/Pintura</label>
+                </div>
+                
+                <div class="form-check form-switch mb-3">
+                    <input class="form-check-input fs-5" type="checkbox" name="oferece_carro" id="carro">
+                    <label class="form-check-label ms-2 mt-1 text-dark" for="carro"><i class="fa-solid fa-car text-muted me-1"></i> Carro para Adesivo</label>
+                </div>
+                
+                <div class="form-check form-switch mb-4">
+                    <input class="form-check-input fs-5" type="checkbox" name="lideranca" id="lideranca">
+                    <label class="form-check-label ms-2 mt-1 text-dark" for="lideranca"><i class="fa-solid fa-users text-muted me-1"></i> É Líder Comunitário/Religioso</label>
+                </div>
+
+                <label class="form-label text-muted small fw-bold text-uppercase">Observações / Demandas</label>
+                <textarea name="observacoes" class="form-control bg-light border-0" rows="4" placeholder="Reclamações do bairro, pedidos, etc..."></textarea>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100 rounded-pill py-3 fw-bold shadow-sm fs-5">
+                <i class="fa-solid fa-check-circle me-2"></i>Salvar no CRM
+            </button>
+
+        </div>
+    </div>
+</form>
 
 <script>
-    document.getElementById('cep').addEventListener('blur', function() {
-        // Remove tudo que não for número do CEP digitado
-        let cep = this.value.replace(/\D/g, ''); 
+    // 1. MÁSCARA AUTOMÁTICA DE TELEFONE (DD) 00000-0000
+    document.getElementById('telefone').addEventListener('input', function (e) {
+        let x = e.target.value.replace(/\D/g, '').match(/(\d{0,2})(\d{0,5})(\d{0,4})/);
+        e.target.value = !x[2] ? x[1] : '(' + x[1] + ') ' + x[2] + (x[3] ? '-' + x[3] : '');
+    });
 
+    // 2. MÁSCARA DO CEP 00000-000
+    document.getElementById('cep').addEventListener('input', function (e) {
+        let x = e.target.value.replace(/\D/g, '').match(/(\d{0,5})(\d{0,3})/);
+        e.target.value = !x[2] ? x[1] : x[1] + '-' + x[2];
+    });
+
+    // 3. BUSCA DE CEP AUTOMÁTICA (ViaCEP)
+    document.getElementById('cep').addEventListener('blur', function() {
+        let cep = this.value.replace(/\D/g, ''); 
         if (cep.length === 8) {
-            // Mostra carregando nos campos (feedback visual)
             document.getElementById('logradouro').value = 'Buscando...';
             document.getElementById('bairro').value = 'Buscando...';
             document.getElementById('cidade').value = 'Buscando...';
             document.getElementById('uf').value = '...';
 
-            // Faz a requisição na API gratuita do ViaCEP
             fetch(`https://viacep.com.br/ws/${cep}/json/`)
                 .then(response => response.json())
                 .then(data => {
                     if (!data.erro) {
-                        // Preenche os campos com os dados dos Correios
                         document.getElementById('logradouro').value = data.logradouro;
                         document.getElementById('bairro').value = data.bairro;
                         document.getElementById('cidade').value = data.localidade;
                         document.getElementById('uf').value = data.uf;
-                        
-                        // Opcional: Focar no campo de número após preencher automático
                         document.querySelector('input[name="numero"]').focus();
                     } else {
                         alert("CEP não encontrado!");
@@ -97,8 +155,7 @@
                     }
                 })
                 .catch(error => {
-                    console.error('Erro ao buscar CEP:', error);
-                    alert("Erro ao buscar o CEP. Digite manualmente.");
+                    alert("Erro ao buscar o CEP.");
                     limparCamposCEP();
                 });
         }
@@ -110,5 +167,57 @@
         document.getElementById('cidade').value = '';
         document.getElementById('uf').value = '';
     }
+
+    // 4. AUTOCOMPLETE DE INDICAÇÕES (Buscando no Backend)
+    const inputIndicado = document.getElementById('indicado_por');
+    const listaSugestoes = document.getElementById('sugestoes_indicacao');
+
+    inputIndicado.addEventListener('input', async function() {
+        const termo = this.value;
+        
+        // Se apagou o texto, esconde a lista
+        if (termo.length < 1) {
+            listaSugestoes.style.display = 'none';
+            return;
+        }
+
+        try {
+            // Chama a nossa API Flask silenciosamente
+            const response = await fetch(`/crm/api/apoiadores/busca?q=${encodeURIComponent(termo)}`);
+            const dados = await response.json();
+
+            // Limpa a lista antiga
+            listaSugestoes.innerHTML = '';
+            
+            if (dados.length > 0) {
+                // Monta as novas opções
+                dados.forEach(pessoa => {
+                    const li = document.createElement('li');
+                    li.className = 'list-group-item list-group-item-action cursor-pointer border-0 border-bottom text-dark fw-medium';
+                    li.style.cursor = 'pointer'; // Muda o mouse para a mãozinha
+                    li.innerHTML = `<i class="fa-solid fa-user-check text-success me-2"></i> ${pessoa.nome}`;
+                    
+                    // Quando clicar no nome, joga para dentro do input e esconde a lista
+                    li.onclick = () => {
+                        inputIndicado.value = pessoa.nome;
+                        listaSugestoes.style.display = 'none';
+                    };
+                    listaSugestoes.appendChild(li);
+                });
+                listaSugestoes.style.display = 'block';
+            } else {
+                listaSugestoes.style.display = 'none';
+            }
+        } catch (error) {
+            console.error("Erro ao buscar indicações:", error);
+        }
+    });
+
+    // Esconde a lista de sugestões se o usuário clicar fora do campo
+    document.addEventListener('click', function(e) {
+        if (e.target !== inputIndicado) {
+            listaSugestoes.style.display = 'none';
+        }
+    });
 </script>
 {% endblock %}

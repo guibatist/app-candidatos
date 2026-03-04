@@ -1,82 +1,183 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h2>Perfil: {{ apoiador.nome }}</h2>
-    <a href="/crm/apoiadores" class="btn btn-outline-secondary">Voltar para Lista</a>
+
+<div class="card border-0 shadow-sm mb-4 overflow-hidden rounded-4">
+    <div style="height: 120px; background: linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%);"></div>
+    
+    <div class="card-body position-relative px-4 pb-4">
+        <div class="d-flex justify-content-between align-items-end flex-wrap gap-3" style="margin-top: -60px;">
+            
+            <div class="d-flex align-items-end gap-3">
+                <div class="bg-white rounded-circle p-1 shadow-sm">
+                    <div class="bg-light rounded-circle d-flex align-items-center justify-content-center text-primary fw-bold" style="width: 100px; height: 100px; font-size: 2.5rem;">
+                        {{ apoiador.nome[0] | upper }}
+                    </div>
+                </div>
+                <div class="pb-1">
+                    <h2 class="fw-bold mb-0 text-dark">{{ apoiador.nome }}</h2>
+                    <div class="mt-2 d-flex gap-2">
+                        {% if apoiador.grau_apoio == 'forte' %}
+                            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1"><i class="fa-solid fa-fire me-1"></i> Multiplicador Forte</span>
+                        {% elif apoiador.grau_apoio == 'medio' %}
+                            <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 px-2 py-1 text-dark"><i class="fa-solid fa-handshake me-1"></i> Simpatizante</span>
+                        {% else %}
+                            <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-2 py-1"><i class="fa-solid fa-circle-question me-1"></i> Indeciso</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="pb-1 d-flex gap-2">
+                <a href="https://wa.me/55{{ apoiador.telefone | replace(' ', '') | replace('-', '') | replace('(', '') | replace(')', '') }}" target="_blank" class="btn btn-success rounded-pill px-4 fw-medium shadow-sm">
+                    <i class="fa-brands fa-whatsapp me-2"></i>Chamar no Whats
+                </a>
+                <a href="/crm/apoiadores" class="btn btn-outline-secondary rounded-pill px-4 fw-medium bg-white">
+                    Voltar
+                </a>
+            </div>
+        </div>
+    </div>
 </div>
 
 <div class="row">
-    <div class="col-md-4">
-        <div class="card shadow-sm mb-4">
-            <div class="card-header bg-dark text-white">Dados Básicos</div>
-            <div class="card-body">
-                <p><strong>Telefone:</strong> {{ apoiador.telefone }}</p>
-                <p><strong>Local:</strong> {{ apoiador.bairro }}, {{ apoiador.cidade }} - {{ apoiador.uf }}</p>
-                <p><strong>Grau:</strong> <span class="badge bg-info">{{ apoiador.grau_apoio|upper }}</span></p>
-                <p><strong>Cadastrado em:</strong> {{ apoiador.data_cadastro }}</p>
+    <div class="col-md-4 mb-4">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card-body p-4">
+                <h6 class="fw-bold text-muted text-uppercase mb-4" style="font-size: 0.75rem; letter-spacing: 0.5px;">Informações de Contato</h6>
                 
-                {% if permissoes.permite_mapa %}
-                <button class="btn btn-sm btn-outline-primary w-100 mt-2">📍 Ver no Mapa</button>
-                {% endif %}
+                <ul class="list-unstyled mb-0">
+                    <li class="mb-4 d-flex align-items-start gap-3">
+                        <div class="bg-light p-2 rounded text-primary">
+                            <i class="fa-solid fa-phone w-15px text-center"></i>
+                        </div>
+                        <div>
+                            <span class="d-block text-muted small">Telefone / WhatsApp</span>
+                            <span class="fw-semibold text-dark">{{ apoiador.telefone }}</span>
+                        </div>
+                    </li>
+                    
+                    <li class="mb-4 d-flex align-items-start gap-3">
+                        <div class="bg-light p-2 rounded text-primary">
+                            <i class="fa-solid fa-location-dot w-15px text-center"></i>
+                        </div>
+                        <div>
+                            <span class="d-block text-muted small">Endereço (Base Eleitoral)</span>
+                            <span class="fw-semibold text-dark d-block">
+                                {{ apoiador.logradouro or 'Rua não informada' }}, {{ apoiador.numero or 'S/N' }}
+                            </span>
+                            <span class="text-muted small">{{ apoiador.bairro }} • {{ apoiador.cidade }} - {{ apoiador.uf }}</span>
+                        </div>
+                    </li>
+
+                    <li class="mb-4 d-flex align-items-start gap-3">
+                        <div class="bg-light p-2 rounded text-primary">
+                            <i class="fa-solid fa-calendar-day w-15px text-center"></i>
+                        </div>
+                        <div>
+                            <span class="d-block text-muted small">Data de Entrada no CRM</span>
+                            <span class="fw-semibold text-dark">{{ apoiador.data_cadastro }}</span>
+                        </div>
+                    </li>
+
+                    {% if apoiador.indicado_por %}
+                    <li class="d-flex align-items-start gap-3">
+                        <div class="bg-light p-2 rounded text-warning">
+                            <i class="fa-solid fa-link w-15px text-center"></i>
+                        </div>
+                        <div>
+                            <span class="d-block text-muted small">Indicado na campanha por:</span>
+                            <span class="fw-semibold text-dark">{{ apoiador.indicado_por }}</span>
+                        </div>
+                    </li>
+                    {% endif %}
+                </ul>
+
             </div>
         </div>
     </div>
 
     <div class="col-md-8">
-        <div class="card shadow-sm">
-            <div class="card-header bg-primary text-white d-flex justify-content-between">
-                <span>Histórico e Tarefas</span>
-            </div>
-            <div class="card-body">
-                <form action="/crm/apoiadores/{{ apoiador.id }}/tarefas" method="POST" class="mb-4 bg-light p-3 rounded border">
-                    <div class="row">
-                        <div class="col-md-4 mb-2">
-                            <select name="tipo" class="form-select" required>
+        
+        <div class="card border-0 shadow-sm rounded-4 mb-4">
+            <div class="card-body p-4 bg-light rounded-4">
+                <h6 class="fw-bold mb-3 text-dark"><i class="fa-solid fa-bolt text-warning me-2"></i>Agendar Nova Ação</h6>
+                <form action="/crm/apoiadores/{{ apoiador.id }}/tarefas" method="POST">
+                    <div class="row g-2">
+                        <div class="col-md-3">
+                            <select name="tipo" class="form-select border-0 shadow-sm" required>
                                 <option value="Ligar">📞 Ligar</option>
-                                <option value="WhatsApp">💬 Enviar WhatsApp</option>
+                                <option value="WhatsApp">💬 WhatsApp</option>
                                 <option value="Visitar">🚶 Visitar</option>
-                                <option value="Material">📦 Entregar Material</option>
+                                <option value="Material">📦 Material</option>
                             </select>
                         </div>
-                        <div class="col-md-5 mb-2">
-                            <input type="date" name="data_limite" class="form-control" required>
+                        <div class="col-md-3">
+                            <input type="date" name="data_limite" class="form-control border-0 shadow-sm" required>
                         </div>
-                        <div class="col-md-3 mb-2">
-                            <button type="submit" class="btn btn-success w-100">+ Tarefa</button>
+                        <div class="col-md-4">
+                            <input type="text" name="descricao" class="form-control border-0 shadow-sm" placeholder="Ex: Confirmar ida à reunião..." required>
                         </div>
-                        <div class="col-md-12">
-                            <input type="text" name="descricao" class="form-control" placeholder="Detalhes da tarefa..." required>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-primary w-100 shadow-sm fw-bold">Salvar</button>
                         </div>
                     </div>
                 </form>
-
-                <h5>Tarefas Pendentes</h5>
-                <ul class="list-group mb-4">
-                    {% for t in tarefas if t.status == 'pendente' %}
-                    <li class="list-group-item d-flex justify-content-between align-items-center list-group-item-warning">
-                        <div>
-                            <strong>{{ t.tipo }}</strong> (Até: {{ t.data_limite }})<br>
-                            <small>{{ t.descricao }}</small>
-                        </div>
-                        <form action="/crm/tarefas/{{ t.id }}/concluir" method="POST">
-                            <button class="btn btn-sm btn-success">✔ Concluir</button>
-                        </form>
-                    </li>
-                    {% else %}
-                    <li class="list-group-item text-muted text-center">Nenhuma tarefa pendente.</li>
-                    {% endfor %}
-                </ul>
-
-                <h5>Tarefas Concluídas</h5>
-                <ul class="list-group opacity-75">
-                    {% for t in tarefas if t.status == 'concluida' %}
-                    <li class="list-group-item list-group-item-light">
-                        <strike><strong>{{ t.tipo }}</strong> - {{ t.descricao }}</strike>
-                    </li>
-                    {% endfor %}
-                </ul>
             </div>
         </div>
+
+        <div class="card border-0 shadow-sm rounded-4">
+            <div class="card-header bg-white border-0 pt-4 pb-2 px-4">
+                <h5 class="fw-bold text-dark mb-0">Timeline de Relacionamento</h5>
+            </div>
+            <div class="card-body p-4 pt-2">
+                
+                <h6 class="text-muted fw-bold text-uppercase mb-3 mt-2" style="font-size: 0.7rem;">⏳ Próximos Passos (Pendentes)</h6>
+                <div class="d-flex flex-column gap-2 mb-4">
+                    {% for t in tarefas if t.status == 'pendente' %}
+                    <div class="p-3 border rounded-3 border-warning border-opacity-50 bg-warning bg-opacity-10 d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="bg-white rounded-circle d-flex justify-content-center align-items-center shadow-sm text-warning" style="width: 40px; height: 40px;">
+                                {% if t.tipo == 'Ligar' %}<i class="fa-solid fa-phone"></i>
+                                {% elif t.tipo == 'WhatsApp' %}<i class="fa-brands fa-whatsapp"></i>
+                                {% elif t.tipo == 'Visitar' %}<i class="fa-solid fa-person-walking"></i>
+                                {% else %}<i class="fa-solid fa-box"></i>{% endif %}
+                            </div>
+                            <div>
+                                <h6 class="mb-0 fw-bold text-dark">{{ t.tipo }} <span class="badge bg-white text-danger border ms-2">Até {{ t.data_limite }}</span></h6>
+                                <span class="text-muted small">{{ t.descricao }}</span>
+                            </div>
+                        </div>
+                        <form action="/crm/tarefas/{{ t.id }}/concluir" method="POST" class="m-0">
+                            <button class="btn btn-sm btn-success rounded-pill px-3 fw-bold shadow-sm"><i class="fa-solid fa-check me-1"></i> Concluir</button>
+                        </form>
+                    </div>
+                    {% else %}
+                    <div class="text-center p-4 border rounded-3 bg-light text-muted small">
+                        Nenhuma ação pendente com este apoiador. Agende um follow-up acima.
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <h6 class="text-muted fw-bold text-uppercase mb-3" style="font-size: 0.7rem;">✅ Histórico Concluído</h6>
+                <div class="d-flex flex-column gap-2 opacity-75">
+                    {% for t in tarefas if t.status == 'concluida' %}
+                    <div class="p-3 border rounded-3 bg-light d-flex align-items-center gap-3">
+                        <div class="bg-secondary bg-opacity-10 rounded-circle d-flex justify-content-center align-items-center text-secondary" style="width: 40px; height: 40px;">
+                            <i class="fa-solid fa-check"></i>
+                        </div>
+                        <div>
+                            <h6 class="mb-0 fw-semibold text-secondary text-decoration-line-through">{{ t.tipo }}</h6>
+                            <span class="text-muted small text-decoration-line-through">{{ t.descricao }}</span>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="text-muted small ps-2">Nenhum histórico registrado.</div>
+                    {% endfor %}
+                </div>
+
+            </div>
+        </div>
+
     </div>
 </div>
 {% endblock %}

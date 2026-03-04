@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, session, redirect, url_for, request
+from flask import Blueprint, render_template, session, redirect, url_for, request, jsonify
 from ..services.crm_service import CRMService
 
 crm_bp = Blueprint('crm', __name__)
@@ -108,3 +108,18 @@ def mapa_bairros():
     dados_mapa = CRMService.get_dados_mapa(cliente_id)
     
     return render_template('crm/mapa.html', dados_mapa=dados_mapa)
+
+# (Adicione isso no final do crm.py)
+@crm_bp.route('/api/apoiadores/busca')
+def api_busca_apoiadores():
+    if 'user_id' not in session: 
+        return jsonify([])
+        
+    cliente_id = session.get('cliente_id')
+    termo = request.args.get('q', '')
+    
+    if not termo: 
+        return jsonify([])
+        
+    resultados = CRMService.buscar_apoiadores_por_nome(cliente_id, termo)
+    return jsonify(resultados)

@@ -64,6 +64,23 @@ class CRMService:
         return next((a for a in apoiadores if a['id'] == int(apoiador_id)), None)
 
     @staticmethod
+    def buscar_apoiadores_por_nome(cliente_id, termo):
+        apoiadores = filter_by_client('apoiadores', cliente_id)
+        termo = termo.lower()
+        
+        # Filtra apoiadores cujo nome contenha o termo digitado (como o LIKE %% do SQL)
+        resultados = []
+        for a in apoiadores:
+            if termo in a.get('nome', '').lower():
+                resultados.append({
+                    "id": a['id'],
+                    "nome": a['nome']
+                })
+                
+        # Retorna apenas os 10 primeiros para não travar a tela
+        return resultados[:10]
+
+    @staticmethod
     def adicionar_apoiador(cliente_id, dados):
         apoiadores = load_data('apoiadores')
         novo_apoiador = {
@@ -71,13 +88,22 @@ class CRMService:
             "cliente_id": int(cliente_id),
             "nome": dados.get('nome'),
             "telefone": dados.get('telefone'),
-            "cep": dados.get('cep'),                   # NOVO
-            "logradouro": dados.get('logradouro'),     # NOVO
-            "numero": dados.get('numero'),             # NOVO
+            "cep": dados.get('cep'),
+            "logradouro": dados.get('logradouro'),
+            "numero": dados.get('numero'),
+            "complemento": dados.get('complemento', ''),  # NOVO CAMPO
             "uf": dados.get('uf'),
             "cidade": dados.get('cidade'),
             "bairro": dados.get('bairro'),
             "grau_apoio": dados.get('grau_apoio'),
+            "indicado_por": dados.get('indicado_por', ''),
+            "observacoes": dados.get('observacoes', ''),
+            
+            # ATIVOS DA CAMPANHA (Checkboxes)
+            "oferece_muro": 'oferece_muro' in dados,
+            "oferece_carro": 'oferece_carro' in dados,
+            "lideranca": 'lideranca' in dados,
+            
             "data_cadastro": datetime.now().strftime("%d/%m/%Y")
         }
         apoiadores.append(novo_apoiador)

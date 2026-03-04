@@ -12,5 +12,25 @@
         "bairro": "Jardim S\u00e3o Marcos",
         "grau_apoio": "medio",
         "data_cadastro": "04/03/2026"
+    },
+    {
+        "id": 2,
+        "cliente_id": 1,
+        "nome": "Janice Rosa de Araujo",
+        "telefone": "(11) 98727-6854",
+        "cep": "06826-105",
+        "logradouro": "Rua Jos\u00e9 Benjamin de Castro",
+        "numero": "75",
+        "complemento": "Apt 41, B",
+        "uf": "SP",
+        "cidade": "Embu das Artes",
+        "bairro": "Jardim Independ\u00eancia",
+        "grau_apoio": "forte",
+        "indicado_por": "Guilherme Araujo Batista",
+        "observacoes": "",
+        "oferece_muro": false,
+        "oferece_carro": false,
+        "lideranca": true,
+        "data_cadastro": "04/03/2026"
     }
 ]
