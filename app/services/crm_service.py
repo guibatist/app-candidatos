@@ -7,37 +7,31 @@ class CRMService:
         apoiadores = filter_by_client('apoiadores', cliente_id)
         tarefas = filter_by_client('tarefas', cliente_id)
         
-        # 1. Total e Grau de Apoio
+        # 1. Total, Potencial de Votos e Grau de Apoio
         total = len(apoiadores)
+        # Calcula a soma de votos na família (se não tiver o campo, conta como 1)
+        potencial_votos = sum(int(a.get('votos_familia', 1)) for a in apoiadores)
         multiplicadores = sum(1 for a in apoiadores if a.get('grau_apoio') == 'forte')
         
-        # 2. Bairros (Para gráfico de Rosca)
         bairros = {}
         for a in apoiadores:
             bairro_nome = a.get('bairro', 'Não Informado')
             bairros[bairro_nome] = bairros.get(bairro_nome, 0) + 1
             
-        # 3. Ativos Físicos (Muros, Carros, Lideranças - Para gráfico de Barras)
         ativos = {
-            "Muros Disponíveis": sum(1 for a in apoiadores if a.get('oferece_muro', False)),
-            "Carros P/ Adesivo": sum(1 for a in apoiadores if a.get('oferece_carro', False)),
-            "Líderes Comunitários": sum(1 for a in apoiadores if a.get('lideranca', False))
+            "Muros": sum(1 for a in apoiadores if a.get('oferece_muro', False)),
+            "Carros": sum(1 for a in apoiadores if a.get('oferece_carro', False)),
+            "Líderes": sum(1 for a in apoiadores if a.get('lideranca', False))
         }
 
-        # 4. Score de Influência (Maiores Indicadores)
         indicacoes = {}
         for a in apoiadores:
             indicador = a.get('indicado_por')
             if indicador and indicador.strip() != "":
                 indicacoes[indicador] = indicacoes.get(indicador, 0) + 1
-        
-        # Ordena o dicionário e pega os top 5
         top_influenciadores = dict(sorted(indicacoes.items(), key=lambda item: item[1], reverse=True)[:5])
 
-        # 5. Timeline de Interações (Últimas 5 tarefas concluídas)
         tarefas_concluidas = sorted([t for t in tarefas if t.get('status') == 'concluida'], key=lambda x: x['id'], reverse=True)[:5]
-        
-        # Anexa o nome do apoiador na tarefa para exibir na timeline
         for t in tarefas_concluidas:
             ap_nome = next((a['nome'] for a in apoiadores if a['id'] == t['apoiador_id']), 'Desconhecido')
             t['apoiador_nome'] = ap_nome
@@ -45,6 +39,7 @@ class CRMService:
         return {
             "kpis": {
                 "total": total,
+                "potencial_votos": potencial_votos, # NOVO
                 "multiplicadores": multiplicadores,
                 "ativos_total": sum(ativos.values())
             },
@@ -91,15 +86,18 @@ class CRMService:
             "cep": dados.get('cep'),
             "logradouro": dados.get('logradouro'),
             "numero": dados.get('numero'),
-            "complemento": dados.get('complemento', ''),  # NOVO CAMPO
+            "complemento": dados.get('complemento', ''),
             "uf": dados.get('uf'),
             "cidade": dados.get('cidade'),
             "bairro": dados.get('bairro'),
+            
             "grau_apoio": dados.get('grau_apoio'),
+            "votos_familia": int(dados.get('votos_familia', 1)), # NOVO
+            "tags": dados.getlist('tags') if hasattr(dados, 'getlist') else [], # NOVO (Lista de interesses)
+            
             "indicado_por": dados.get('indicado_por', ''),
             "observacoes": dados.get('observacoes', ''),
             
-            # ATIVOS DA CAMPANHA (Checkboxes)
             "oferece_muro": 'oferece_muro' in dados,
             "oferece_carro": 'oferece_carro' in dados,
             "lideranca": 'lideranca' in dados,

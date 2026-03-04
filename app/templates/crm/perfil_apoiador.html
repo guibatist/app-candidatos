@@ -13,9 +13,9 @@
                         {{ apoiador.nome[0] | upper }}
                     </div>
                 </div>
-                <div class="pb-1">
+<div class="pb-1">
                     <h2 class="fw-bold mb-0 text-dark">{{ apoiador.nome }}</h2>
-                    <div class="mt-2 d-flex gap-2">
+                    <div class="mt-2 d-flex flex-wrap gap-2 align-items-center">
                         {% if apoiador.grau_apoio == 'forte' %}
                             <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1"><i class="fa-solid fa-fire me-1"></i> Multiplicador Forte</span>
                         {% elif apoiador.grau_apoio == 'medio' %}
@@ -23,6 +23,14 @@
                         {% else %}
                             <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-2 py-1"><i class="fa-solid fa-circle-question me-1"></i> Indeciso</span>
                         {% endif %}
+
+                        <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 px-2 py-1" title="Expectativa de votos nesta residência">
+                            <i class="fa-solid fa-users me-1"></i> {{ apoiador.votos_familia | default(1) }} Voto(s) na Casa
+                        </span>
+
+                        {% for tag in apoiador.tags %}
+                            <span class="badge bg-light text-secondary border px-2 py-1"><i class="fa-solid fa-hashtag me-1"></i>{{ tag }}</span>
+                        {% endfor %}
                     </div>
                 </div>
             </div>

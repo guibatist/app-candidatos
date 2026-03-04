@@ -6,21 +6,27 @@
 </div>
 
 <div class="row mb-4">
-    <div class="col-md-4">
-        <div class="card p-3 shadow-sm border-start border-4 border-primary">
-            <span class="text-muted fw-bold text-uppercase" style="font-size: 0.8rem;">Total de Apoiadores</span>
+    <div class="col-md-3">
+        <div class="card p-3 shadow-sm border-start border-4 border-primary h-100">
+            <span class="text-muted fw-bold text-uppercase" style="font-size: 0.75rem;">Total de Apoiadores</span>
             <h2 class="mt-2 mb-0 fw-bold">{{ resumo.kpis.total }}</h2>
         </div>
     </div>
-    <div class="col-md-4">
-        <div class="card p-3 shadow-sm border-start border-4 border-success">
-            <span class="text-muted fw-bold text-uppercase" style="font-size: 0.8rem;">Multiplicadores (Apoio Forte)</span>
+    <div class="col-md-3">
+        <div class="card p-3 shadow-sm border-start border-4 border-info h-100 bg-info bg-opacity-10">
+            <span class="text-info fw-bold text-uppercase" style="font-size: 0.75rem;"><i class="fa-solid fa-users-rays me-1"></i> Potencial de Votos</span>
+            <h2 class="mt-2 mb-0 fw-bold text-info">{{ resumo.kpis.potencial_votos }}</h2>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card p-3 shadow-sm border-start border-4 border-success h-100">
+            <span class="text-muted fw-bold text-uppercase" style="font-size: 0.75rem;">Multiplicadores (Forte)</span>
             <h2 class="mt-2 mb-0 fw-bold">{{ resumo.kpis.multiplicadores }}</h2>
         </div>
     </div>
-    <div class="col-md-4">
-        <div class="card p-3 shadow-sm border-start border-4 border-warning">
-            <span class="text-muted fw-bold text-uppercase" style="font-size: 0.8rem;">Ativos de Campanha Mapeados</span>
+    <div class="col-md-3">
+        <div class="card p-3 shadow-sm border-start border-4 border-warning h-100">
+            <span class="text-muted fw-bold text-uppercase" style="font-size: 0.75rem;">Ativos Mapeados</span>
             <h2 class="mt-2 mb-0 fw-bold">{{ resumo.kpis.ativos_total }}</h2>
         </div>
     </div>

@@ -27,6 +27,7 @@
                         <label class="form-label text-muted small fw-bold text-uppercase">WhatsApp / Celular</label>
                         <input type="text" name="telefone" id="telefone" class="form-control bg-light border-0 py-2" placeholder="(00) 00000-0000" maxlength="15" required>
                     </div>
+                    
                     <div class="col-md-12 mt-3">
                         <label class="form-label text-muted small fw-bold text-uppercase">Indicado na campanha por (Opcional)</label>
                         <div class="position-relative">
@@ -82,12 +83,41 @@
             <div class="card border-0 shadow-sm rounded-4 mb-4 p-4">
                 <h5 class="fw-bold text-dark mb-4"><i class="fa-solid fa-fire text-warning me-2"></i>Estratégia</h5>
                 
-                <label class="form-label text-muted small fw-bold text-uppercase">Grau de Apoio</label>
-                <select name="grau_apoio" class="form-select bg-light border-0 py-2 mb-4" required>
-                    <option value="forte">🟢 Forte (Multiplicador)</option>
-                    <option value="medio">🟡 Médio (Simpatizante)</option>
-                    <option value="fraco">🔴 Indeciso / Fraco</option>
-                </select>
+                <div class="row g-2 mb-4">
+                    <div class="col-md-8">
+                        <label class="form-label text-muted small fw-bold text-uppercase">Grau de Apoio</label>
+                        <select name="grau_apoio" class="form-select bg-light border-0 py-2" required>
+                            <option value="forte">🟢 Forte (Multiplicador)</option>
+                            <option value="medio">🟡 Médio (Simpatizante)</option>
+                            <option value="fraco">🔴 Indeciso / Fraco</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label text-muted small fw-bold text-uppercase" title="Quantos votos essa pessoa influencia na própria casa?">Votos na Casa</label>
+                        <input type="number" name="votos_familia" class="form-control bg-light border-0 py-2 text-center fw-bold text-info" min="1" value="1" required>
+                    </div>
+                </div>
+
+                <label class="form-label text-muted small fw-bold text-uppercase mb-2">Pautas / Áreas de Interesse</label>
+                <div class="d-flex flex-wrap gap-2 mb-4">
+                    <input type="checkbox" class="btn-check" name="tags" id="tag1" value="Saúde">
+                    <label class="btn btn-outline-primary btn-sm rounded-pill" for="tag1">Saúde</label>
+                    
+                    <input type="checkbox" class="btn-check" name="tags" id="tag2" value="Educação">
+                    <label class="btn btn-outline-primary btn-sm rounded-pill" for="tag2">Educação</label>
+                    
+                    <input type="checkbox" class="btn-check" name="tags" id="tag3" value="Segurança">
+                    <label class="btn btn-outline-primary btn-sm rounded-pill" for="tag3">Segurança</label>
+                    
+                    <input type="checkbox" class="btn-check" name="tags" id="tag4" value="Causa Animal">
+                    <label class="btn btn-outline-primary btn-sm rounded-pill" for="tag4">Causa Animal</label>
+
+                    <input type="checkbox" class="btn-check" name="tags" id="tag5" value="Esporte">
+                    <label class="btn btn-outline-primary btn-sm rounded-pill" for="tag5">Esporte</label>
+
+                    <input type="checkbox" class="btn-check" name="tags" id="tag6" value="Religião">
+                    <label class="btn btn-outline-primary btn-sm rounded-pill" for="tag6">Religião</label>
+                </div>
 
                 <label class="form-label text-muted small fw-bold text-uppercase mb-3">Ativos da Campanha (O que oferece?)</label>
                 
@@ -107,7 +137,7 @@
                 </div>
 
                 <label class="form-label text-muted small fw-bold text-uppercase">Observações / Demandas</label>
-                <textarea name="observacoes" class="form-control bg-light border-0" rows="4" placeholder="Reclamações do bairro, pedidos, etc..."></textarea>
+                <textarea name="observacoes" class="form-control bg-light border-0 mb-4" rows="3" placeholder="Reclamações do bairro, pedidos, etc..."></textarea>
             </div>
 
             <button type="submit" class="btn btn-primary w-100 rounded-pill py-3 fw-bold shadow-sm fs-5">
@@ -174,30 +204,24 @@
 
     inputIndicado.addEventListener('input', async function() {
         const termo = this.value;
-        
-        // Se apagou o texto, esconde a lista
         if (termo.length < 1) {
             listaSugestoes.style.display = 'none';
             return;
         }
 
         try {
-            // Chama a nossa API Flask silenciosamente
             const response = await fetch(`/crm/api/apoiadores/busca?q=${encodeURIComponent(termo)}`);
             const dados = await response.json();
 
-            // Limpa a lista antiga
             listaSugestoes.innerHTML = '';
             
             if (dados.length > 0) {
-                // Monta as novas opções
                 dados.forEach(pessoa => {
                     const li = document.createElement('li');
                     li.className = 'list-group-item list-group-item-action cursor-pointer border-0 border-bottom text-dark fw-medium';
-                    li.style.cursor = 'pointer'; // Muda o mouse para a mãozinha
+                    li.style.cursor = 'pointer';
                     li.innerHTML = `<i class="fa-solid fa-user-check text-success me-2"></i> ${pessoa.nome}`;
                     
-                    // Quando clicar no nome, joga para dentro do input e esconde a lista
                     li.onclick = () => {
                         inputIndicado.value = pessoa.nome;
                         listaSugestoes.style.display = 'none';
@@ -213,7 +237,6 @@
         }
     });
 
-    // Esconde a lista de sugestões se o usuário clicar fora do campo
     document.addEventListener('click', function(e) {
         if (e.target !== inputIndicado) {
             listaSugestoes.style.display = 'none';
