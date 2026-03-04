@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="card p-4">
+    <h2>Bem-vindo, {{ usuario_logado.email }}</h2>
+    <hr>
+    <h3>Total de Apoiadores: {{ resumo.total_apoiadores }}</h3>
+    <ul class="list-group mt-3">
+        {% for bairro, qtd in resumo.bairros.items() %}
+        <li class="list-group-item d-flex justify-content-between">
+            {{ bairro }} <span>{{ qtd }}</span>
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+{% endblock %}

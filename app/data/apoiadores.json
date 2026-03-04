@@ -1,0 +1,4 @@
+[
+  {"id": 1, "cliente_id": 1, "nome": "Maria Silva", "bairro": "Centro", "grau_apoio": "forte"},
+  {"id": 2, "cliente_id": 1, "nome": "José Souza", "bairro": "Jardins", "grau_apoio": "medio"}
+]

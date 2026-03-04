@@ -1,0 +1,4 @@
+[
+  {"id": 1, "nome": "Básico", "permite_mapa": false, "permite_equipe": true},
+  {"id": 2, "nome": "Elite", "permite_mapa": true, "permite_equipe": true}
+]
