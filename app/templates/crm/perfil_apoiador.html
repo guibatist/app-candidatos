@@ -1,191 +1,270 @@
 {% extends 'base.html' %}
+
 {% block content %}
-
-<div class="card border-0 shadow-sm mb-4 overflow-hidden rounded-4">
-    <div style="height: 120px; background: linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%);"></div>
-    
-    <div class="card-body position-relative px-4 pb-4">
-        <div class="d-flex justify-content-between align-items-end flex-wrap gap-3" style="margin-top: -60px;">
-            
-            <div class="d-flex align-items-end gap-3">
-                <div class="bg-white rounded-circle p-1 shadow-sm">
-                    <div class="bg-light rounded-circle d-flex align-items-center justify-content-center text-primary fw-bold" style="width: 100px; height: 100px; font-size: 2.5rem;">
-                        {{ apoiador.nome[0] | upper }}
-                    </div>
-                </div>
-<div class="pb-1">
-                    <h2 class="fw-bold mb-0 text-dark">{{ apoiador.nome }}</h2>
-                    <div class="mt-2 d-flex flex-wrap gap-2 align-items-center">
-                        {% if apoiador.grau_apoio == 'forte' %}
-                            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1"><i class="fa-solid fa-fire me-1"></i> Multiplicador Forte</span>
-                        {% elif apoiador.grau_apoio == 'medio' %}
-                            <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 px-2 py-1 text-dark"><i class="fa-solid fa-handshake me-1"></i> Simpatizante</span>
-                        {% else %}
-                            <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-2 py-1"><i class="fa-solid fa-circle-question me-1"></i> Indeciso</span>
-                        {% endif %}
-
-                        <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 px-2 py-1" title="Expectativa de votos nesta residência">
-                            <i class="fa-solid fa-users me-1"></i> {{ apoiador.votos_familia | default(1) }} Voto(s) na Casa
-                        </span>
-
-                        {% for tag in apoiador.tags %}
-                            <span class="badge bg-light text-secondary border px-2 py-1"><i class="fa-solid fa-hashtag me-1"></i>{{ tag }}</span>
-                        {% endfor %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+                <div class="card-body p-0">
+                    <div class="bg-indigo p-4 text-white d-flex align-items-center justify-content-between" style="background-color: #4f46e5;">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="bg-white rounded-circle d-flex justify-content-center align-items-center text-indigo" style="width: 60px; height: 60px; font-size: 24px;">
+                                <i class="fa-solid fa-user"></i>
+                            </div>
+                            <div>
+                                <h3 class="mb-0 fw-bold">{{ apoiador.nome }}</h3>
+                                <span class="badge bg-white bg-opacity-25 text-white border-0">{{ apoiador.bairro }}</span>
+                            </div>
+                        </div>
+                        <a href="https://wa.me/55{{ apoiador.telefone|replace('(', '')|replace(')', '')|replace('-', '')|replace(' ', '') }}" target="_blank" class="btn btn-light rounded-pill px-4 fw-bold text-indigo">
+                            <i class="fa-brands fa-whatsapp me-2"></i> WhatsApp
+                        </a>
                     </div>
                 </div>
             </div>
+        </div>
+    </div>
 
-            <div class="pb-1 d-flex gap-2">
-                <a href="https://wa.me/55{{ apoiador.telefone | replace(' ', '') | replace('-', '') | replace('(', '') | replace(')', '') }}" target="_blank" class="btn btn-success rounded-pill px-4 fw-medium shadow-sm">
-                    <i class="fa-brands fa-whatsapp me-2"></i>Chamar no Whats
-                </a>
-                <a href="/crm/apoiadores" class="btn btn-outline-secondary rounded-pill px-4 fw-medium bg-white">
-                    Voltar
-                </a>
+    <div class="row g-4">
+        
+        <div class="col-lg-8">
+            
+            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card-header bg-white border-0 pt-4 px-4">
+                    <h5 class="fw-bold text-dark mb-0"><i class="fa-solid fa-calendar-plus me-2 text-indigo"></i>Agendar Nova Ação</h5>
+                </div>
+                <div class="card-body p-4">
+                    <form action="{{ url_for('crm.nova_tarefa', apoiador_id=apoiador.id) }}" method="POST">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label small fw-bold text-muted">Tipo de Ação</label>
+                                <select name="tipo" class="form-select border-light bg-light" required>
+                                    <option value="Ligar">Ligar</option>
+                                    <option value="WhatsApp">Enviar WhatsApp</option>
+                                    <option value="Visitar">Visita Presencial</option>
+                                    <option value="Entregar">Entregar Material</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small fw-bold text-muted">Data Limite</label>
+                                <input type="date" name="data_limite" class="form-control border-light bg-light" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small fw-bold text-muted">Delegar para (Opcional)</label>
+                                <select name="assessor_id" class="form-select border-light bg-light">
+                                    <option value="">Fazer eu mesmo</option>
+                                    {% for assessor in assessores %}
+                                        <option value="{{ assessor.id }}">{{ assessor.nome }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label small fw-bold text-muted">Instruções/Descrição</label>
+                                <textarea name="descricao" class="form-control border-light bg-light" rows="2" placeholder="Ex: Pedir para colocar o adesivo no carro..." required></textarea>
+                            </div>
+                            <div class="col-12 text-end">
+                                <button type="submit" class="btn btn-indigo rounded-pill px-5 shadow-sm" style="background-color: #4f46e5; color: white;">Agendar</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-header bg-white border-0 pt-4 px-4">
+                    <h5 class="fw-bold text-dark mb-0"><i class="fa-solid fa-list-check me-2 text-indigo"></i>Ações Pendentes</h5>
+                </div>
+                <div class="card-body p-4 d-flex flex-column" style="min-height: 380px;">
+                    <div class="d-flex flex-column gap-3 flex-grow-1">
+                        
+                        {% for t in pendentes[:3] %}
+                            <div class="p-3 border rounded-3 bg-white shadow-sm d-flex justify-content-between align-items-center transition-all">
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="bg-light rounded-circle d-flex justify-content-center align-items-center text-indigo" style="width: 40px; height: 40px;">
+                                        <i class="fa-solid fa-thumbtack"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-0 fw-bold text-dark d-flex align-items-center gap-2">
+                                            {{ t.tipo }} 
+                                            <span class="badge bg-light text-secondary border small">
+                                                Até {{ t.data_limite.split('-')|reverse|join('/') if '-' in t.data_limite else t.data_limite }}
+                                            </span>
+                                            <button type="button" class="btn btn-link text-muted p-0 ms-1" data-bs-toggle="modal" data-bs-target="#editModal{{ t.id }}" title="Editar">
+                                                <i class="fa-solid fa-pencil" style="font-size: 0.75rem;"></i>
+                                            </button>
+                                        </h6>
+                                        <span class="text-muted small">{{ t.descricao }}</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="d-flex gap-2">
+                                    <form action="{{ url_for('crm.atualizar_status_tarefa', id=t.id) }}" method="POST" class="m-0">
+                                        <input type="hidden" name="apoiador_id" value="{{ apoiador.id }}">
+                                        <select name="status" class="form-select form-select-sm border-light bg-light fw-bold text-secondary shadow-none cursor-pointer" onchange="this.form.submit()" style="cursor: pointer; min-width: 130px;">
+                                            <option value="pendente" selected>Pendente</option>
+                                            <option value="concluida">Concluído</option>
+                                            <option value="cancelada">Cancelado</option>
+                                        </select>
+                                    </form>
+                                </div>
+                            </div>
+                        {% else %}
+                            <div class="text-center py-4 border rounded-3 bg-light d-flex flex-column justify-content-center h-100" style="border-style: dashed !important;">
+                                <p class="text-muted small mb-0">Nenhuma ação pendente.</p>
+                            </div>
+                        {% endfor %}
+
+                    </div>
+                    
+                    {% if pendentes|length > 3 %}
+                    <div class="mt-3 text-center">
+                        <button class="btn btn-sm rounded-pill px-4 fw-bold" style="background-color: #eef2ff; color: #4f46e5; border: 1px solid #4f46e5;" data-bs-toggle="modal" data-bs-target="#modalPendentes">
+                            Ver todas as {{ pendentes|length }} pendências
+                        </button>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-white border-0 pt-4 px-4">
+                    <h5 class="fw-bold text-dark mb-0">Histórico de Contatos</h5>
+                </div>
+                <div class="card-body p-4 pt-2">
+                    <div class="timeline-simple" style="max-height: 700px; overflow-y: auto; padding-right: 10px;">
+                        
+                        {% for t in historico|reverse %}
+                            {% set cor_borda = 'border-danger' if t.status|lower == 'cancelada' else 'border-success' %}
+                            {% set cor_bg = 'bg-danger' if t.status|lower == 'cancelada' else 'bg-success' %}
+                            {% set texto_status = 'Cancelado' if t.status|lower == 'cancelada' else 'Concluído' %}
+                            
+                            {% set delegado = 'Candidato' %}
+                            {% for a in assessores %}
+                                {% if a.id|string == t.assessor_id|string %}
+                                    {% set delegado = a.nome %}
+                                {% endif %}
+                            {% endfor %}
+
+                            <div class="border-start border-2 {{ cor_borda }} ps-3 pb-4 position-relative">
+                                <div class="position-absolute {{ cor_bg }} rounded-circle" style="width: 12px; height: 12px; left: -7px; top: 5px;"></div>
+                                
+                                <h6 class="mb-0 fw-bold small text-dark d-flex align-items-center gap-2">
+                                    {{ t.tipo }} - {{ texto_status }}
+                                </h6>
+                                <p class="text-muted extra-small mb-1">{{ t.data_limite.split('-')|reverse|join('/') if '-' in t.data_limite else t.data_limite }}</p>
+                                <span class="text-muted small d-block mb-1">{{ t.descricao }}</span>
+                                <span class="badge bg-light text-secondary border fw-normal" style="font-size: 0.65rem;">Resp: {{ delegado }}</span>
+                            </div>
+                        {% else %}
+                            <p class="text-muted small text-center py-5">Sem registros no histórico.</p>
+                        {% endfor %}
+
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
-<div class="row">
-    <div class="col-md-4 mb-4">
-        <div class="card border-0 shadow-sm rounded-4 h-100">
-            <div class="card-body p-4">
-                <h6 class="fw-bold text-muted text-uppercase mb-4" style="font-size: 0.75rem; letter-spacing: 0.5px;">Informações de Contato</h6>
-                
-                <ul class="list-unstyled mb-0">
-                    <li class="mb-4 d-flex align-items-start gap-3">
-                        <div class="bg-light p-2 rounded text-primary">
-                            <i class="fa-solid fa-phone w-15px text-center"></i>
-                        </div>
+<div class="modal fade" id="modalPendentes" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow rounded-4">
+            <div class="modal-header border-0 bg-light">
+                <h5 class="modal-title fw-bold text-indigo"><i class="fa-solid fa-list-check me-2"></i>Todas as Pendências</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body bg-light">
+                <div class="d-flex flex-column gap-3">
+                    {% for t in pendentes %}
+                    <div class="p-3 border rounded-3 bg-white shadow-sm d-flex justify-content-between align-items-center">
                         <div>
-                            <span class="d-block text-muted small">Telefone / WhatsApp</span>
-                            <span class="fw-semibold text-dark">{{ apoiador.telefone }}</span>
+                            <h6 class="mb-0 fw-bold text-dark d-flex align-items-center gap-2">
+                                {{ t.tipo }} 
+                                <span class="badge bg-light text-secondary border small">{{ t.data_limite.split('-')|reverse|join('/') if '-' in t.data_limite else t.data_limite }}</span>
+                                <button type="button" class="btn btn-link text-muted p-0" data-bs-toggle="modal" data-bs-target="#editModal{{ t.id }}">
+                                    <i class="fa-solid fa-pencil" style="font-size: 0.75rem;"></i>
+                                </button>
+                            </h6>
+                            <span class="text-muted small">{{ t.descricao }}</span>
                         </div>
-                    </li>
-                    
-                    <li class="mb-4 d-flex align-items-start gap-3">
-                        <div class="bg-light p-2 rounded text-primary">
-                            <i class="fa-solid fa-location-dot w-15px text-center"></i>
-                        </div>
-                        <div>
-                            <span class="d-block text-muted small">Endereço (Base Eleitoral)</span>
-                            <span class="fw-semibold text-dark d-block">
-                                {{ apoiador.logradouro or 'Rua não informada' }}, {{ apoiador.numero or 'S/N' }}
-                            </span>
-                            <span class="text-muted small">{{ apoiador.bairro }} • {{ apoiador.cidade }} - {{ apoiador.uf }}</span>
-                        </div>
-                    </li>
-
-                    <li class="mb-4 d-flex align-items-start gap-3">
-                        <div class="bg-light p-2 rounded text-primary">
-                            <i class="fa-solid fa-calendar-day w-15px text-center"></i>
-                        </div>
-                        <div>
-                            <span class="d-block text-muted small">Data de Entrada no CRM</span>
-                            <span class="fw-semibold text-dark">{{ apoiador.data_cadastro }}</span>
-                        </div>
-                    </li>
-
-                    {% if apoiador.indicado_por %}
-                    <li class="d-flex align-items-start gap-3">
-                        <div class="bg-light p-2 rounded text-warning">
-                            <i class="fa-solid fa-link w-15px text-center"></i>
-                        </div>
-                        <div>
-                            <span class="d-block text-muted small">Indicado na campanha por:</span>
-                            <span class="fw-semibold text-dark">{{ apoiador.indicado_por }}</span>
-                        </div>
-                    </li>
-                    {% endif %}
-                </ul>
-
+                        <form action="{{ url_for('crm.atualizar_status_tarefa', id=t.id) }}" method="POST" class="m-0">
+                            <input type="hidden" name="apoiador_id" value="{{ apoiador.id }}">
+                            <select name="status" class="form-select form-select-sm border-light bg-light fw-bold text-secondary" onchange="this.form.submit()" style="min-width: 120px;">
+                                <option value="pendente" selected>Pendente</option>
+                                <option value="concluida">Concluído</option>
+                                <option value="cancelada">Cancelado</option>
+                            </select>
+                        </form>
+                    </div>
+                    {% endfor %}
+                </div>
             </div>
         </div>
     </div>
+</div>
 
-    <div class="col-md-8">
-        
-        <div class="card border-0 shadow-sm rounded-4 mb-4">
-            <div class="card-body p-4 bg-light rounded-4">
-                <h6 class="fw-bold mb-3 text-dark"><i class="fa-solid fa-bolt text-warning me-2"></i>Agendar Nova Ação</h6>
-                <form action="/crm/apoiadores/{{ apoiador.id }}/tarefas" method="POST">
-                    <div class="row g-2">
-                        <div class="col-md-3">
-                            <select name="tipo" class="form-select border-0 shadow-sm" required>
-                                <option value="Ligar">📞 Ligar</option>
-                                <option value="WhatsApp">💬 WhatsApp</option>
-                                <option value="Visitar">🚶 Visitar</option>
-                                <option value="Material">📦 Material</option>
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <input type="date" name="data_limite" class="form-control border-0 shadow-sm" required>
-                        </div>
-                        <div class="col-md-4">
-                            <input type="text" name="descricao" class="form-control border-0 shadow-sm" placeholder="Ex: Confirmar ida à reunião..." required>
-                        </div>
-                        <div class="col-md-2">
-                            <button type="submit" class="btn btn-primary w-100 shadow-sm fw-bold">Salvar</button>
-                        </div>
+{% for t in todas_tarefas %}
+<div class="modal fade" id="editModal{{ t.id }}" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow rounded-4">
+            <div class="modal-header border-0 bg-light">
+                <h5 class="modal-title fw-bold text-indigo">Editar Ação</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form action="{{ url_for('crm.editar_tarefa', id=t.id) }}" method="POST">
+                    <input type="hidden" name="apoiador_id" value="{{ apoiador.id }}">
+                    
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted">Tipo de Ação</label>
+                        <select name="tipo" class="form-select border-light bg-light" required>
+                            <option value="Ligar" {% if t.tipo == 'Ligar' %}selected{% endif %}>Ligar</option>
+                            <option value="WhatsApp" {% if t.tipo == 'WhatsApp' %}selected{% endif %}>Enviar WhatsApp</option>
+                            <option value="Visitar" {% if t.tipo == 'Visitar' %}selected{% endif %}>Visita Presencial</option>
+                            <option value="Entregar" {% if t.tipo == 'Entregar' %}selected{% endif %}>Entregar Material</option>
+                        </select>
                     </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted">Data Limite</label>
+                        <input type="date" name="data_limite" class="form-control border-light bg-light" value="{{ t.data_limite }}" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted">Delegar para</label>
+                        <select name="assessor_id" class="form-select border-light bg-light">
+                            <option value="">Fazer eu mesmo</option>
+                            {% for assessor in assessores %}
+                                <option value="{{ assessor.id }}" {% if str(t.assessor_id) == str(assessor.id) %}selected{% endif %}>{{ assessor.nome }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label small fw-bold text-muted">Instruções/Descrição</label>
+                        <textarea name="descricao" class="form-control border-light bg-light" rows="2" required>{{ t.descricao }}</textarea>
+                    </div>
+
+                    <button type="submit" class="btn btn-indigo w-100 rounded-pill fw-bold shadow-sm" style="background-color: #4f46e5; color: white;">Salvar Alterações</button>
                 </form>
             </div>
         </div>
-
-        <div class="card border-0 shadow-sm rounded-4">
-            <div class="card-header bg-white border-0 pt-4 pb-2 px-4">
-                <h5 class="fw-bold text-dark mb-0">Timeline de Relacionamento</h5>
-            </div>
-            <div class="card-body p-4 pt-2">
-                
-                <h6 class="text-muted fw-bold text-uppercase mb-3 mt-2" style="font-size: 0.7rem;">⏳ Próximos Passos (Pendentes)</h6>
-                <div class="d-flex flex-column gap-2 mb-4">
-                    {% for t in tarefas if t.status == 'pendente' %}
-                    <div class="p-3 border rounded-3 border-warning border-opacity-50 bg-warning bg-opacity-10 d-flex justify-content-between align-items-center">
-                        <div class="d-flex align-items-center gap-3">
-                            <div class="bg-white rounded-circle d-flex justify-content-center align-items-center shadow-sm text-warning" style="width: 40px; height: 40px;">
-                                {% if t.tipo == 'Ligar' %}<i class="fa-solid fa-phone"></i>
-                                {% elif t.tipo == 'WhatsApp' %}<i class="fa-brands fa-whatsapp"></i>
-                                {% elif t.tipo == 'Visitar' %}<i class="fa-solid fa-person-walking"></i>
-                                {% else %}<i class="fa-solid fa-box"></i>{% endif %}
-                            </div>
-                            <div>
-                                <h6 class="mb-0 fw-bold text-dark">{{ t.tipo }} <span class="badge bg-white text-danger border ms-2">Até {{ t.data_limite }}</span></h6>
-                                <span class="text-muted small">{{ t.descricao }}</span>
-                            </div>
-                        </div>
-                        <form action="/crm/tarefas/{{ t.id }}/concluir" method="POST" class="m-0">
-                            <button class="btn btn-sm btn-success rounded-pill px-3 fw-bold shadow-sm"><i class="fa-solid fa-check me-1"></i> Concluir</button>
-                        </form>
-                    </div>
-                    {% else %}
-                    <div class="text-center p-4 border rounded-3 bg-light text-muted small">
-                        Nenhuma ação pendente com este apoiador. Agende um follow-up acima.
-                    </div>
-                    {% endfor %}
-                </div>
-
-                <h6 class="text-muted fw-bold text-uppercase mb-3" style="font-size: 0.7rem;">✅ Histórico Concluído</h6>
-                <div class="d-flex flex-column gap-2 opacity-75">
-                    {% for t in tarefas if t.status == 'concluida' %}
-                    <div class="p-3 border rounded-3 bg-light d-flex align-items-center gap-3">
-                        <div class="bg-secondary bg-opacity-10 rounded-circle d-flex justify-content-center align-items-center text-secondary" style="width: 40px; height: 40px;">
-                            <i class="fa-solid fa-check"></i>
-                        </div>
-                        <div>
-                            <h6 class="mb-0 fw-semibold text-secondary text-decoration-line-through">{{ t.tipo }}</h6>
-                            <span class="text-muted small text-decoration-line-through">{{ t.descricao }}</span>
-                        </div>
-                    </div>
-                    {% else %}
-                    <div class="text-muted small ps-2">Nenhum histórico registrado.</div>
-                    {% endfor %}
-                </div>
-
-            </div>
-        </div>
-
     </div>
 </div>
+{% endfor %}
+
+<style>
+    .extra-small { font-size: 0.75rem; }
+    .text-indigo { color: #4f46e5 !important; }
+    .btn-indigo { background-color: #4f46e5; color: white; border: none; }
+    .btn-indigo:hover { background-color: #3f36c5; color: white; }
+    /* Scrollbar minimalista para o Histórico */
+    .timeline-simple::-webkit-scrollbar { width: 6px; }
+    .timeline-simple::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+    .timeline-simple::-webkit-scrollbar-thumb { background: #c7c7cc; border-radius: 4px; }
+    .timeline-simple::-webkit-scrollbar-thumb:hover { background: #a1a1aa; }
+</style>
+
 {% endblock %}

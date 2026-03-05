@@ -2,6 +2,21 @@ import json, os
 
 DATA_PATH = os.path.join(os.path.dirname(__file__), '..', 'data')
 
+# Pega o caminho absoluto da pasta 'app'
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) 
+DATA_DIR = os.path.join(BASE_DIR, 'data')
+
+def load_data(filename):
+    filepath = os.path.join(DATA_DIR, filename)
+    
+    # Trava de segurança para você saber se o caminho está errado
+    if not os.path.exists(filepath):
+        print(f"⚠️ ALERTA DO TECH LEAD: Arquivo não encontrado em: {filepath}")
+        return []
+        
+    with open(filepath, 'r', encoding='utf-8') as f:
+        return json.load(f)
+
 def load_data(table):
     path = os.path.join(DATA_PATH, f"{table}.json")
     if not os.path.exists(path): return []

@@ -1,5 +1,39 @@
 from ..utils.json_helper import load_data, save_data, filter_by_client, get_next_id, delete_item, update_item
+import uuid
 from datetime import datetime
+
+def listar_tarefas_por_usuario(cliente_id, usuario_id, role, apoiador_id):
+    from app.utils.json_helper import load_data
+    todas = load_data('tarefas.json') 
+    
+    # Filtro Robusto: converte tudo para string para evitar erro de tipo (Int vs Str)
+    tarefas = [t for t in todas if str(t.get('cliente_id')) == str(cliente_id) 
+               and str(t.get('apoiador_id')) == str(apoiador_id)]
+    
+    # Regra de Equipe: Se for assessor, filtra apenas as dele [cite: 80, 126]
+    if role == 'assessor':
+        tarefas = [t for t in tarefas if str(t.get('assessor_id')) == str(usuario_id)]
+        
+    return tarefas
+
+def criar_tarefa(cliente_id, apoiador_id, descricao, assessor_id=None):
+    """
+    Cria uma nova tarefa. O assessor_id agora pode ser passado (delegação).
+    """
+    tarefas = load_data('tarefas.json')
+    nova_tarefa = {
+        "id": str(uuid.uuid4()),
+        "cliente_id": str(cliente_id),
+        "apoiador_id": str(apoiador_id),
+        "assessor_id": str(assessor_id) if assessor_id else None,
+        "descricao": descricao,
+        "status": "Pendente",
+        "data_criacao": datetime.now().isoformat()
+    }
+    
+    tarefas.append(nova_tarefa)
+    save_data('tarefas.json', tarefas)
+    return nova_tarefa
 
 class CRMService:
     @staticmethod
@@ -208,3 +242,4 @@ class CRMService:
             })
             
         return resultados
+    

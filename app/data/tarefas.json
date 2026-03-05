@@ -1,1 +1,90 @@
-[]
+[
+    {
+        "id": "4298981",
+        "cliente_id": "1",
+        "apoiador_id": "1",
+        "tipo": "WhatsApp",
+        "data_limite": "2026-03-05",
+        "descricao": "Adicionar adesivo de carro e de moto",
+        "assessor_id": null,
+        "status": "concluida",
+        "data_criacao": "05/03/2026 14:20"
+    },
+    {
+        "id": "4299166",
+        "cliente_id": "1",
+        "apoiador_id": "1",
+        "tipo": "Ligar",
+        "data_limite": "2026-03-06",
+        "descricao": "Conversar sobre o problema da calçada, se foi bem atendido",
+        "assessor_id": null,
+        "status": "concluida",
+        "data_criacao": "05/03/2026 14:23"
+    },
+    {
+        "id": "4300239",
+        "cliente_id": "1",
+        "apoiador_id": "1",
+        "tipo": "Visitar",
+        "data_limite": "2026-03-09",
+        "descricao": "Almoço ",
+        "assessor_id": null,
+        "status": "cancelada",
+        "data_criacao": "05/03/2026 14:40"
+    },
+    {
+        "id": "4300300",
+        "cliente_id": "1",
+        "apoiador_id": "1",
+        "tipo": "WhatsApp",
+        "data_limite": "2026-03-05",
+        "descricao": "Convidar para caminhada",
+        "assessor_id": null,
+        "status": "concluida",
+        "data_criacao": "05/03/2026 14:41"
+    },
+    {
+        "id": "4300463",
+        "cliente_id": "1",
+        "apoiador_id": "1",
+        "tipo": "WhatsApp",
+        "data_limite": "2026-03-05",
+        "descricao": "teste 1",
+        "assessor_id": "",
+        "status": "pendente",
+        "data_criacao": "05/03/2026 14:44"
+    },
+    {
+        "id": "4300471",
+        "cliente_id": "1",
+        "apoiador_id": "1",
+        "tipo": "Ligar",
+        "data_limite": "2026-03-19",
+        "descricao": "teste 2",
+        "assessor_id": null,
+        "status": "pendente",
+        "data_criacao": "05/03/2026 14:44"
+    },
+    {
+        "id": "4301130",
+        "cliente_id": "1",
+        "apoiador_id": "1",
+        "tipo": "Visitar",
+        "data_limite": "2026-03-07",
+        "descricao": "teste 1",
+        "assessor_id": null,
+        "status": "pendente",
+        "data_criacao": "05/03/2026 14:55"
+    },
+    {
+        "id": "4301414",
+        "cliente_id": "1",
+        "apoiador_id": "1",
+        "tipo": "Entregar",
+        "data_limite": "2026-03-05",
+        "descricao": "Entrega de tintas ",
+        "assessor_id": null,
+        "status": "pendente",
+        "data_criacao": "05/03/2026 15:00"
+    }
+]

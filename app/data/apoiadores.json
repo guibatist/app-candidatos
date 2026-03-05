@@ -32,5 +32,29 @@
         "oferece_carro": false,
         "lideranca": true,
         "data_cadastro": "04/03/2026"
+    },
+    {
+        "id": 3,
+        "cliente_id": 1,
+        "nome": "Danilo Vieira ",
+        "telefone": "(11) 96996-1638",
+        "cep": "06823-600",
+        "logradouro": "Rua Guatapara",
+        "numero": "18",
+        "complemento": "",
+        "uf": "SP",
+        "cidade": "Embu das Artes",
+        "bairro": "Jardim Dom Jos\u00e9",
+        "grau_apoio": "medio",
+        "votos_familia": 1,
+        "tags": [
+            "Esporte"
+        ],
+        "indicado_por": "Janice Rosa de Araujo",
+        "observacoes": "",
+        "oferece_muro": false,
+        "oferece_carro": false,
+        "lideranca": false,
+        "data_cadastro": "05/03/2026"
     }
 ]
