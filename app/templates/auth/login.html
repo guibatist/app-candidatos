@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container d-flex align-items-center justify-content-center" style="min-height: 80vh;">
+    <div class="card border-0 shadow-lg rounded-4 overflow-hidden" style="max-width: 400px; width: 100%;">
+        <div class="bg-primary p-4 text-center text-white">
+            <i class="fa-solid fa-rocket mb-3" style="font-size: 2.5rem;"></i>
+            <h4 class="fw-bold mb-0">Sistema de Campanha</h4>
+            <p class="small opacity-75 mb-0">Gestão Estratégica SaaS</p>
+        </div>
+        
+        <div class="card-body p-4 p-md-5">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }} alert-dismissible fade show small py-2" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close" style="padding: 0.8rem;"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <form action="{{ url_for('auth.login') }}" method="POST">
+                <div class="mb-3">
+                    <label class="form-label text-muted small fw-bold text-uppercase">E-mail</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-0"><i class="fa-solid fa-envelope text-muted"></i></span>
+                        <input type="email" name="email" class="form-control bg-light border-0 py-2" placeholder="seu@email.com" required>
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <label class="form-label text-muted small fw-bold text-uppercase">Senha</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-0"><i class="fa-solid fa-lock text-muted"></i></span>
+                        <input type="password" name="password" class="form-control bg-light border-0 py-2" placeholder="••••••••" required>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100 rounded-pill fw-bold py-2 shadow-sm mb-3">
+                    Entrar no Painel
+                </button>
+                
+                <div class="text-center">
+                    <a href="#" class="text-decoration-none small text-muted">Esqueceu a senha?</a>
+                </div>
+            </form>
+        </div>
+        
+        <div class="card-footer bg-light border-0 py-3 text-center">
+            <p class="mb-0 small text-muted">Acesso restrito a assessores e candidatos.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

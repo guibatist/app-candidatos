@@ -11,12 +11,28 @@ crm_bp = Blueprint('crm', __name__)
 # 1. DASHBOARD PRINCIPAL
 @crm_bp.route('/')
 def dashboard_index():
-    if 'user_id' not in session: 
+    if 'user_id' not in session:
         return redirect(url_for('auth.login'))
     
     cliente_id = session.get('cliente_id')
+    role = session.get('role')
+
+    # 1. Buscamos os dados do dashboard
     resumo = CRMService.get_dashboard_data(cliente_id)
-    return render_template('crm/dashboard.html', resumo=resumo)
+
+    # 2. Criamos o objeto de permissões baseado no cargo/role
+    # Aqui você define a lógica: candidatos e coordenadores veem tudo. 
+    # Assessores talvez não vejam o mapa (exemplo).
+    permissoes = {
+        "permite_mapa": True, 
+        "permite_equipe": True if role in ['candidato', 'coordenador'] else False,
+        "permite_bi": True if role == 'candidato' else False
+    }
+
+    # 3. Enviamos 'permissoes' para o template
+    return render_template('crm/dashboard.html', 
+                           resumo=resumo, 
+                           permissoes=permissoes)
 
 # 2. LISTAR TODOS OS APOIADORES (Aqui estava o seu erro 404)
 @crm_bp.route('/apoiadores')
@@ -284,4 +300,4 @@ def excluir_equipe(id):
     CRMService.excluir_membro_equipe(cliente_id, id)
     
     return redirect(url_for('crm.listar_equipe'))
-    return redirect(url_for('crm.listar_equipe'))
+ 

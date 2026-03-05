@@ -27,7 +27,7 @@ def save_data(table, data):
     with open(path, 'w', encoding='utf-8') as f: json.dump(data, f, indent=4)
 
 def filter_by_client(table, cliente_id):
-    return [item for item in load_data(table) if item.get('cliente_id') == int(cliente_id)]
+    return [item for item in load_data(table) if str(item.get('cliente_id')) == str(cliente_id)]
 
 # NOVAS FUNÇÕES:
 def get_next_id(table):

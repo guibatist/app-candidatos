@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold text-dark mb-0"><i class="fa-solid fa-crown text-warning me-2"></i>Painel Master (SaaS)</h2>
+            <p class="text-muted small mb-0">Gestão de licenças, campanhas e acessos.</p>
+        </div>
+        <button class="btn btn-dark rounded-pill px-4 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#modalNovaCampanha">
+            <i class="fa-solid fa-plus me-2"></i>Nova Campanha
+        </button>
+    </div>
+
+    <div class="row g-4">
+        {% for camp in campanhas %}
+        <div class="col-12">
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-header bg-white border-bottom-0 pt-4 px-4 d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="badge bg-success bg-opacity-10 text-success border border-success mb-2">Ativa</span>
+                        <h4 class="fw-bold text-dark mb-0">{{ camp.nome_campanha }}</h4>
+                        <p class="text-muted small mb-0">Candidato: {{ camp.candidato_nome }} | Criada em: {{ camp.data_criacao }}</p>
+                    </div>
+                    <button class="btn btn-outline-primary btn-sm rounded-pill px-3 fw-bold" data-bs-toggle="modal" data-bs-target="#modalNovoAssessor{{ camp.id }}">
+                        <i class="fa-solid fa-user-plus me-1"></i> Liberar Acesso (Assessor)
+                    </button>
+                </div>
+                
+                <div class="card-body p-4">
+                    <h6 class="fw-bold text-muted text-uppercase small mb-3">Acessos Liberados</h6>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="text-muted small fw-bold">Nome / E-mail</th>
+                                    <th class="text-muted small fw-bold">Nível de Acesso</th>
+                                    <th class="text-muted small fw-bold text-end">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for usr in camp.usuarios %}
+                                <tr>
+                                    <td>
+                                        <div class="fw-bold text-dark">{{ usr.nome }}</div>
+                                        <div class="text-muted small">{{ usr.email }}</div>
+                                    </td>
+                                    <td>
+                                        {% if usr.role == 'candidato' %}
+                                            <span class="badge bg-primary">Candidato (Dono)</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">{{ usr.cargo }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end">
+                                        <form action="{{ url_for('superadmin.excluir_usuario', usuario_id=usr.id) }}" method="POST" class="m-0" onsubmit="return confirm('Revogar acesso?');">
+                                            <button type="submit" class="btn btn-sm btn-link text-danger p-0"><i class="fa-solid fa-trash"></i></button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="3" class="text-center text-muted small py-3">Nenhum acesso criado.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-12">
+            <div class="text-center py-5 border rounded-4 bg-white shadow-sm">
+                <i class="fa-solid fa-rocket text-muted mb-3" style="font-size: 3rem; opacity: 0.3;"></i>
+                <h5 class="fw-bold text-dark">Nenhum cliente cadastrado.</h5>
+                <button class="btn btn-dark rounded-pill px-4 fw-bold mt-2" data-bs-toggle="modal" data-bs-target="#modalNovaCampanha">Criar Primeira Campanha</button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="modal fade" id="modalNovaCampanha" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow rounded-4">
+            <div class="modal-header border-0 bg-light">
+                <h5 class="modal-title fw-bold text-dark">Novo Cliente</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form action="{{ url_for('superadmin.criar_campanha') }}" method="POST">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted">Campanha</label>
+                        <input type="text" name="nome_campanha" class="form-control bg-light border-0 py-2" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted">Candidato</label>
+                        <input type="text" name="nome_candidato" class="form-control bg-light border-0 py-2" required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label small fw-bold text-muted">E-mail de Acesso</label>
+                        <input type="email" name="email_candidato" class="form-control bg-light border-0 py-2" required>
+                    </div>
+                    <button type="submit" class="btn btn-dark w-100 rounded-pill fw-bold py-2">Salvar e Gerar Acesso</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% for camp in campanhas %}
+<div class="modal fade" id="modalNovoAssessor{{ camp.id }}" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow rounded-4">
+            <div class="modal-header border-0 bg-light">
+                <h5 class="modal-title fw-bold text-dark">Acesso - {{ camp.nome_campanha }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form action="{{ url_for('superadmin.adicionar_assessor', campanha_id=camp.id) }}" method="POST">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted">Nome do Assessor</label>
+                        <input type="text" name="nome" class="form-control bg-light border-0 py-2" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted">E-mail de Acesso</label>
+                        <input type="email" name="email" class="form-control bg-light border-0 py-2" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100 rounded-pill fw-bold py-2 shadow-sm">Criar Acesso</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+{% endblock %}

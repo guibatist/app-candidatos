@@ -1,31 +1,29 @@
-from flask import Flask, session, redirect, url_for
-from .utils.json_helper import load_data
+from flask import Flask
+import os
 
 def create_app():
     app = Flask(__name__)
-    app.secret_key = 'chave_secreta_teste'
+    
+    # Configurações Básicas
+    app.config['SECRET_KEY'] = 'sua_chave_secreta_aqui_mude_em_producao'
+    
+    # Caminho para os dados JSON 
+    app.config['DATA_DIR'] = os.path.join(app.root_path, 'data')
 
-    @app.context_processor
-    def inject_permissions():
-        user_id = session.get('user_id')
-        if user_id:
-            usuarios = load_data('usuarios')
-            user = next((u for u in usuarios if u['id'] == user_id), None)
-            if user:
-                clientes = load_data('clientes')
-                cliente = next((c for c in clientes if c['id'] == user['cliente_id']), None)
-                planos = load_data('planos')
-                plano = next((p for p in planos if p['id'] == cliente['plano_id']), None)
-                return dict(permissoes=plano, usuario_logado=user)
-        return dict(permissoes={}, usuario_logado=None)
+    # Importação das Blueprints (Rotas) - CORRIGIDO cm_bp para crm_bp
+    from app.routes.auth import auth_bp
+    from app.routes.crm import crm_bp 
+    from app.routes.superadmin import superadmin_bp 
 
-    from .routes.auth import auth_bp
-    from .routes.crm import crm_bp
+    # Registro das Blueprints
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(crm_bp, url_prefix='/crm')
+    app.register_blueprint(superadmin_bp, url_prefix='/master')
 
+    # Rota de redirecionamento inicial
     @app.route('/')
     def index():
+        from flask import redirect, url_for
         return redirect(url_for('auth.login'))
 
     return app
