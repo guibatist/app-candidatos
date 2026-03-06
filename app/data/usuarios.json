@@ -8,12 +8,23 @@
         "senha": "scrypt:32768:8:1$diLSqZPJwb9xYtgg$7d9b35bd4e95ad96bed33ffdc51a481171902590174e7d96c9c218a7ee1d8c897df5edbd41acb2e4d90779fb16e6384991967041a5d86858a4796c073531f0d9"
     },
     {
-        "id": "usr_1772727048",
+        "id": "camp_1772727048",
         "cliente_id": "camp_1772727048",
         "nome": "Guilherme Araujo",
         "email": "contato.guibatist@gmail.com",
         "role": "candidato",
-        "senha": "scrypt:32768:8:1$JP43QuQYh6VbWYpm$d6fb3d5cf0b04a1c37cb2e83171ecf3dd36ee247364524f8bb22e71cb3c2b31d559bc124310a153d14614c6c636e045fe6085886633994e6b6df87ee532554f8",
-        "precisa_trocar_senha": true
+        "senha": "scrypt:32768:8:1$bfAo3OKoHg87GSrM$c41a33e207e2b4264c90d044d1e929ac6be3afc118ceb0e01174b8eb5a92b427172dd6b91d6e5961e5d00b58c51c24827446bd73c365b293f23f9eca1de574d9",
+        "precisa_trocar_senha": false
+    },
+    {
+        "id": "usr_1772728427",
+        "cliente_id": "camp_1772727048",
+        "nome": "João Cezar",
+        "email": "guilherme.batista@br.g4s.com",
+        "role": "assessor",
+        "cargo": "Assessor",
+        "meta_apoiadores": 50,
+        "senha": "scrypt:32768:8:1$7xYkqzSo28UxfuXM$c086c0a9820f18c69a14b78f9974b1eda3d3b30fbc2b77e621ba0d73bd43c46e8a6cf656792b7edf43486d3c93211007dae3dcfe1dc38c2dd8f4b6912364114d",
+        "precisa_trocar_senha": false
     }
 ]

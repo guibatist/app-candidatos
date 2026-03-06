@@ -1,4 +1,12 @@
 [
-  {"id": 1, "nome": "Básico", "permite_mapa": false, "permite_equipe": true},
-  {"id": 2, "nome": "Elite", "permite_mapa": true, "permite_equipe": true}
+  {
+    "id": "1",
+    "nome": "Plano Básico",
+    "permite_mapa": false
+  },
+  {
+    "id": "2",
+    "nome": "Plano Profissional",
+    "permite_mapa": true
+  }
 ]

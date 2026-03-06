@@ -1,134 +1,96 @@
 {% extends 'base.html' %}
+
 {% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1 text-primary">Mapa de Calor Eleitoral</h2>
+            <p class="text-muted small">Localização precisa dos apoiadores rua a rua.</p>
+        </div>
+        <div class="badge bg-primary px-3 py-2 rounded-pill">
+            <i class="fa-solid fa-location-dot me-2"></i>Apoiadores no Mapa: {{ dados_mapa|length }}
+        </div>
+    </div>
 
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<style>
-    /* O mapa precisa de uma altura fixa para aparecer */
-    #mapa-base {
-        height: 600px;
-        width: 100%;
-        border-radius: 12px;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        z-index: 1; /* Para não bugar o menu lateral */
-    }
-</style>
-
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h2 class="fw-bold text-dark"><i class="fa-solid fa-map-location-dot text-primary me-2"></i>Mapa de Influência</h2>
-        <p class="text-muted mb-0">Densidade de eleitores baseada nos endereços cadastrados.</p>
+    <div class="row">
+        <div class="col-md-9">
+            <div id="map" class="shadow-sm rounded-4" style="height: 650px; width: 100%; border: 1px solid #e5e7eb; background-color: #f8f9fa;"></div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm rounded-4 mb-3">
+                <div class="card-header bg-white fw-bold border-0 pt-3 text-dark">Legenda de Apoio</div>
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <span class="badge me-2" style="background: #ef4444; width: 18px; height: 18px; border-radius: 50%; display: inline-block;">&nbsp;</span> 
+                        <span class="small fw-medium">Apoio Alto / Liderança</span>
+                    </div>
+                    <div class="d-flex align-items-center mb-3">
+                        <span class="badge me-2" style="background: #3b82f6; width: 18px; height: 18px; border-radius: 50%; display: inline-block;">&nbsp;</span> 
+                        <span class="small fw-medium">Apoio Médio / Geral</span>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
-<div class="card p-2 border-0 shadow-sm">
-    <div id="mapa-base"></div>
-</div>
-
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
 <script>
-    // 1. Inicializa o mapa focado no Brasil
-    const map = L.map('mapa-base').setView([-14.235, -51.925], 4);
+    var map = L.map('map').setView([-15.78, -47.93], 4);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors',
-        maxZoom: 18,
+        attribution: '&copy; OpenStreetMap contributors',
+        maxZoom: 19
     }).addTo(map);
 
-    // 2. Recebe os eleitores do Python (com filtro "safe" do Jinja2 para evitar quebra de aspas)
-    const locais = {{ dados_mapa | tojson | safe }};
-    const bounds = L.latLngBounds();
+    var layerGroup = L.featureGroup().addTo(map);
+    var dados = {{ dados_mapa | tojson | safe }};
 
-    // Regra da API gratuita: 1 segundo de espera
-    const delay = ms => new Promise(res => setTimeout(res, ms));
+    if (dados && dados.length > 0) {
+        dados.forEach(function(ponto) {
+            if (ponto.lat && ponto.lng) {
+                var corPonto = (ponto.grau_apoio === 'alto' || ponto.lideranca) ? '#ef4444' : '#3b82f6';
+                
+                var circle = L.circle([ponto.lat, ponto.lng], {
+                    color: corPonto,
+                    fillColor: corPonto,
+                    fillOpacity: 0.8,
+                    radius: 15 // Tamanho pequeno para acertar a casa
+                }).addTo(layerGroup);
 
-    async function plotarPinosExatos() {
-        // Se não tiver ninguém para mapear, para o script aqui e evita erro
-        if (!locais || locais.length === 0) {
-            console.warn("Nenhum apoiador válido para mostrar no mapa.");
-            return;
-        }
+                // O Fim do Undefined: Usando os dados formatados corretamente
+                var nome = ponto.nome || "Apoiador sem nome";
+                var endereco = `${ponto.logradouro || ''} ${ponto.numero || ''}`.trim() || "Rua não informada";
+                var cidade_bairro = `${ponto.bairro || ''} - ${ponto.cidade || ''}`.trim() || "";
 
-        for (let i = 0; i < locais.length; i++) {
-            const local = locais[i];
-            
-            // Trava de segurança: se o apoiador não tem endereço, pula pro próximo
-            if (!local.endereco) continue; 
-            
-            // Plano A: Busca super exata (Rua + Número)
-            let queryBusca = `${local.endereco}, ${local.bairro}, ${local.cidade}, ${local.uf}, Brazil`;
-            
-            try {
-                let response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(queryBusca)}&limit=1`);
-                let data = await response.json();
+                var popupContent = `
+                    <div style="min-width: 150px;">
+                        <strong style="font-size: 14px;">${nome}</strong><br>
+                        <span style="color: #666; font-size: 12px;">
+                            ${endereco}<br>
+                            ${cidade_bairro}
+                        </span>
+                    </div>
+                `;
+                circle.bindPopup(popupContent);
+            }
+        });
 
-                // PLANO B: Se não achou com o Número, tenta só com o nome da Rua
-                if (data.length === 0 && local.endereco.includes(',')) {
-                    const ruaSemNumero = local.endereco.split(',')[0]; 
-                    queryBusca = `${ruaSemNumero}, ${local.cidade}, ${local.uf}, Brazil`;
-                    response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(queryBusca)}&limit=1`);
-                    data = await response.json();
-                }
-
-                // PLANO C: Pina no Bairro
-                if (data.length === 0) {
-                    queryBusca = `${local.bairro}, ${local.cidade}, ${local.uf}, Brazil`;
-                    response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(queryBusca)}&limit=1`);
-                    data = await response.json();
-                }
-
-                // Se achou, plota!
-                if (data.length > 0) {
-                    const lat = parseFloat(data[0].lat);
-                    const lon = parseFloat(data[0].lon);
-                    const coord = [lat, lon];
-
-                    let corPino = "#3b82f6"; // Azul
-                    if (local.grau_apoio === 'forte') corPino = "#10b981"; // Verde
-                    if (local.grau_apoio === 'medio') corPino = "#f59e0b"; // Amarelo
-                    if (local.grau_apoio === 'fraco') corPino = "#ef4444"; // Vermelho
-
-                    const marker = L.circleMarker(coord, {
-                        radius: 8,
-                        fillColor: corPino,
-                        color: "#ffffff",
-                        weight: 2,
-                        opacity: 1,
-                        fillOpacity: 0.9
-                    }).addTo(map);
-
-                    marker.bindPopup(`
-                        <div style="font-family: 'Inter', sans-serif; min-width: 150px;">
-                            <h6 style="margin: 0; font-weight: bold;">
-                                <a href="/crm/apoiadores/${local.id}" style="color: #4f46e5; text-decoration: none; display: flex; align-items: center; gap: 4px;">
-                                    ${local.nome} <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 0.75rem;"></i>
-                                </a>
-                            </h6>
-                            <p style="margin: 6px 0 8px 0; color: #6b7280; font-size: 12px; line-height: 1.2;">
-                                ${local.endereco}<br>${local.bairro}
-                            </p>
-                            <span style="color: ${corPino}; font-weight: bold; font-size: 11px; text-transform: uppercase;">
-                                Apoio ${local.grau_apoio}
-                            </span>
-                        </div>
-                    `);
-
-                    bounds.extend(coord);
-                    
-                    // TRAVA DE SEGURANÇA: Só ajusta a câmera se houverem pontos válidos.
-                    // Isso evita o erro de "tela cinza".
-                    if (bounds.isValid()) {
-                        map.fitBounds(bounds, { padding: [50, 50], maxZoom: 16 });
-                    }
-                }
-
-                await delay(1000); // Delay obrigatório da API
-
-            } catch (err) {
-                console.error("Erro ao buscar coordenadas para:", local.nome, err);
+        var bounds = layerGroup.getBounds();
+            if (bounds.isValid()) {
+                // maxZoom: 15 limita a aproximação. Quanto menor o número, mais longe fica.
+                map.fitBounds(bounds, { 
+                    padding: [50, 50],
+                    maxZoom: 15 
+                });
             }
         }
-    }
 
-    plotarPinosExatos();
+    setTimeout(function(){ 
+        map.invalidateSize(); 
+    }, 400);
 </script>
 {% endblock %}

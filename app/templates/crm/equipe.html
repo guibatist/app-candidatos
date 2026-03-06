@@ -1,62 +1,103 @@
 {% extends 'base.html' %}
+
 {% block content %}
-
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h2 class="fw-bold text-dark mb-0"><i class="fa-solid fa-users-gear text-primary me-2"></i>Gestão de Equipe</h2>
-        <p class="text-muted small">Acompanhe as metas de captação dos seus assessores e coordenadores.</p>
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1" style="color: #111827;">Minha Equipe</h2>
+            <p class="text-muted small">Gerencie assessores, visualize metas e inicie conversas internas.</p>
+        </div>
+        {% if session.role == 'candidato' %}
+        <button class="btn btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#modalNovoAssessor">
+            <i class="fa-solid fa-user-plus me-2"></i>Novo Assessor
+        </button>
+        {% endif %}
     </div>
-</div>
 
-<div class="row g-4">
-    {% for item in equipe %}
-    <div class="col-md-4">
-        <div class="card border-0 shadow-sm rounded-4 h-100 position-relative">
-            
-            <form action="/crm/equipe/excluir/{{ item.membro.id }}" method="POST" class="position-absolute top-0 end-0 m-3">
-                <button type="submit" class="btn btn-sm text-danger opacity-50 hover-opacity-100 p-0" onclick="return confirm('Deseja remover este assessor da equipe?');" title="Excluir">
-                    <i class="fa-solid fa-trash"></i>
-                </button>
-            </form>
-
-            <div class="card-body p-4 text-center">
-                <div class="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center text-primary fw-bold mx-auto mb-3" style="width: 70px; height: 70px; font-size: 2rem;">
-                    {{ item.membro.nome[0] | upper }}
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-header bg-white py-3 border-bottom border-light">
+                    <h6 class="m-0 fw-bold" style="color: #374151;">Membros da Campanha</h6>
                 </div>
-                
-                <h5 class="fw-bold text-dark mb-1">{{ item.membro.nome }}</h5>
-                <span class="badge bg-light text-secondary border px-3 py-1 mb-3">{{ item.membro.cargo }}</span>
-                
-                <p class="text-muted small mb-4"><i class="fa-brands fa-whatsapp me-1"></i> {{ item.membro.telefone }}</p>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        {% for membro in equipe %}
+                        <div class="list-group-item py-3 px-4 border-light">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="d-flex align-items-center">
+                                    <div class="rounded-circle bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center me-3 fw-bold" 
+                                         style="width: 48px; height: 48px; font-size: 1.2rem;">
+                                        {{ membro.nome[:1].upper() }}
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-0 fw-bold" style="color: #111827;">
+                                            {{ membro.nome }}
+                                            {% if membro.id|string == meu_id|string %}
+                                                <span class="badge bg-indigo-soft text-primary ms-2" style="background-color: #e0e7ff; font-size: 0.65rem;">VOCÊ</span>
+                                            {% endif %}
+                                            {% if membro.role == 'candidato' %}
+                                                <i class="fa-solid fa-crown text-warning ms-1" title="Líder da Campanha"></i>
+                                            {% endif %}
+                                        </h6>
+                                        <div class="d-flex align-items-center gap-2 mt-1">
+                                            <span class="small text-muted text-uppercase fw-semibold" style="font-size: 0.65rem; letter-spacing: 0.05em;">
+                                                {{ membro.role }}
+                                            </span>
+                                            <span class="text-muted">•</span>
+                                            <span class="small text-muted" style="font-size: 0.75rem;">{{ membro.email }}</span>
+                                        </div>
+                                    </div>
+                                </div>
 
-                <div class="text-start mb-1 d-flex justify-content-between align-items-end">
-                    <span class="fw-bold text-muted" style="font-size: 0.75rem; text-transform: uppercase;">Meta de Captação</span>
-                    <span class="fw-bold text-dark">{{ item.captados }} / {{ item.membro.meta_apoiadores }}</span>
-                </div>
-                
-                <div class="progress" style="height: 10px; border-radius: 10px;">
-                    <div class="progress-bar {% if item.percentual >= 100 %}bg-success{% else %}bg-primary{% endif %}" 
-                         role="progressbar" 
-                         style="width: {{ item.percentual }}%;" 
-                         aria-valuenow="{{ item.percentual }}" aria-valuemin="0" aria-valuemax="100">
+                                <div class="d-flex gap-2">
+                                    {% if membro.id|string != meu_id|string %}
+                                    <button class="btn btn-sm btn-outline-primary border-0 rounded-pill px-3 fw-medium">
+                                        <i class="fa-solid fa-comment-dots me-1"></i> Chat
+                                    </button>
+                                    {% endif %}
+                                    
+                                    {% if session.role == 'candidato' and membro.role != 'candidato' %}
+                                    <button class="btn btn-sm btn-light text-muted border-0 rounded-circle" title="Configurações">
+                                        <i class="fa-solid fa-ellipsis-vertical"></i>
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="mt-3">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span class="text-muted" style="font-size: 0.7rem;">Meta de Apoiadores</span>
+                                    <span class="fw-bold" style="font-size: 0.7rem; color: #4f46e5;">{{ membro.progresso|default(0) }}%</span>
+                                </div>
+                                <div class="progress" style="height: 6px; background-color: #f3f4f6;">
+                                    <div class="progress-bar bg-primary" role="progressbar" style="width: {{ membro.progresso|default(0) }}%;" aria-valuenow="{{ membro.progresso|default(0) }}" aria-valuemin="0" aria-valuemax="100"></div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
                     </div>
                 </div>
-                
-                {% if item.percentual >= 100 %}
-                <div class="mt-2 text-success small fw-bold"><i class="fa-solid fa-trophy me-1"></i> Meta Batida!</div>
-                {% else %}
-                <div class="mt-2 text-muted small">{{ item.percentual }}% concluído</div>
-                {% endif %}
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card-body p-4 text-center">
+                    <div class="d-inline-flex align-items-center justify-content-center bg-primary bg-opacity-10 text-primary rounded-circle mb-3" style="width: 60px; height: 60px;">
+                        <i class="fa-solid fa-users-viewfinder fa-xl"></i>
+                    </div>
+                    <h5 class="fw-bold mb-1">Total da Equipe</h5>
+                    <h2 class="fw-bold text-primary">{{ equipe|length }}</h2>
+                    <p class="text-muted small">Membros ativos na campanha</p>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm rounded-4 bg-dark text-white p-4">
+                <h6 class="fw-bold"><i class="fa-solid fa-lightbulb text-warning me-2"></i>Dica do Líder</h6>
+                <p class="small opacity-75 mb-0">Mantenha sua equipe engajada. O chat interno permite que você delegue tarefas e cobre resultados sem sair do ecossistema da campanha.</p>
             </div>
         </div>
     </div>
-    {% else %}
-    <div class="col-12 text-center py-5">
-        <i class="fa-solid fa-users text-muted mb-3" style="font-size: 3rem; opacity: 0.3;"></i>
-        <h5 class="fw-bold text-dark">Sua equipe está vazia</h5>
-        <p class="text-muted">Cadastre seus assessores e comece a medir o desempenho da campanha.</p>
-    </div>
-    {% endfor %}
 </div>
-
 {% endblock %}
