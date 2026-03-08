@@ -40,6 +40,76 @@
             </div>
 
             <div class="card border-0 shadow-sm rounded-4 mb-4 p-4">
+                <h5 class="fw-bold text-dark mb-4"><i class="fa-solid fa-chart-pie text-info me-2"></i>Análise Demográfica e Perfil</h5>
+                
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label text-muted small fw-bold text-uppercase">Sexo</label>
+                        <select name="sexo" class="form-select bg-light border-0 py-2">
+                            <option value="">Não informado</option>
+                            <option value="Masculino">Masculino</option>
+                            <option value="Feminino">Feminino</option>
+                            <option value="Outro">Outro</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label text-muted small fw-bold text-uppercase">Faixa Etária</label>
+                        <select name="faixa_etaria" class="form-select bg-light border-0 py-2">
+                            <option value="">Não informada</option>
+                            <option value="16-24">16-24</option>
+                            <option value="25-34">25-34</option>
+                            <option value="35-60">35-60</option>
+                            <option value="60+">60+</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label text-muted small fw-bold text-uppercase">Renda Familiar</label>
+                        <select name="renda_familiar" class="form-select bg-light border-0 py-2">
+                            <option value="">Não informada</option>
+                            <option value="Até 2 salários">Até 2 salários</option>
+                            <option value="2-5 salários">2-5 salários</option>
+                            <option value="5-10 salários">5-10 salários</option>
+                            <option value="10+">10+ salários</option>
+                        </select>
+                    </div>
+                    
+                    <div class="col-md-6 mt-3">
+                        <label class="form-label text-muted small fw-bold text-uppercase">Grau de Instrução</label>
+                        <select name="grau_instrucao" class="form-select bg-light border-0 py-2">
+                            <option value="">Não informado</option>
+                            <option value="Fundamental">Fundamental</option>
+                            <option value="Médio">Médio</option>
+                            <option value="Superior">Superior</option>
+                            <option value="Pós/Mestrado/Doutorado">Pós/Mestrado/Doutorado</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 mt-3">
+                        <label class="form-label text-muted small fw-bold text-uppercase">De onde veio?</label>
+                        <select name="origem_cadastro" class="form-select bg-light border-0 py-2">
+                            <option value="">Selecione...</option>
+                            <option value="Instagram">Instagram</option>
+                            <option value="TikTok">TikTok</option>
+                            <option value="Linkedin">Linkedin</option>
+                            <option value="Site">Site</option>
+                            <option value="Indicação">Indicação (Boca a Boca)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="col-md-12 mt-3">
+                        <label class="form-label text-muted small fw-bold text-uppercase">Posicionamento Político</label>
+                        <select name="posicionamento_politico" class="form-select bg-light border-0 py-2">
+                            <option value="">Neutro / Não informado</option>
+                            <option value="Esquerda">Esquerda</option>
+                            <option value="Centro-Esquerda">Centro-Esquerda</option>
+                            <option value="Centro">Centro</option>
+                            <option value="Centro-Direita">Centro-Direita</option>
+                            <option value="Direita">Direita</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm rounded-4 mb-4 p-4">
                 <h5 class="fw-bold text-dark mb-4"><i class="fa-solid fa-map-location-dot text-danger me-2"></i>Base Geográfica</h5>
                 
                 <div class="row g-3">
@@ -119,7 +189,7 @@
                     <label class="btn btn-outline-primary btn-sm rounded-pill" for="tag6">Religião</label>
                 </div>
 
-                <label class="form-label text-muted small fw-bold text-uppercase mb-3">Ativos da Campanha (O que oferece?)</label>
+                <label class="form-label text-muted small fw-bold text-uppercase mb-3">Ativos da Campanha</label>
                 
                 <div class="form-check form-switch mb-3">
                     <input class="form-check-input fs-5" type="checkbox" name="oferece_muro" id="muro">

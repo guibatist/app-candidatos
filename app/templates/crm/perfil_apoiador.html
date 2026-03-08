@@ -6,19 +6,37 @@
         <div class="col-12">
             <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
                 <div class="card-body p-0">
-                    <div class="bg-indigo p-4 text-white d-flex align-items-center justify-content-between" style="background-color: #4f46e5;">
+                    <div class="bg-indigo p-4 text-white d-flex align-items-center justify-content-between flex-wrap gap-3" style="background-color: #4f46e5;">
                         <div class="d-flex align-items-center gap-3">
                             <div class="bg-white rounded-circle d-flex justify-content-center align-items-center text-indigo" style="width: 60px; height: 60px; font-size: 24px;">
                                 <i class="fa-solid fa-user"></i>
                             </div>
                             <div>
                                 <h3 class="mb-0 fw-bold">{{ apoiador.nome }}</h3>
-                                <span class="badge bg-white bg-opacity-25 text-white border-0">{{ apoiador.bairro }}</span>
+                                <div class="d-flex flex-wrap gap-2 mt-2">
+                                    <span class="badge bg-white bg-opacity-25 text-white border-0">
+                                        <i class="fa-solid fa-location-dot me-1"></i> {{ apoiador.bairro or 'Bairro não informado' }}
+                                    </span>
+                                    <span class="badge text-white border-0" style="background-color: rgba(255,255,255,0.15);">
+                                        <i class="fa-solid fa-venus-mars me-1"></i> {{ apoiador.sexo or 'Sexo n/i' }}
+                                    </span>
+                                    <span class="badge text-white border-0" style="background-color: rgba(255,255,255,0.15);">
+                                        <i class="fa-solid fa-cake-candles me-1"></i> {{ apoiador.faixa_etaria or 'Idade n/i' }}
+                                    </span>
+                                    <span class="badge bg-warning text-dark border-0">
+                                        <i class="fa-solid fa-scale-balanced me-1"></i> {{ apoiador.posicionamento_politico or 'Neutro' }}
+                                    </span>
+                                </div>
                             </div>
                         </div>
-                        <a href="https://wa.me/55{{ apoiador.telefone|replace('(', '')|replace(')', '')|replace('-', '')|replace(' ', '') }}" target="_blank" class="btn btn-light rounded-pill px-4 fw-bold text-indigo">
-                            <i class="fa-brands fa-whatsapp me-2"></i> WhatsApp
-                        </a>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-outline-light rounded-pill px-3 fw-bold" data-bs-toggle="modal" data-bs-target="#modalEditarPerfil">
+                                <i class="fa-solid fa-user-gear me-2"></i> Editar Perfil
+                            </button>
+                            <a href="https://wa.me/55{{ apoiador.telefone|replace('(', '')|replace(')', '')|replace('-', '')|replace(' ', '') }}" target="_blank" class="btn btn-light rounded-pill px-4 fw-bold text-indigo">
+                                <i class="fa-brands fa-whatsapp me-2"></i> WhatsApp
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -163,6 +181,88 @@
 
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalEditarPerfil" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow rounded-4">
+            <div class="modal-header border-0 bg-light">
+                <h5 class="modal-title fw-bold text-indigo"><i class="fa-solid fa-chart-pie me-2"></i> Dados Demográficos e Análise</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form action="{{ url_for('crm.editar_perfil_detalhado', id=apoiador.id) }}" method="POST">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold">Sexo</label>
+                            <select name="sexo" class="form-select">
+                                <option value="" {% if not apoiador.sexo %}selected{% endif %}>Selecione...</option>
+                                <option value="Masculino" {% if apoiador.sexo == 'Masculino' %}selected{% endif %}>Masculino</option>
+                                <option value="Feminino" {% if apoiador.sexo == 'Feminino' %}selected{% endif %}>Feminino</option>
+                                <option value="Outro" {% if apoiador.sexo == 'Outro' %}selected{% endif %}>Outro</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold">Faixa Etária</label>
+                            <select name="faixa_etaria" class="form-select">
+                                <option value="" {% if not apoiador.faixa_etaria %}selected{% endif %}>Selecione...</option>
+                                <option value="16-24" {% if apoiador.faixa_etaria == '16-24' %}selected{% endif %}>16-24</option>
+                                <option value="25-34" {% if apoiador.faixa_etaria == '25-34' %}selected{% endif %}>25-34</option>
+                                <option value="35-60" {% if apoiador.faixa_etaria == '35-60' %}selected{% endif %}>35-60</option>
+                                <option value="60+" {% if apoiador.faixa_etaria == '60+' %}selected{% endif %}>60+</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold">Renda Familiar</label>
+                            <select name="renda_familiar" class="form-select">
+                                <option value="" {% if not apoiador.renda_familiar %}selected{% endif %}>Selecione...</option>
+                                <option value="Até 2 salários" {% if apoiador.renda_familiar == 'Até 2 salários' %}selected{% endif %}>Até 2 salários</option>
+                                <option value="2-5 salários" {% if apoiador.renda_familiar == '2-5 salários' %}selected{% endif %}>2-5 salários</option>
+                                <option value="5-10 salários" {% if apoiador.renda_familiar == '5-10 salários' %}selected{% endif %}>5-10 salários</option>
+                                <option value="10+" {% if apoiador.renda_familiar == '10+' %}selected{% endif %}>10+ salários</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">Grau de Instrução</label>
+                            <select name="grau_instrucao" class="form-select">
+                                <option value="" {% if not apoiador.grau_instrucao %}selected{% endif %}>Selecione...</option>
+                                <option value="Fundamental" {% if apoiador.grau_instrucao == 'Fundamental' %}selected{% endif %}>Fundamental</option>
+                                <option value="Médio" {% if apoiador.grau_instrucao == 'Médio' %}selected{% endif %}>Médio</option>
+                                <option value="Superior" {% if apoiador.grau_instrucao == 'Superior' %}selected{% endif %}>Superior</option>
+                                <option value="Pós/Mestrado/Doutorado" {% if apoiador.grau_instrucao == 'Pós/Mestrado/Doutorado' %}selected{% endif %}>Pós/Mestrado/Doutorado</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">Origem / De onde veio?</label>
+                            <select name="origem_cadastro" class="form-select">
+                                <option value="" {% if not apoiador.origem_cadastro %}selected{% endif %}>Selecione...</option>
+                                <option value="Linkedin" {% if apoiador.origem_cadastro == 'Linkedin' %}selected{% endif %}>Linkedin</option>
+                                <option value="TikTok" {% if apoiador.origem_cadastro == 'TikTok' %}selected{% endif %}>TikTok</option>
+                                <option value="Instagram" {% if apoiador.origem_cadastro == 'Instagram' %}selected{% endif %}>Instagram</option>
+                                <option value="Site" {% if apoiador.origem_cadastro == 'Site' %}selected{% endif %}>Site</option>
+                                <option value="Indicação" {% if apoiador.origem_cadastro == 'Indicação' %}selected{% endif %}>Indicação</option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small fw-bold">Posicionamento Político</label>
+                            <select name="posicionamento_politico" class="form-select">
+                                <option value="" {% if not apoiador.posicionamento_politico %}selected{% endif %}>Selecione...</option>
+                                <option value="Esquerda" {% if apoiador.posicionamento_politico == 'Esquerda' %}selected{% endif %}>Esquerda</option>
+                                <option value="Centro-Esquerda" {% if apoiador.posicionamento_politico == 'Centro-Esquerda' %}selected{% endif %}>Centro-Esquerda</option>
+                                <option value="Centro" {% if apoiador.posicionamento_politico == 'Centro' %}selected{% endif %}>Centro</option>
+                                <option value="Centro-Direita" {% if apoiador.posicionamento_politico == 'Centro-Direita' %}selected{% endif %}>Centro-Direita</option>
+                                <option value="Direita" {% if apoiador.posicionamento_politico == 'Direita' %}selected{% endif %}>Direita</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mt-4 pt-3 border-top d-flex justify-content-end gap-2">
+                        <button type="button" class="btn btn-light rounded-pill" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-indigo rounded-pill px-4 fw-bold">Atualizar Perfil Analítico</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>

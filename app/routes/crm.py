@@ -188,3 +188,14 @@ def excluir_tarefa(id):
     flash('Tarefa removida.', 'warning')
     
     return redirect(request.referrer or url_for('crm.listar_apoiadores'))
+
+@crm_bp.route('/apoiadores/<id>/editar-perfil', methods=['POST'])
+def editar_perfil_detalhado(id):
+    ctx = obter_contexto_acesso()
+    if not ctx: return redirect(url_for('auth.login'))
+    
+    # Chama o service para atualizar os dados demográficos no banco
+    CRMService.atualizar_perfil_demografico(ctx['cliente_id'], id, request.form)
+    
+    flash('Perfil demográfico atualizado com sucesso!', 'success')
+    return redirect(url_for('crm.perfil_apoiador', apoiador_id=id))

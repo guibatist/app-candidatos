@@ -196,6 +196,7 @@ class CRMService:
         cidade = dados_form.get('cidade', '').strip()
         uf = dados_form.get('uf', '').strip()
         
+        # Faz a mágica do Mapa (Geocoding)
         lat, lon = CRMService.buscar_coordenadas(logradouro, numero, bairro, cidade, uf, cep)
         novo_id = f"apo_{uuid.uuid4().hex[:12]}"
         
@@ -211,20 +212,30 @@ class CRMService:
         
         try:
             with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+                # Atualizado com os 6 novos campos demográficos
                 cursor.execute("""
                     INSERT INTO apoiadores (
                         id, cliente_id, nome, telefone, cep, logradouro, numero, complemento, 
                         bairro, cidade, uf, lat, lon, grau_apoio, votos_familia, tags, 
-                        indicado_por, observacoes, oferece_muro, oferece_carro, lideranca, data_cadastro
+                        indicado_por, observacoes, oferece_muro, oferece_carro, lideranca, data_cadastro,
+                        sexo, faixa_etaria, renda_familiar, grau_instrucao, origem_cadastro, posicionamento_politico
                     ) VALUES (
-                        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+                        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                        %s, %s, %s, %s, %s, %s
                     ) RETURNING *
                 """, (
                     novo_id, str(cliente_id), nome, telefone, cep, logradouro, numero, complemento,
                     bairro, cidade, uf, lat, lon, dados_form.get('grau_apoio', 'medio'),
                     int(dados_form.get('votos_familia', 1) or 1), json.dumps(tags_list),
                     dados_form.get('indicado_por', ''), dados_form.get('observacoes', ''),
-                    oferece_muro, oferece_carro, lideranca, datetime.now().strftime("%d/%m/%Y %H:%M")
+                    oferece_muro, oferece_carro, lideranca, datetime.now().strftime("%d/%m/%Y %H:%M"),
+                    # Nossos novos campos pegos direto do HTML:
+                    dados_form.get('sexo') or None,
+                    dados_form.get('faixa_etaria') or None,
+                    dados_form.get('renda_familiar') or None,
+                    dados_form.get('grau_instrucao') or None,
+                    dados_form.get('origem_cadastro') or None,
+                    dados_form.get('posicionamento_politico') or None
                 ))
                 novo_apoiador = cursor.fetchone()
             conn.commit()
@@ -426,5 +437,37 @@ class CRMService:
         except Exception as e:
             conn.rollback()
             print(f"Erro ao excluir tarefa: {e}")
+        finally:
+            conn.close()
+
+    @staticmethod
+    def atualizar_perfil_demografico(cliente_id, apoiador_id, dados):
+        conn = get_db_connection()
+        if not conn: return
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                    UPDATE apoiadores 
+                    SET sexo = %s,
+                        faixa_etaria = %s,
+                        renda_familiar = %s,
+                        grau_instrucao = %s,
+                        origem_cadastro = %s,
+                        posicionamento_politico = %s
+                    WHERE id = %s AND cliente_id = %s
+                """, (
+                    dados.get('sexo') or None,
+                    dados.get('faixa_etaria') or None,
+                    dados.get('renda_familiar') or None,
+                    dados.get('grau_instrucao') or None,
+                    dados.get('origem_cadastro') or None,
+                    dados.get('posicionamento_politico') or None,
+                    str(apoiador_id), 
+                    str(cliente_id)
+                ))
+            conn.commit()
+        except Exception as e:
+            conn.rollback()
+            print(f"Erro ao atualizar perfil demográfico: {e}")
         finally:
             conn.close()
