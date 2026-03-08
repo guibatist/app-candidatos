@@ -2,6 +2,11 @@
 
 {% block content %}
 <div class="container-fluid py-4">
+    <div class="mb-3">
+        <a href="{{ url_for('crm.listar_apoiadores') }}" class="btn btn-sm btn-outline-secondary rounded-pill px-3 fw-bold bg-white shadow-sm">
+            <i class="fa-solid fa-arrow-left me-2"></i>Voltar para Apoiadores
+        </a>
+    </div>
     <div class="row mb-4">
         <div class="col-12">
             <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
@@ -11,7 +16,7 @@
                             <div class="bg-white rounded-circle d-flex justify-content-center align-items-center text-indigo" style="width: 60px; height: 60px; font-size: 24px;">
                                 <i class="fa-solid fa-user"></i>
                             </div>
-                            <div>
+                            <div>    
                                 <h3 class="mb-0 fw-bold d-flex align-items-center gap-2">
                                     {{ apoiador.nome }}
                                     <button type="button" class="btn btn-sm btn-light text-indigo rounded-circle shadow-sm" data-bs-toggle="modal" data-bs-target="#modalEditarCadastro" title="Editar Dados Básicos">
