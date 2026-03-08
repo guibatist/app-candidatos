@@ -1,53 +1,303 @@
 {% extends 'base.html' %}
+
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>Meus Apoiadores</h2>
-    <a href="/crm/apoiadores/novo" class="btn btn-primary">+ Novo Apoiador</a>
+<div class="container-fluid py-4">
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold text-dark mb-0">Base de Apoiadores</h2>
+            <p class="text-muted small">Gestão, microdirecionamento e inteligência de dados.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-indigo rounded-pill px-4 shadow-sm fw-bold" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasFiltros" aria-controls="offcanvasFiltros">
+                <i class="fa-solid fa-filter me-2"></i> Filtrar Base
+            </button>
+            <a href="{{ url_for('crm.novo_apoiador') }}" class="btn btn-indigo rounded-pill px-4 shadow-sm fw-bold">
+                <i class="fa-solid fa-plus me-2"></i> Novo Apoiador
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 bg-white p-3 border-start border-indigo border-4" style="border-left-color: #4f46e5 !important;">
+                <p class="text-muted small fw-bold mb-1 text-uppercase">Apoiadores Filtrados</p>
+                <h3 class="fw-bold text-dark mb-0" id="bi-total">0</h3>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 bg-white p-3 border-start border-success border-4">
+                <p class="text-muted small fw-bold mb-1 text-uppercase">Multiplicadores (Forte)</p>
+                <h3 class="fw-bold text-dark mb-0" id="bi-multiplicadores">0</h3>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 bg-white p-3 border-start border-info border-4">
+                <p class="text-muted small fw-bold mb-1 text-uppercase" title="Soma da influência familiar">Potencial de Votos (Est.)</p>
+                <h3 class="fw-bold text-dark mb-0" id="bi-votos">0</h3>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+        <div class="table-responsive" style="min-height: 50vh;">
+            <table class="table table-hover align-middle mb-0 bg-white" id="tabela-apoiadores">
+                <thead class="bg-light text-muted small text-uppercase">
+                    <tr>
+                        <th class="ps-4 py-3 fw-bold border-0">Apoiador</th>
+                        <th class="py-3 fw-bold border-0">Contato</th>
+                        <th class="py-3 fw-bold border-0">Localização</th>
+                        <th class="py-3 fw-bold border-0 text-center">Grau de Apoio</th>
+                        <th class="pe-4 py-3 fw-bold border-0 text-end">Ações</th>
+                    </tr>
+                </thead>
+                <tbody class="border-top-0">
+                    {% for a in apoiadores %}
+                    <tr class="linha-apoiador" 
+                        data-cidade="{{ a.cidade or '' }}"
+                        data-bairro="{{ a.bairro or '' }}"
+                        data-sexo="{{ a.sexo or '' }}"
+                        data-idade="{{ a.faixa_etaria or '' }}"
+                        data-origem="{{ a.origem_cadastro or '' }}"
+                        data-instrucao="{{ a.grau_instrucao or '' }}"
+                        data-posicionamento="{{ a.posicionamento_politico or '' }}"
+                        data-apoio="{{ a.grau_apoio or '' }}"
+                        data-votos="{{ a.votos_familia or 1 }}">
+                        
+                        <td class="ps-4 py-3">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="bg-light rounded-circle d-flex justify-content-center align-items-center text-indigo" style="width: 40px; height: 40px;">
+                                    <i class="fa-solid fa-user"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0 fw-bold text-dark">{{ a.nome }}</h6>
+                                    <span class="text-muted small">Resp: {{ a.indicado_por or 'Direto' }}</span>
+                                </div>
+                            </div>
+                        </td>
+                        
+                        <td class="py-3">
+                            <a href="https://wa.me/55{{ a.telefone|replace('(', '')|replace(')', '')|replace('-', '')|replace(' ', '') }}" target="_blank" class="text-decoration-none text-dark fw-medium">
+                                <i class="fa-brands fa-whatsapp text-success me-1"></i> {{ a.telefone }}
+                            </a>
+                        </td>
+                        
+                        <td class="py-3">
+                            <span class="d-block fw-bold text-dark">{{ a.bairro or '-' }}</span>
+                            <span class="text-muted small">{{ a.cidade or '-' }}</span>
+                        </td>
+                        
+                        <td class="py-3 text-center">
+                            {% if a.grau_apoio == 'forte' %}
+                                <span class="badge bg-success bg-opacity-10 text-success border border-success rounded-pill px-3">Forte</span>
+                            {% elif a.grau_apoio == 'medio' %}
+                                <span class="badge bg-warning bg-opacity-10 text-warning border border-warning rounded-pill px-3">Médio</span>
+                            {% else %}
+                                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger rounded-pill px-3">Fraco</span>
+                            {% endif %}
+                        </td>
+                        
+                        <td class="pe-4 py-3 text-end">
+                            <a href="{{ url_for('crm.perfil_apoiador', apoiador_id=a.id) }}" class="btn btn-sm btn-light text-indigo fw-bold rounded-pill px-3 shadow-sm" style="border: 1px solid #4f46e5;">
+                                Abrir Perfil <i class="fa-solid fa-arrow-right ms-1"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center py-5 text-muted">
+                            <i class="fa-solid fa-folder-open fs-2 mb-3 text-light"></i>
+                            <p class="mb-0">Nenhum apoiador cadastrado ainda.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
 </div>
 
-<div class="card p-3 shadow-sm">
-    <table class="table table-hover align-middle">
-        <thead class="table-dark">
-            <tr>
-                <th>Nome</th>
-                <th>Bairro</th>
-                <th>Telefone</th>
-                <th>Grau de Apoio</th>
-                <th>Ações</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for a in apoiadores %}
-            <tr>
-                <td>
-                    <strong>{{ a.nome }}</strong><br>
-                    <small class="text-muted">Indicado por: {{ a.indicado_por or 'N/A' }}</small>
-                </td>
-                <td>{{ a.bairro }}</td>
-                <td>{{ a.telefone }}</td>
-                <td>
-                    {% if a.grau_apoio == 'forte' %}
-                        <span class="badge bg-success">Forte (Multiplicador)</span>
-                    {% elif a.grau_apoio == 'medio' %}
-                        <span class="badge bg-warning text-dark">Médio (Simpatizante)</span>
-                    {% else %}
-                        <span class="badge bg-danger">Indeciso/Fraco</span>
-                    {% endif %}
-                </td>
-                <td>
-                    <a href="/crm/apoiadores/{{ a.id }}" class="btn btn-sm btn-primary">Ver Perfil / Tarefas</a>
-                    
-                    <form action="/crm/apoiadores/excluir/{{ a.id }}" method="POST" style="display:inline;">
-                        <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Excluir?');">Excluir</button>
-                    </form>
-                </td>
-            </tr>
-            {% else %}
-            <tr>
-                <td colspan="5" class="text-center text-muted">Nenhum apoiador cadastrado ainda.</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+<div class="offcanvas offcanvas-end border-0 shadow" tabindex="-1" id="offcanvasFiltros" aria-labelledby="offcanvasLabel" style="width: 380px;">
+    <div class="offcanvas-header bg-light border-bottom p-4">
+        <h5 class="offcanvas-title fw-bold text-indigo" id="offcanvasLabel">
+            <i class="fa-solid fa-filter me-2"></i>Filtros Avançados
+        </h5>
+        <button type="button" class="btn-close shadow-none" data-bs-dismiss="offcanvas" aria-label="Fechar"></button>
+    </div>
+    
+    <div class="offcanvas-body p-4 bg-white">
+        <p class="text-muted small mb-4">Selecione as opções abaixo para microdirecionar a sua base. Os dados são atualizados em tempo real.</p>
+        
+        <div class="d-flex flex-column gap-3">
+            <div>
+                <label class="form-label small fw-bold text-muted">Cidade</label>
+                <select id="filtro-cidade" class="form-select border-light shadow-sm filtro-crm bg-light">
+                    <option value="">Todas as Cidades</option>
+                </select>
+            </div>
+            
+            <div>
+                <label class="form-label small fw-bold text-muted">Bairro</label>
+                <select id="filtro-bairro" class="form-select border-light shadow-sm filtro-crm bg-light">
+                    <option value="">Todos os Bairros</option>
+                </select>
+            </div>
+            
+            <div class="row g-2">
+                <div class="col-6">
+                    <label class="form-label small fw-bold text-muted">Sexo</label>
+                    <select id="filtro-sexo" class="form-select border-light shadow-sm filtro-crm bg-light">
+                        <option value="">Todos</option>
+                    </select>
+                </div>
+                <div class="col-6">
+                    <label class="form-label small fw-bold text-muted">Faixa Etária</label>
+                    <select id="filtro-idade" class="form-select border-light shadow-sm filtro-crm bg-light">
+                        <option value="">Todas</option>
+                    </select>
+                </div>
+            </div>
+
+            <div>
+                <label class="form-label small fw-bold text-muted">Origem (Como chegou?)</label>
+                <select id="filtro-origem" class="form-select border-light shadow-sm filtro-crm bg-light">
+                    <option value="">Todas</option>
+                </select>
+            </div>
+            
+            <div>
+                <label class="form-label small fw-bold text-muted">Grau de Instrução</label>
+                <select id="filtro-instrucao" class="form-select border-light shadow-sm filtro-crm bg-light">
+                    <option value="">Todos</option>
+                </select>
+            </div>
+            
+            <div>
+                <label class="form-label small fw-bold text-muted">Posicionamento Político</label>
+                <select id="filtro-posicionamento" class="form-select border-light shadow-sm filtro-crm bg-light">
+                    <option value="">Todos</option>
+                </select>
+            </div>
+        </div>
+    </div>
+    
+    <div class="offcanvas-footer p-4 bg-light border-top d-flex justify-content-between align-items-center">
+        <button id="btn-limpar-filtros" class="btn btn-outline-secondary rounded-pill px-4 bg-white shadow-sm fw-bold">Limpar</button>
+        <button type="button" class="btn btn-indigo rounded-pill px-4 shadow-sm fw-bold" data-bs-dismiss="offcanvas">Ver Resultados</button>
+    </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const linhas = document.querySelectorAll('.linha-apoiador');
+    const filtros = document.querySelectorAll('.filtro-crm');
+    
+    const biTotal = document.getElementById('bi-total');
+    const biMultiplicadores = document.getElementById('bi-multiplicadores');
+    const biVotos = document.getElementById('bi-votos');
+
+    // 1. Dicionários para capturar os dados reais da base
+    const dadosReais = {
+        cidade: new Set(),
+        bairro: new Set(),
+        sexo: new Set(),
+        idade: new Set(),
+        origem: new Set(),
+        instrucao: new Set(),
+        posicionamento: new Set()
+    };
+    
+    linhas.forEach(linha => {
+        if(linha.dataset.cidade) dadosReais.cidade.add(linha.dataset.cidade);
+        if(linha.dataset.bairro) dadosReais.bairro.add(linha.dataset.bairro);
+        if(linha.dataset.sexo) dadosReais.sexo.add(linha.dataset.sexo);
+        if(linha.dataset.idade) dadosReais.idade.add(linha.dataset.idade);
+        if(linha.dataset.origem) dadosReais.origem.add(linha.dataset.origem);
+        if(linha.dataset.instrucao) dadosReais.instrucao.add(linha.dataset.instrucao);
+        if(linha.dataset.posicionamento) dadosReais.posicionamento.add(linha.dataset.posicionamento);
+    });
+
+    function popularDropdown(idSelect, setDeDados) {
+        const select = document.getElementById(idSelect);
+        Array.from(setDeDados).sort().forEach(item => {
+            if (item && item.toLowerCase() !== 'none' && item.trim() !== '') {
+                select.add(new Option(item, item));
+            }
+        });
+    }
+
+    popularDropdown('filtro-cidade', dadosReais.cidade);
+    popularDropdown('filtro-bairro', dadosReais.bairro);
+    popularDropdown('filtro-sexo', dadosReais.sexo);
+    popularDropdown('filtro-idade', dadosReais.idade);
+    popularDropdown('filtro-origem', dadosReais.origem);
+    popularDropdown('filtro-instrucao', dadosReais.instrucao);
+    popularDropdown('filtro-posicionamento', dadosReais.posicionamento);
+
+    // 2. A Função de Filtragem Dinâmica (Tempo Real)
+    function aplicarFiltros() {
+        let total = 0;
+        let multiplicadores = 0;
+        let votos = 0;
+
+        const estadoFiltros = {
+            cidade: document.getElementById('filtro-cidade').value,
+            bairro: document.getElementById('filtro-bairro').value,
+            sexo: document.getElementById('filtro-sexo').value,
+            idade: document.getElementById('filtro-idade').value,
+            origem: document.getElementById('filtro-origem').value,
+            instrucao: document.getElementById('filtro-instrucao').value,
+            posicionamento: document.getElementById('filtro-posicionamento').value,
+        };
+
+        linhas.forEach(linha => {
+            let mostrar = true;
+            for (const [chave, valor] of Object.entries(estadoFiltros)) {
+                if (valor !== "" && linha.dataset[chave] !== valor) {
+                    mostrar = false;
+                    break;
+                }
+            }
+
+            linha.style.display = mostrar ? '' : 'none';
+
+            if (mostrar) {
+                total++;
+                votos += parseInt(linha.dataset.votos) || 1;
+                if (linha.dataset.apoio === 'forte') multiplicadores++;
+            }
+        });
+
+        biTotal.textContent = total;
+        biMultiplicadores.textContent = multiplicadores;
+        biVotos.textContent = votos;
+    }
+
+    // 3. Gatilhos: Atualiza o B.I. instantaneamente enquanto o usuário muda no Offcanvas
+    filtros.forEach(select => {
+        select.addEventListener('change', aplicarFiltros);
+    });
+
+    document.getElementById('btn-limpar-filtros').addEventListener('click', () => {
+        filtros.forEach(select => select.value = "");
+        aplicarFiltros();
+    });
+
+    // Inicia calculando tudo
+    aplicarFiltros();
+});
+</script>
+
+<style>
+    .text-indigo { color: #4f46e5 !important; }
+    .btn-indigo { background-color: #4f46e5; color: white; border: none; }
+    .btn-indigo:hover { background-color: #3f36c5; color: white; }
+    .btn-outline-indigo { color: #4f46e5; border-color: #4f46e5; background-color: transparent; }
+    .btn-outline-indigo:hover { background-color: #4f46e5; color: white; }
+    .border-indigo { border-color: #4f46e5 !important; }
+    
+    /* Suaviza a transição das linhas da tabela sumindo/aparecendo */
+    .linha-apoiador { transition: opacity 0.2s ease-in-out; }
+</style>
 {% endblock %}
