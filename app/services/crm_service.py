@@ -292,7 +292,7 @@ class CRMService:
         if not conn: return []
         try:
             with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-                # O Frontend espera 'lng', mas o banco salva como 'lon'. Tratamos isso na saída:
+                # Importante: 'lon as lng' faz a tradução para o JavaScript entender
                 cursor.execute("""
                     SELECT nome, logradouro, numero, bairro, cidade, grau_apoio, lideranca, lat, lon as lng
                     FROM apoiadores 
@@ -300,7 +300,7 @@ class CRMService:
                 """, (str(cliente_id),))
                 return cursor.fetchall()
         except Exception as e:
-            print(f"Erro ao buscar dados do mapa: {e}")
+            print(f"❌ Erro SQL no Mapa: {e}")
             return []
         finally:
             conn.close()
@@ -373,3 +373,35 @@ class CRMService:
                 "percentual": percentual
             })
         return resultados
+
+    @staticmethod
+    def editar_tarefa(cliente_id, tarefa_id, dados):
+        conn = get_db_connection()
+        if not conn: return
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                    UPDATE tarefas 
+                    SET tipo = %s, descricao = %s, data_limite = %s 
+                    WHERE id = %s AND cliente_id = %s
+                """, (dados.get('tipo'), dados.get('descricao'), dados.get('data_limite'), str(tarefa_id), str(cliente_id)))
+            conn.commit()
+        except Exception as e:
+            conn.rollback()
+            print(f"Erro ao editar tarefa: {e}")
+        finally:
+            conn.close()
+
+    @staticmethod
+    def excluir_tarefa(cliente_id, tarefa_id):
+        conn = get_db_connection()
+        if not conn: return
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute("DELETE FROM tarefas WHERE id = %s AND cliente_id = %s", (str(tarefa_id), str(cliente_id)))
+            conn.commit()
+        except Exception as e:
+            conn.rollback()
+            print(f"Erro ao excluir tarefa: {e}")
+        finally:
+            conn.close()

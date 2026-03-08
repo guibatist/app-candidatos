@@ -67,25 +67,73 @@ def mapa_bairros():
                            dados_mapa=dados_mapa, 
                            permissoes=ctx['permissoes'])
 
-# 5. PERFIL DO APOIADOR (MIGRAÇÃO PARCIAL PARA SERVICE)
+from app.utils.db import get_db_connection
+from psycopg2.extras import RealDictCursor
+
+# 5. PERFIL DO APOIADOR (100% POSTGRESQL)
 @crm_bp.route('/apoiadores/<apoiador_id>')
 def perfil_apoiador(apoiador_id):
     ctx = obter_contexto_acesso()
     if not ctx: return redirect(url_for('auth.login'))
 
-    # Usaremos o service para buscar os dados no banco
-    # Se você ainda não migrou o get_apoiador_by_id no service,
-    # ele pode dar erro. Mas para o mapa funcionar, a rota acima já basta.
-    apoiadores = CRMService.get_apoiadores(ctx['cliente_id'])
+    cliente_id = str(ctx['cliente_id'])
+    
+    # Busca o Apoiador
+    apoiadores = CRMService.get_apoiadores(cliente_id)
     apoiador = next((a for a in apoiadores if str(a['id']) == str(apoiador_id)), None)
 
     if not apoiador:
         flash('Apoiador não encontrado.', 'danger')
         return redirect(url_for('crm.listar_apoiadores'))
 
+    # Busca as Tarefas do Apoiador
+    todas_tarefas = CRMService.listar_tarefas_apoiador(cliente_id, apoiador_id)
+    pendentes = [t for t in todas_tarefas if str(t.get('status')).lower() == 'pendente']
+    historico = [t for t in todas_tarefas if str(t.get('status')).lower() in ['concluida', 'cancelada']]
+
+    # Busca os Assessores na tabela de usuários para delegação de tarefas
+    assessores = []
+    conn = get_db_connection()
+    if conn:
+        try:
+            with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+                cursor.execute("""
+                    SELECT id, nome FROM usuarios 
+                    WHERE cliente_id = %s AND role = 'assessor'
+                """, (cliente_id,))
+                assessores = cursor.fetchall()
+        finally:
+            conn.close()
+
     return render_template('crm/perfil_apoiador.html', 
-                           apoiador=apoiador, 
+                           apoiador=apoiador,
+                           tarefas=todas_tarefas,
+                           pendentes=pendentes,
+                           historico=historico,
+                           todas_tarefas=todas_tarefas,
+                           assessores=assessores,
+                           user_role=ctx['role'],
                            permissoes=ctx['permissoes'])
+
+# --- ROTAS DE AÇÃO (TAREFAS E EXCLUSÃO) ---
+
+@crm_bp.route('/apoiadores/<apoiador_id>/tarefas', methods=['POST'])
+def nova_tarefa(apoiador_id):
+    ctx = obter_contexto_acesso()
+    if not ctx: return redirect(url_for('auth.login'))
+    
+    CRMService.adicionar_tarefa(ctx['cliente_id'], apoiador_id, request.form)
+    flash('Tarefa adicionada com sucesso!', 'success')
+    return redirect(url_for('crm.perfil_apoiador', apoiador_id=apoiador_id))
+
+@crm_bp.route('/apoiadores/excluir/<apoiador_id>', methods=['POST'])
+def excluir_apoiador(apoiador_id):
+    ctx = obter_contexto_acesso()
+    if not ctx: return redirect(url_for('auth.login'))
+    
+    CRMService.excluir_apoiador(ctx['cliente_id'], apoiador_id)
+    flash('Apoiador excluído permanentemente.', 'warning')
+    return redirect(url_for('crm.listar_apoiadores'))
 
 # 6. EQUIPE
 @crm_bp.route('/equipe')
@@ -102,3 +150,36 @@ def api_busca_apoiadores():
     termo = request.args.get('q', '')
     resultados = CRMService.buscar_apoiadores_por_nome(ctx['cliente_id'], termo)
     return jsonify(resultados)
+
+@crm_bp.route('/tarefas/<id>/atualizar', methods=['POST'])
+def atualizar_status_tarefa(id):
+    ctx = obter_contexto_acesso()
+    if not ctx: return redirect(url_for('auth.login'))
+    
+    # Chama o service para atualizar no Postgres (muda para 'concluida')
+    CRMService.concluir_tarefa(ctx['cliente_id'], id)
+    
+    flash('Tarefa concluída com sucesso!', 'success')
+    
+    # request.referrer é um truque elegante: ele devolve você para a página exata de onde veio
+    return redirect(request.referrer or url_for('crm.listar_apoiadores'))
+
+@crm_bp.route('/tarefas/<id>/editar', methods=['POST'])
+def editar_tarefa(id):
+    ctx = obter_contexto_acesso()
+    if not ctx: return redirect(url_for('auth.login'))
+    
+    CRMService.editar_tarefa(ctx['cliente_id'], id, request.form)
+    flash('Tarefa atualizada com sucesso!', 'success')
+    
+    return redirect(request.referrer or url_for('crm.listar_apoiadores'))
+
+@crm_bp.route('/tarefas/<id>/excluir', methods=['POST'])
+def excluir_tarefa(id):
+    ctx = obter_contexto_acesso()
+    if not ctx: return redirect(url_for('auth.login'))
+    
+    CRMService.excluir_tarefa(ctx['cliente_id'], id)
+    flash('Tarefa removida.', 'warning')
+    
+    return redirect(request.referrer or url_for('crm.listar_apoiadores'))
