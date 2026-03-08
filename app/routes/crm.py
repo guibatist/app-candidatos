@@ -1,11 +1,22 @@
-from flask import Blueprint, render_template, session, redirect, url_for, request, jsonify, flash
-from ..services.crm_service import CRMService
+# === BLOCO 1: DEPENDÊNCIAS E SETUP ===
 import os
 import json
+from flask import Blueprint, render_template, session, redirect, url_for, request, jsonify, flash
+from psycopg2.extras import RealDictCursor
+
+# Nossos módulos
+from ..services.crm_service import CRMService
+from app.utils.db import get_db_connection
 
 crm_bp = Blueprint('crm', __name__)
 
+
+# === BLOCO 2: HELPERS E CONTROLE DE ACESSO ===
 def obter_contexto_acesso():
+    """
+    Recupera o contexto do usuário logado e define permissões base.
+    No futuro, isso conversará com as regras do SuperAdmin.
+    """
     if 'user_id' not in session:
         return None
     
@@ -23,7 +34,8 @@ def obter_contexto_acesso():
         "permissoes": permissoes
     }
 
-# 1. DASHBOARD
+
+# === BLOCO 3: DASHBOARD E GEOINTELIGÊNCIA ===
 @crm_bp.route('/')
 def dashboard_index():
     ctx = obter_contexto_acesso()
@@ -31,7 +43,20 @@ def dashboard_index():
     resumo = CRMService.get_dashboard_data(ctx['cliente_id'])
     return render_template('crm/dashboard.html', resumo=resumo, permissoes=ctx['permissoes'])
 
-# 2. LISTAR APOIADORES
+@crm_bp.route('/mapa')
+def mapa_bairros():
+    ctx = obter_contexto_acesso()
+    if not ctx: return redirect(url_for('auth.login'))
+    
+    if not ctx['permissoes']['permite_mapa']:
+        flash('Seu perfil não tem acesso ao mapa.', 'warning')
+        return redirect(url_for('crm.dashboard_index'))
+
+    dados_mapa = CRMService.get_dados_mapa(ctx['cliente_id'])
+    return render_template('crm/mapa.html', dados_mapa=dados_mapa, permissoes=ctx['permissoes'])
+
+
+# === BLOCO 4: GESTÃO DE APOIADORES (CRUD E PERFIL) ===
 @crm_bp.route('/apoiadores')
 def listar_apoiadores():
     ctx = obter_contexto_acesso()
@@ -39,38 +64,17 @@ def listar_apoiadores():
     apoiadores = CRMService.get_apoiadores(ctx['cliente_id'])
     return render_template('crm/apoiadores.html', apoiadores=apoiadores, permissoes=ctx['permissoes'])
 
-# 3. NOVO APOIADOR
 @crm_bp.route('/apoiadores/novo', methods=['GET', 'POST'])
 def novo_apoiador():
     ctx = obter_contexto_acesso()
     if not ctx: return redirect(url_for('auth.login'))
+    
     if request.method == 'POST':
         CRMService.adicionar_apoiador(ctx['cliente_id'], request.form)
         return redirect(url_for('crm.listar_apoiadores'))
+        
     return render_template('crm/form_apoiador.html', permissoes=ctx['permissoes'])
 
-# 4. MAPA (GEOINTELIGÊNCIA) - REFATORADO PARA SQL
-@crm_bp.route('/mapa')
-def mapa_bairros():
-    ctx = obter_contexto_acesso()
-    if not ctx: return redirect(url_for('auth.login'))
-    
-    # Removida a dependência de planos.json e clientes.json
-    # Se o usuário tem a permissão no ctx, ele acessa os dados do Postgres
-    if not ctx['permissoes']['permite_mapa']:
-        flash('Seu perfil não tem acesso ao mapa.', 'warning')
-        return redirect(url_for('crm.dashboard_index'))
-
-    dados_mapa = CRMService.get_dados_mapa(ctx['cliente_id'])
-    
-    return render_template('crm/mapa.html', 
-                           dados_mapa=dados_mapa, 
-                           permissoes=ctx['permissoes'])
-
-from app.utils.db import get_db_connection
-from psycopg2.extras import RealDictCursor
-
-# 5. PERFIL DO APOIADOR (100% POSTGRESQL)
 @crm_bp.route('/apoiadores/<apoiador_id>')
 def perfil_apoiador(apoiador_id):
     ctx = obter_contexto_acesso()
@@ -115,88 +119,12 @@ def perfil_apoiador(apoiador_id):
                            user_role=ctx['role'],
                            permissoes=ctx['permissoes'])
 
-# --- ROTAS DE AÇÃO (TAREFAS E EXCLUSÃO) ---
-
-@crm_bp.route('/apoiadores/<apoiador_id>/tarefas', methods=['POST'])
-def nova_tarefa(apoiador_id):
-    ctx = obter_contexto_acesso()
-    if not ctx: return redirect(url_for('auth.login'))
-    
-    CRMService.adicionar_tarefa(ctx['cliente_id'], apoiador_id, request.form)
-    flash('Tarefa adicionada com sucesso!', 'success')
-    return redirect(url_for('crm.perfil_apoiador', apoiador_id=apoiador_id))
-
-@crm_bp.route('/apoiadores/excluir/<apoiador_id>', methods=['POST'])
-def excluir_apoiador(apoiador_id):
-    ctx = obter_contexto_acesso()
-    if not ctx: return redirect(url_for('auth.login'))
-    
-    CRMService.excluir_apoiador(ctx['cliente_id'], apoiador_id)
-    flash('Apoiador excluído permanentemente.', 'warning')
-    return redirect(url_for('crm.listar_apoiadores'))
-
-# 6. EQUIPE
-@crm_bp.route('/equipe')
-def listar_equipe():
-    ctx = obter_contexto_acesso()
-    if not ctx: return redirect(url_for('auth.login'))
-    equipe = CRMService.get_equipe_completa(ctx['cliente_id'])
-    return render_template('crm/equipe.html', equipe=equipe, permissoes=ctx['permissoes'])
-
-@crm_bp.route('/api/apoiadores/busca')
-def api_busca_apoiadores():
-    ctx = obter_contexto_acesso()
-    if not ctx: return jsonify([])
-    termo = request.args.get('q', '')
-    resultados = CRMService.buscar_apoiadores_por_nome(ctx['cliente_id'], termo)
-    return jsonify(resultados)
-
-@crm_bp.route('/tarefas/<id>/atualizar', methods=['POST'])
-def atualizar_status_tarefa(id):
-    ctx = obter_contexto_acesso()
-    if not ctx: return redirect(url_for('auth.login'))
-    
-    # Agora o Flask vai ler o que escolheu no dropdown!
-    novo_status = request.form.get('status', 'concluida')
-    
-    # Chama o novo serviço que sabe lidar com estados dinâmicos
-    CRMService.alterar_status_tarefa(ctx['cliente_id'], id, novo_status)
-    
-    if novo_status == 'cancelada':
-        flash('Tarefa cancelada.', 'warning')
-    else:
-        flash('Tarefa concluída com sucesso!', 'success')
-    
-    return redirect(request.referrer or url_for('crm.listar_apoiadores'))
-
-@crm_bp.route('/tarefas/<id>/editar', methods=['POST'])
-def editar_tarefa(id):
-    ctx = obter_contexto_acesso()
-    if not ctx: return redirect(url_for('auth.login'))
-    
-    CRMService.editar_tarefa(ctx['cliente_id'], id, request.form)
-    flash('Tarefa atualizada com sucesso!', 'success')
-    
-    return redirect(request.referrer or url_for('crm.listar_apoiadores'))
-
-@crm_bp.route('/tarefas/<id>/excluir', methods=['POST'])
-def excluir_tarefa(id):
-    ctx = obter_contexto_acesso()
-    if not ctx: return redirect(url_for('auth.login'))
-    
-    CRMService.excluir_tarefa(ctx['cliente_id'], id)
-    flash('Tarefa removida.', 'warning')
-    
-    return redirect(request.referrer or url_for('crm.listar_apoiadores'))
-
 @crm_bp.route('/apoiadores/<id>/editar-perfil', methods=['POST'])
 def editar_perfil_detalhado(id):
     ctx = obter_contexto_acesso()
     if not ctx: return redirect(url_for('auth.login'))
     
-    # Chama o service para atualizar os dados demográficos no banco
     CRMService.atualizar_perfil_demografico(ctx['cliente_id'], id, request.form)
-    
     flash('Perfil demográfico atualizado com sucesso!', 'success')
     return redirect(url_for('crm.perfil_apoiador', apoiador_id=id))
 
@@ -207,5 +135,94 @@ def editar_cadastro_geral(id):
     
     CRMService.atualizar_cadastro_geral(ctx['cliente_id'], id, request.form)
     flash('Dados cadastrais e endereço atualizados com sucesso.', 'success')
-    
     return redirect(url_for('crm.perfil_apoiador', apoiador_id=id))
+
+@crm_bp.route('/apoiadores/excluir/<apoiador_id>', methods=['POST'])
+def excluir_apoiador(apoiador_id):
+    ctx = obter_contexto_acesso()
+    if not ctx: return redirect(url_for('auth.login'))
+    
+    CRMService.excluir_apoiador(ctx['cliente_id'], apoiador_id)
+    flash('Apoiador excluído permanentemente.', 'warning')
+    return redirect(url_for('crm.listar_apoiadores'))
+
+
+# === BLOCO 5: GESTÃO DE TAREFAS ===
+@crm_bp.route('/apoiadores/<apoiador_id>/tarefas', methods=['POST'])
+def nova_tarefa(apoiador_id):
+    ctx = obter_contexto_acesso()
+    if not ctx: return redirect(url_for('auth.login'))
+    
+    CRMService.adicionar_tarefa(ctx['cliente_id'], apoiador_id, request.form)
+    flash('Tarefa adicionada com sucesso!', 'success')
+    return redirect(url_for('crm.perfil_apoiador', apoiador_id=apoiador_id))
+
+@crm_bp.route('/tarefas/<id>/atualizar', methods=['POST'])
+def atualizar_status_tarefa(id):
+    ctx = obter_contexto_acesso()
+    if not ctx: return redirect(url_for('auth.login'))
+    
+    novo_status = request.form.get('status', 'concluida')
+    CRMService.alterar_status_tarefa(ctx['cliente_id'], id, novo_status)
+    
+    if novo_status == 'cancelada':
+        flash('Tarefa cancelada.', 'warning')
+    else:
+        flash('Tarefa concluída com sucesso!', 'success')
+        
+    return redirect(request.referrer or url_for('crm.listar_apoiadores'))
+
+@crm_bp.route('/tarefas/<id>/editar', methods=['POST'])
+def editar_tarefa(id):
+    ctx = obter_contexto_acesso()
+    if not ctx: return redirect(url_for('auth.login'))
+    
+    CRMService.editar_tarefa(ctx['cliente_id'], id, request.form)
+    flash('Tarefa atualizada com sucesso!', 'success')
+    return redirect(request.referrer or url_for('crm.listar_apoiadores'))
+
+@crm_bp.route('/tarefas/<id>/excluir', methods=['POST'])
+def excluir_tarefa(id):
+    ctx = obter_contexto_acesso()
+    if not ctx: return redirect(url_for('auth.login'))
+    
+    CRMService.excluir_tarefa(ctx['cliente_id'], id)
+    flash('Tarefa removida.', 'warning')
+    return redirect(request.referrer or url_for('crm.listar_apoiadores'))
+
+
+# === BLOCO 6: EQUIPE E ADMINISTRAÇÃO ===
+@crm_bp.route('/minha-equipe')
+def minha_equipe():
+    ctx = obter_contexto_acesso()
+    if not ctx: return redirect(url_for('auth.login'))
+    
+    # Busca a equipe direto no banco de dados via Service
+    equipe = CRMService.listar_equipe(ctx['cliente_id'])
+    
+    return render_template('crm/equipe.html', equipe=equipe)
+
+@crm_bp.route('/equipe')
+def listar_equipe():
+    ctx = obter_contexto_acesso()
+    if not ctx: return redirect(url_for('auth.login'))
+    
+    # Busca a lista de usuários no banco filtrando por cliente_id
+    equipe = CRMService.listar_equipe(ctx['cliente_id'])
+    
+    # O nome da variável aqui DEVE ser 'equipe' para bater com o HTML
+    return render_template('crm/equipe.html', equipe=equipe)
+
+
+# === BLOCO: APIs DE SUPORTE AO FRONT-END ===
+
+@crm_bp.route('/api/apoiadores/busca')
+def api_busca_apoiadores():
+    """Endpoint para busca dinâmica via JavaScript (Autocomplete)"""
+    ctx = obter_contexto_acesso()
+    if not ctx: return jsonify([])
+    
+    termo = request.args.get('q', '')
+    # O CRMService agora encapsula a query SQL de busca
+    resultados = CRMService.buscar_apoiadores_por_nome(ctx['cliente_id'], termo)
+    return jsonify(resultados)

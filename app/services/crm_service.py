@@ -1,3 +1,4 @@
+# === BLOCO 1: DEPENDÊNCIAS E SETUP ===
 import uuid
 import json
 import requests
@@ -5,6 +6,10 @@ import time
 from datetime import datetime
 from psycopg2.extras import RealDictCursor
 from app.utils.db import get_db_connection
+
+
+# === BLOCO 2: FUNÇÕES HELPERS GLOBAIS ===
+# (Funções auxiliares que operam fora da classe principal)
 
 def listar_tarefas_por_usuario(cliente_id, usuario_id, role, apoiador_id):
     conn = get_db_connection()
@@ -57,8 +62,11 @@ def criar_tarefa(cliente_id, apoiador_id, descricao, assessor_id=None):
             
     return nova_tarefa
 
+
+# === BLOCO 3: SERVIÇO CORE DO CRM ===
 class CRMService:
     
+    # --- SUB-BLOCO 3.1: DASHBOARD E MÉTRICAS ---
     @staticmethod
     def get_dashboard_data(cliente_id):
         conn = get_db_connection()
@@ -120,43 +128,8 @@ class CRMService:
         finally:
             conn.close()
 
-    @staticmethod
-    def listar_apoiadores(cliente_id):
-        return CRMService.get_apoiadores(cliente_id)
 
-    @staticmethod
-    def get_apoiadores(cliente_id):
-        conn = get_db_connection()
-        if not conn: return []
-        try:
-            with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-                cursor.execute("SELECT * FROM apoiadores WHERE cliente_id = %s ORDER BY created_at DESC", (str(cliente_id),))
-                return cursor.fetchall()
-        except Exception as e:
-            print(f"Erro ao buscar apoiadores: {e}")
-            return []
-        finally:
-            conn.close()
-
-    @staticmethod
-    def buscar_apoiadores_por_nome(cliente_id, termo):
-        conn = get_db_connection()
-        if not conn: return []
-        try:
-            with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-                # ILIKE faz busca ignorando maiúsculas/minúsculas no Postgres
-                cursor.execute("""
-                    SELECT id, nome FROM apoiadores 
-                    WHERE cliente_id = %s AND nome ILIKE %s 
-                    LIMIT 10
-                """, (str(cliente_id), f"%{termo}%"))
-                return cursor.fetchall()
-        except Exception as e:
-            print(f"Erro na busca por nome: {e}")
-            return []
-        finally:
-            conn.close()
-
+    # --- SUB-BLOCO 3.2: GEOINTELIGÊNCIA (MAPAS E NOMINATIM) ---
     @staticmethod
     def buscar_coordenadas(logradouro, numero, bairro, cidade, uf, cep):
         headers = {'User-Agent': 'Votahub_SaaS/1.0'}
@@ -183,6 +156,63 @@ class CRMService:
                 
         print(f"⚠️ Geocoding esgotou as tentativas.")
         return None, None
+
+    @staticmethod
+    def get_dados_mapa(cliente_id):
+        conn = get_db_connection()
+        if not conn: return []
+        try:
+            with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+                # Importante: 'lon as lng' faz a tradução para o JavaScript entender
+                cursor.execute("""
+                    SELECT nome, logradouro, numero, bairro, cidade, grau_apoio, lideranca, lat, lon as lng
+                    FROM apoiadores 
+                    WHERE cliente_id = %s AND lat IS NOT NULL AND lon IS NOT NULL
+                """, (str(cliente_id),))
+                return cursor.fetchall()
+        except Exception as e:
+            print(f"❌ Erro SQL no Mapa: {e}")
+            return []
+        finally:
+            conn.close()
+
+
+    # --- SUB-BLOCO 3.3: GESTÃO DE APOIADORES (CRUD) ---
+    @staticmethod
+    def listar_apoiadores(cliente_id):
+        return CRMService.get_apoiadores(cliente_id)
+
+    @staticmethod
+    def get_apoiadores(cliente_id):
+        conn = get_db_connection()
+        if not conn: return []
+        try:
+            with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+                cursor.execute("SELECT * FROM apoiadores WHERE cliente_id = %s ORDER BY created_at DESC", (str(cliente_id),))
+                return cursor.fetchall()
+        except Exception as e:
+            print(f"Erro ao buscar apoiadores: {e}")
+            return []
+        finally:
+            conn.close()
+
+    @staticmethod
+    def buscar_apoiadores_por_nome(cliente_id, termo):
+        conn = get_db_connection()
+        if not conn: return []
+        try:
+            with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+                cursor.execute("""
+                    SELECT id, nome FROM apoiadores 
+                    WHERE cliente_id = %s AND nome ILIKE %s 
+                    LIMIT 10
+                """, (str(cliente_id), f"%{termo}%"))
+                return cursor.fetchall()
+        except Exception as e:
+            print(f"Erro na busca por nome: {e}")
+            return []
+        finally:
+            conn.close()
 
     @staticmethod
     def adicionar_apoiador(cliente_id, dados_form):
@@ -212,7 +242,6 @@ class CRMService:
         
         try:
             with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-                # Atualizado com os 6 novos campos demográficos
                 cursor.execute("""
                     INSERT INTO apoiadores (
                         id, cliente_id, nome, telefone, cep, logradouro, numero, complemento, 
@@ -229,7 +258,6 @@ class CRMService:
                     int(dados_form.get('votos_familia', 1) or 1), json.dumps(tags_list),
                     dados_form.get('indicado_por', ''), dados_form.get('observacoes', ''),
                     oferece_muro, oferece_carro, lideranca, datetime.now().strftime("%d/%m/%Y %H:%M"),
-                    # Nossos novos campos pegos direto do HTML:
                     dados_form.get('sexo') or None,
                     dados_form.get('faixa_etaria') or None,
                     dados_form.get('renda_familiar') or None,
@@ -248,6 +276,73 @@ class CRMService:
             conn.close()
 
     @staticmethod
+    def atualizar_perfil_demografico(cliente_id, apoiador_id, dados):
+        conn = get_db_connection()
+        if not conn: return
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                    UPDATE apoiadores 
+                    SET sexo = %s, faixa_etaria = %s, renda_familiar = %s,
+                        grau_instrucao = %s, origem_cadastro = %s, posicionamento_politico = %s
+                    WHERE id = %s AND cliente_id = %s
+                """, (
+                    dados.get('sexo') or None, dados.get('faixa_etaria') or None,
+                    dados.get('renda_familiar') or None, dados.get('grau_instrucao') or None,
+                    dados.get('origem_cadastro') or None, dados.get('posicionamento_politico') or None,
+                    str(apoiador_id), str(cliente_id)
+                ))
+            conn.commit()
+        except Exception as e:
+            conn.rollback()
+            print(f"Erro ao atualizar perfil demográfico: {e}")
+        finally:
+            conn.close()
+
+    @staticmethod
+    def atualizar_cadastro_geral(cliente_id, apoiador_id, dados_form):
+        nome = dados_form.get('nome', '').strip()
+        telefone = dados_form.get('telefone', '').strip()
+        cep = dados_form.get('cep', '').strip()
+        logradouro = dados_form.get('logradouro', '').strip()
+        numero = dados_form.get('numero', '').strip()
+        complemento = dados_form.get('complemento', '').strip()
+        bairro = dados_form.get('bairro', '').strip()
+        cidade = dados_form.get('cidade', '').strip()
+        uf = dados_form.get('uf', '').strip()
+        grau_apoio = dados_form.get('grau_apoio', 'medio')
+        votos_familia = int(dados_form.get('votos_familia', 1) or 1)
+
+        oferece_muro = str(dados_form.get('oferece_muro')).lower() in ['on', 'true', '1']
+        oferece_carro = str(dados_form.get('oferece_carro')).lower() in ['on', 'true', '1']
+        lideranca = str(dados_form.get('lideranca')).lower() in ['on', 'true', '1']
+
+        lat, lon = CRMService.buscar_coordenadas(logradouro, numero, bairro, cidade, uf, cep)
+
+        conn = get_db_connection()
+        if not conn: return
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                    UPDATE apoiadores 
+                    SET nome = %s, telefone = %s, cep = %s, logradouro = %s, numero = %s,
+                        complemento = %s, bairro = %s, cidade = %s, uf = %s,
+                        lat = %s, lon = %s, grau_apoio = %s, votos_familia = %s,
+                        oferece_muro = %s, oferece_carro = %s, lideranca = %s
+                    WHERE id = %s AND cliente_id = %s
+                """, (
+                    nome, telefone, cep, logradouro, numero, complemento, bairro, cidade, uf,
+                    lat, lon, grau_apoio, votos_familia, oferece_muro, oferece_carro, lideranca,
+                    str(apoiador_id), str(cliente_id)
+                ))
+            conn.commit()
+        except Exception as e:
+            conn.rollback()
+            print(f"Erro ao atualizar cadastro geral: {e}")
+        finally:
+            conn.close()
+
+    @staticmethod
     def excluir_apoiador(cliente_id, apoiador_id):
         conn = get_db_connection()
         if not conn: return
@@ -261,6 +356,8 @@ class CRMService:
         finally:
             conn.close()
 
+
+    # --- SUB-BLOCO 3.4: GESTÃO DE TAREFAS ---
     @staticmethod
     def listar_tarefas_apoiador(cliente_id, apoiador_id):
         return listar_tarefas_por_usuario(cliente_id, None, 'admin', apoiador_id)
@@ -272,10 +369,7 @@ class CRMService:
         try:
             with conn.cursor() as cursor:
                 novo_id = f"tar_{uuid.uuid4().hex[:12]}"
-                
-                # Captura o assessor escolhido no select do HTML
                 assessor_id = dados.get('assessor_id')
-                # Se vier vazio do HTML, transforma em None (NULL no banco)
                 if not assessor_id or assessor_id.strip() == '':
                     assessor_id = None
                     
@@ -298,8 +392,7 @@ class CRMService:
         try:
             with conn.cursor() as cursor:
                 cursor.execute("""
-                    UPDATE tarefas 
-                    SET status = %s 
+                    UPDATE tarefas SET status = %s 
                     WHERE id = %s AND cliente_id = %s
                 """, (novo_status, str(tarefa_id), str(cliente_id)))
             conn.commit()
@@ -310,24 +403,40 @@ class CRMService:
             conn.close()
 
     @staticmethod
-    def get_dados_mapa(cliente_id):
+    def editar_tarefa(cliente_id, tarefa_id, dados):
         conn = get_db_connection()
-        if not conn: return []
+        if not conn: return
         try:
-            with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-                # Importante: 'lon as lng' faz a tradução para o JavaScript entender
+            with conn.cursor() as cursor:
                 cursor.execute("""
-                    SELECT nome, logradouro, numero, bairro, cidade, grau_apoio, lideranca, lat, lon as lng
-                    FROM apoiadores 
-                    WHERE cliente_id = %s AND lat IS NOT NULL AND lon IS NOT NULL
-                """, (str(cliente_id),))
-                return cursor.fetchall()
+                    UPDATE tarefas 
+                    SET tipo = %s, descricao = %s, data_limite = %s, status = COALESCE(%s, status)
+                    WHERE id = %s AND cliente_id = %s
+                """, (dados.get('tipo'), dados.get('descricao'), dados.get('data_limite'), 
+                      dados.get('status'), str(tarefa_id), str(cliente_id)))
+            conn.commit()
         except Exception as e:
-            print(f"❌ Erro SQL no Mapa: {e}")
-            return []
+            conn.rollback()
+            print(f"Erro ao editar tarefa: {e}")
         finally:
             conn.close()
 
+    @staticmethod
+    def excluir_tarefa(cliente_id, tarefa_id):
+        conn = get_db_connection()
+        if not conn: return
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute("DELETE FROM tarefas WHERE id = %s AND cliente_id = %s", (str(tarefa_id), str(cliente_id)))
+            conn.commit()
+        except Exception as e:
+            conn.rollback()
+            print(f"Erro ao excluir tarefa: {e}")
+        finally:
+            conn.close()
+
+
+    # --- SUB-BLOCO 3.5: GESTÃO DE EQUIPE ---
     @staticmethod
     def get_equipe_completa(cliente_id):
         conn = get_db_connection()
@@ -396,122 +505,67 @@ class CRMService:
                 "percentual": percentual
             })
         return resultados
-
+    
     @staticmethod
-    def editar_tarefa(cliente_id, tarefa_id, dados):
+    def listar_equipe(cliente_id):
         conn = get_db_connection()
-        if not conn: return
+        if not conn: return []
         try:
             with conn.cursor() as cursor:
-                # O COALESCE garante que, se o formulário não enviar o status, ele mantém o atual
+                # Mudamos de 'papel' para 'role'
                 cursor.execute("""
-                    UPDATE tarefas 
-                    SET tipo = %s, 
-                        descricao = %s, 
-                        data_limite = %s,
-                        status = COALESCE(%s, status)
-                    WHERE id = %s AND cliente_id = %s
-                """, (
-                    dados.get('tipo'), 
-                    dados.get('descricao'), 
-                    dados.get('data_limite'), 
-                    dados.get('status'), # <-- Agora o status é capturado do formulário
-                    str(tarefa_id), 
-                    str(cliente_id)
-                ))
-            conn.commit()
+                    SELECT id, nome, email, role, created_at 
+                    FROM usuarios 
+                    WHERE cliente_id = %s AND role != 'master'
+                    ORDER BY nome ASC
+                """, (str(cliente_id),))
+                
+                colunas = [desc[0] for desc in cursor.description]
+                return [dict(zip(colunas, row)) for row in cursor.fetchall()]
         except Exception as e:
-            conn.rollback()
-            print(f"Erro ao editar tarefa: {e}")
+            print(f"Erro ao listar equipe: {e}")
+            return []
+        finally:
+            conn.close()
+
+# === BLOCO: GESTÃO DE EQUIPE (MÉTODOS ADICIONADOS) ===
+
+    @staticmethod
+    def listar_equipe(cliente_id):
+        """
+        Lista todos os usuários vinculados a uma campanha específica,
+        exceto usuários com nível de acesso Master/SaaS.
+        """
+        conn = get_db_connection()
+        if not conn: return []
+        try:
+            with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+                # Mudamos de 'papel' para 'role' para manter consistência com auth.py
+                cursor.execute("""
+                    SELECT id, nome, email, role, data_cadastro 
+                    FROM usuarios 
+                    WHERE cliente_id = %s AND role NOT IN ('superadmin', 'admin', 'master')
+                    ORDER BY nome ASC
+                """, (str(cliente_id),))
+                return cursor.fetchall()
+        except Exception as e:
+            print(f"Erro ao listar equipe no service: {e}")
+            return []
         finally:
             conn.close()
 
     @staticmethod
-    def excluir_tarefa(cliente_id, tarefa_id):
+    def buscar_apoiadores_por_nome(cliente_id, termo):
+        """Busca rápida para componentes de AutoComplete ou BI."""
         conn = get_db_connection()
-        if not conn: return
+        if not conn: return []
         try:
-            with conn.cursor() as cursor:
-                cursor.execute("DELETE FROM tarefas WHERE id = %s AND cliente_id = %s", (str(tarefa_id), str(cliente_id)))
-            conn.commit()
-        except Exception as e:
-            conn.rollback()
-            print(f"Erro ao excluir tarefa: {e}")
-        finally:
-            conn.close()
-
-    @staticmethod
-    def atualizar_perfil_demografico(cliente_id, apoiador_id, dados):
-        conn = get_db_connection()
-        if not conn: return
-        try:
-            with conn.cursor() as cursor:
+            with conn.cursor(cursor_factory=RealDictCursor) as cursor:
                 cursor.execute("""
-                    UPDATE apoiadores 
-                    SET sexo = %s,
-                        faixa_etaria = %s,
-                        renda_familiar = %s,
-                        grau_instrucao = %s,
-                        origem_cadastro = %s,
-                        posicionamento_politico = %s
-                    WHERE id = %s AND cliente_id = %s
-                """, (
-                    dados.get('sexo') or None,
-                    dados.get('faixa_etaria') or None,
-                    dados.get('renda_familiar') or None,
-                    dados.get('grau_instrucao') or None,
-                    dados.get('origem_cadastro') or None,
-                    dados.get('posicionamento_politico') or None,
-                    str(apoiador_id), 
-                    str(cliente_id)
-                ))
-            conn.commit()
-        except Exception as e:
-            conn.rollback()
-            print(f"Erro ao atualizar perfil demográfico: {e}")
-        finally:
-            conn.close()
-
-    @staticmethod
-    def atualizar_cadastro_geral(cliente_id, apoiador_id, dados_form):
-        nome = dados_form.get('nome', '').strip()
-        telefone = dados_form.get('telefone', '').strip()
-        cep = dados_form.get('cep', '').strip()
-        logradouro = dados_form.get('logradouro', '').strip()
-        numero = dados_form.get('numero', '').strip()
-        complemento = dados_form.get('complemento', '').strip()
-        bairro = dados_form.get('bairro', '').strip()
-        cidade = dados_form.get('cidade', '').strip()
-        uf = dados_form.get('uf', '').strip()
-        grau_apoio = dados_form.get('grau_apoio', 'medio')
-        votos_familia = int(dados_form.get('votos_familia', 1) or 1)
-
-        oferece_muro = str(dados_form.get('oferece_muro')).lower() in ['on', 'true', '1']
-        oferece_carro = str(dados_form.get('oferece_carro')).lower() in ['on', 'true', '1']
-        lideranca = str(dados_form.get('lideranca')).lower() in ['on', 'true', '1']
-
-        # Refaz a busca no mapa caso o endereço tenha sido alterado
-        lat, lon = CRMService.buscar_coordenadas(logradouro, numero, bairro, cidade, uf, cep)
-
-        conn = get_db_connection()
-        if not conn: return
-        try:
-            with conn.cursor() as cursor:
-                cursor.execute("""
-                    UPDATE apoiadores 
-                    SET nome = %s, telefone = %s, cep = %s, logradouro = %s, numero = %s,
-                        complemento = %s, bairro = %s, cidade = %s, uf = %s,
-                        lat = %s, lon = %s, grau_apoio = %s, votos_familia = %s,
-                        oferece_muro = %s, oferece_carro = %s, lideranca = %s
-                    WHERE id = %s AND cliente_id = %s
-                """, (
-                    nome, telefone, cep, logradouro, numero, complemento,
-                    bairro, cidade, uf, lat, lon, grau_apoio, votos_familia,
-                    oferece_muro, oferece_carro, lideranca, str(apoiador_id), str(cliente_id)
-                ))
-            conn.commit()
-        except Exception as e:
-            conn.rollback()
-            print(f"Erro ao atualizar cadastro geral: {e}")
+                    SELECT id, nome FROM apoiadores 
+                    WHERE cliente_id = %s AND nome ILIKE %s 
+                    LIMIT 10
+                """, (str(cliente_id), f"%{termo}%"))
+                return cursor.fetchall()
         finally:
             conn.close()
