@@ -1,0 +1,161 @@
+<style>
+    /* Estilos da Sidebar Premium (Dark Mode) */
+    :root {
+        --sidebar-width: 260px;
+        --sidebar-collapsed-width: 70px;
+        --sidebar-bg: #111827; 
+        --sidebar-hover: #1f2937;
+        --sidebar-text: #9ca3af;
+        --sidebar-active-text: #ffffff;
+        --sidebar-active-bg: #4f46e5; /* Corrigido para a sua cor primária original */
+    }
+
+    #sidebar {
+        width: var(--sidebar-width);
+        height: calc(100vh - 65px); /* Desconta a altura da topbar */
+        position: fixed;
+        top: 65px; /* Começa logo abaixo da topbar */
+        left: 0;
+        background-color: var(--sidebar-bg);
+        color: var(--sidebar-text);
+        transition: width 0.3s ease;
+        z-index: 1000;
+        display: flex;
+        flex-direction: column;
+        overflow-x: hidden;
+        border-right: 1px solid #1f2937;
+    }
+
+    #sidebar.collapsed { width: var(--sidebar-collapsed-width); }
+
+    .sidebar-nav { flex: 1; padding: 15px 0; overflow-y: auto; overflow-x: hidden; }
+
+    .nav-category {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #6b7280;
+        margin: 15px 20px 5px;
+        white-space: nowrap;
+        font-weight: 600;
+    }
+
+    #sidebar.collapsed .nav-category { display: none; }
+
+    .nav-item {
+        display: flex;
+        align-items: center;
+        padding: 12px 20px;
+        color: var(--sidebar-text);
+        text-decoration: none;
+        transition: all 0.2s;
+        white-space: nowrap;
+        border-radius: 0 8px 8px 0;
+        margin-right: 15px;
+    }
+
+    .nav-item:hover { background-color: var(--sidebar-hover); color: var(--sidebar-active-text); }
+
+    .nav-item.active { background-color: var(--sidebar-active-bg); color: var(--sidebar-active-text); }
+
+    .nav-icon { width: 24px; font-size: 1.1rem; text-align: center; margin-right: 15px; }
+
+    #sidebar.collapsed .nav-text { display: none; }
+    #sidebar.collapsed .nav-item { justify-content: center; padding: 15px 0; border-radius: 0; margin-right: 0;}
+    #sidebar.collapsed .nav-icon { margin-right: 0; }
+    
+    /* Área de bloqueio (Premium) */
+    .nav-item.locked { opacity: 0.5; cursor: not-allowed; }
+    .nav-item.locked:hover { background-color: transparent; color: var(--sidebar-text); }
+</style>
+
+<nav id="sidebar">
+    <div class="sidebar-nav">
+        
+        {% if session.role == 'superadmin' %}
+            <div class="nav-category text-warning mb-3">Administração Master</div>
+            
+            <a href="/master/dashboard" class="nav-item {% if 'master' in request.path %}active{% endif %}">
+                <i class="fa-solid fa-rocket nav-icon"></i>
+                <span class="nav-text">Campanhas</span>
+            </a>
+            <a href="#" class="nav-item">
+                <i class="fa-solid fa-file-invoice-dollar nav-icon"></i>
+                <span class="nav-text">Faturamento</span>
+            </a>
+        
+        {% else %}
+            
+            <div class="nav-category">Operação & Base</div>
+            
+            <a href="/crm/" class="nav-item {% if request.endpoint == 'crm.dashboard_index' %}active{% endif %}">
+                <i class="fa-solid fa-chart-pie nav-icon"></i>
+                <span class="nav-text">Painel Principal</span>
+            </a>
+            
+            <a href="/crm/apoiadores" class="nav-item {% if request.endpoint == 'crm.listar_apoiadores' %}active{% endif %}">
+                <i class="fa-solid fa-address-book nav-icon"></i>
+                <span class="nav-text">Gestão de Apoio</span>
+            </a>
+            
+            <a href="/crm/equipe" class="nav-item {% if request.endpoint == 'crm.listar_equipe' %}active{% endif %}">
+                <i class="fa-solid fa-users-gear nav-icon"></i>
+                <span class="nav-text">Minha Equipe</span>
+            </a>
+
+            <a href="#" class="nav-item">
+                <i class="fa-solid fa-bullhorn nav-icon"></i>
+                <span class="nav-text">Central de Comunicação</span>
+            </a>
+
+            <div class="nav-category mt-4">Inteligência Estratégica</div>
+            
+            {% if permissoes and permissoes.permite_mapa %}
+                <a href="/crm/mapa" class="nav-item {% if request.endpoint == 'crm.mapa_calor' or request.endpoint == 'crm.mapa_bairros' %}active{% endif %}">
+                    <i class="fa-solid fa-map-location-dot nav-icon text-warning"></i>
+                    <span class="nav-text">Geointeligência</span>
+                </a>
+            {% else %}
+                <a href="#" class="nav-item locked" title="Disponível no Plano Elite">
+                    <i class="fa-solid fa-lock nav-icon"></i>
+                    <span class="nav-text">Geointeligência (Premium)</span>
+                </a>
+            {% endif %}
+
+            <a href="#" class="nav-item">
+                <i class="fa-solid fa-chess-knight nav-icon text-info"></i>
+                <span class="nav-text">Strategic IA</span>
+            </a>
+
+            <a href="#" class="nav-item">
+                <i class="fa-solid fa-wand-magic-sparkles nav-icon text-primary"></i>
+                <span class="nav-text">Estúdio Criativo IA</span>
+            </a>
+
+            <a href="#" class="nav-item">
+                <i class="fa-solid fa-calendar-check nav-icon text-success"></i>
+                <span class="nav-text">Meus Eventos</span>
+            </a>
+
+            <a href="#" class="nav-item">
+                <i class="fa-solid fa-chart-line nav-icon text-danger"></i>
+                <span class="nav-text">Termômetro Eleitoral</span>
+            </a>
+        {% endif %}
+    </div>
+
+    <div class="sidebar-footer" style="border-top: 1px solid #1f2937; padding: 10px 0;">
+        <a href="#" class="nav-item">
+            <i class="fa-solid fa-user-circle nav-icon"></i>
+            <span class="nav-text">Meu Perfil</span>
+        </a>
+        <a href="#" class="nav-item">
+            <i class="fa-solid fa-gear nav-icon"></i>
+            <span class="nav-text">Configurações</span>
+        </a>
+        <a href="#" class="nav-item">
+            <i class="fa-regular fa-life-ring nav-icon"></i>
+            <span class="nav-text">Suporte</span>
+        </a>
+    </div>
+</nav>

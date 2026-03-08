@@ -10,27 +10,53 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; color: #1f2937; }
-        .topbar { background-color: #ffffff; border-bottom: 1px solid #e5e7eb; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); padding: 12px 0; }
+        /* 1. SEUS ESTILOS ORIGINAIS INTACTOS (Reseta o B.I para o padrão Premium) */
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; color: #1f2937; margin: 0; overflow-x: hidden; }
+        .topbar { background-color: #ffffff; border-bottom: 1px solid #e5e7eb; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); padding: 12px 0; z-index: 1050; position: relative;}
         .topbar-brand { font-weight: 700; font-size: 1.25rem; color: #111827; text-decoration: none; letter-spacing: -0.5px; }
         .topbar-brand i { color: #4f46e5; }
-        .sidebar { background-color: #ffffff; border-right: 1px solid #e5e7eb; min-height: calc(100vh - 65px); padding: 24px 16px; }
-        .list-group-item { border: none; padding: 10px 16px; color: #4b5563; font-weight: 500; border-radius: 8px !important; margin-bottom: 6px; transition: all 0.2s ease; display: flex; align-items: center; gap: 12px; }
-        .list-group-item:hover { background-color: #f3f4f6; color: #111827; }
-        .list-group-item.active { background-color: #4f46e5; color: #ffffff; }
+        
+        /* A MÁGICA DOS GRÁFICOS E BOTÕES VOLTOU AQUI: */
         .card { border: none; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); background-color: #ffffff; }
         .btn { border-radius: 8px; font-weight: 500; padding: 8px 16px; transition: all 0.2s; }
         .btn-primary { background-color: #4f46e5; border-color: #4f46e5; }
+        
+        /* 2. MECÂNICA DA NOVA SIDEBAR (Layout e Margens) */
+        #main-content {
+            margin-left: 260px; /* var(--sidebar-width) */
+            transition: margin-left 0.3s ease;
+            min-height: calc(100vh - 65px);
+        }
+
+        #main-content.expanded {
+            margin-left: 70px; /* var(--sidebar-collapsed-width) */
+        }
+
+        body.not-logged-in #main-content {
+            margin-left: 0;
+        }
+
+        @media (max-width: 768px) {
+            #main-content { margin-left: 70px; }
+        }
     </style>
 </head>
 
-<body>
+<body class="{% if not session.user_id %}not-logged-in{% endif %}">
 
     <header class="topbar sticky-top">
         <div class="container-fluid px-4 d-flex justify-content-between align-items-center">
-            <a href="/" class="topbar-brand">
-                <i class="fa-solid fa-chart-pie me-2"></i>SaaS Político
-            </a>
+            <div class="d-flex align-items-center">
+                {% if session.user_id %}
+                <button class="btn btn-sm btn-light me-3 border-0 d-md-none d-lg-block" id="toggleSidebar" style="color:#4b5563; background: transparent;">
+                    <i class="fa-solid fa-bars fs-5"></i>
+                </button>
+                {% endif %}
+                <a href="/" class="topbar-brand">
+                    <i class="fa-solid fa-chart-pie me-2"></i>SaaS Político
+                </a>
+            </div>
+            
             <div class="d-flex align-items-center gap-3">
                 {% if session.user_id %}
                     <span class="text-muted text-sm"><i class="fa-regular fa-user me-2"></i>{{ session.nome }}</span>
@@ -40,56 +66,33 @@
         </div>
     </header>
 
-    <div class="container-fluid">
-        <div class="row">
-            {% if session.user_id %}
-            <div class="col-md-2 p-0 sidebar d-none d-md-block">
-                <div class="list-group">
-                    
-                    {% if session.role != 'superadmin' %}
-                        <a href="/crm/" class="list-group-item text-decoration-none {% if request.endpoint == 'crm.dashboard_index' %}active{% endif %}">
-                            <i class="fa-solid fa-house w-20px"></i> Dashboard
-                        </a>
-                        <a href="/crm/apoiadores" class="list-group-item text-decoration-none {% if request.endpoint == 'crm.listar_apoiadores' %}active{% endif %}">
-                            <i class="fa-solid fa-users w-20px"></i> Apoiadores
-                        </a>
-                        <a href="/crm/equipe" class="list-group-item text-decoration-none {% if request.endpoint == 'crm.listar_equipe' %}active{% endif %}">
-                            <i class="fa-solid fa-users-gear w-20px"></i> Minha Equipe
-                        </a>
+    {% if session.user_id %}
+        {% include 'includes/sidebar.html' %}
+    {% endif %}
 
-                        <div class="mt-4 mb-2 px-3 text-uppercase text-muted" style="font-size: 0.7rem; font-weight: 600;">Estratégia</div>
-
-                        {% if permissoes.permite_mapa %}
-                        <a href="/crm/mapa" class="list-group-item text-decoration-none {% if request.endpoint == 'crm.mapa_bairros' %}active{% endif %}">
-                            <i class="fa-solid fa-map-location-dot w-20px"></i> Mapa de Bairros
-                        </a>
-                        {% else %}
-                        <a href="#" class="list-group-item text-decoration-none text-muted" style="opacity: 0.6; cursor: not-allowed;" title="Disponível no Plano Elite">
-                            <i class="fa-solid fa-lock w-20px"></i> Mapa (Premium)
-                        </a>
-                        {% endif %}
-
-                    {% else %}
-                        <div class="px-3 mb-3">
-                            <span class="badge bg-dark text-white w-100 py-2">ADMIN MASTER</span>
-                        </div>
-                        <a href="/master/dashboard" class="list-group-item text-decoration-none active">
-                            <i class="fa-solid fa-rocket w-20px"></i> Campanhas
-                        </a>
-                        <a href="/master/dashboard" class="list-group-item text-decoration-none">
-                            <i class="fa-solid fa-file-invoice-dollar w-20px"></i> Faturamento
-                        </a>
-                    {% endif %}
-                </div>
-            </div>
-            {% endif %}
-
-            <div class="{% if session.user_id %}col-md-10{% else %}col-12{% endif %} p-4 pt-5">
-                {% block content %}{% endblock %}
-            </div>
+    <div id="main-content">
+        <div class="container-fluid p-4 pt-5">
+            {% block content %}{% endblock %}
         </div>
     </div>
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const toggleBtn = document.getElementById('toggleSidebar');
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('main-content');
+
+            if (toggleBtn && sidebar) {
+                toggleBtn.addEventListener('click', function() {
+                    sidebar.classList.toggle('collapsed');
+                    mainContent.classList.toggle('expanded');
+                    
+                    setTimeout(() => { window.dispatchEvent(new Event('resize')); }, 300);
+                });
+            }
+        });
+    </script>
 </body>
 </html>
