@@ -1,28 +1,13 @@
-import os
-import json
 import random
 import string
 from flask import Blueprint, render_template, request, session, redirect, url_for, flash
 from werkzeug.security import check_password_hash, generate_password_hash
+from psycopg2.extras import RealDictCursor
+
+# IMPORTANTE: Confirme se o caminho do import do seu db.py está correto
+from app.utils.db import get_db_connection 
 
 auth_bp = Blueprint('auth', __name__)
-
-base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-PATH_USUARIOS = os.path.join(base_dir, 'data', 'usuarios.json')
-
-def load_usuarios():
-    if os.path.exists(PATH_USUARIOS):
-        with open(PATH_USUARIOS, 'r', encoding='utf-8') as f:
-            try:
-                data = json.load(f)
-                return data if isinstance(data, list) else []
-            except json.JSONDecodeError:
-                return []
-    return []
-
-def save_usuarios(usuarios):
-    with open(PATH_USUARIOS, 'w', encoding='utf-8') as f:
-        json.dump(usuarios, f, indent=4, ensure_ascii=False)
 
 def gerar_codigo_verificacao():
     """Gera um código de 6 caracteres: 3 Letras Maiúsculas e 3 Números aleatoriamente misturados"""
@@ -38,18 +23,32 @@ def login():
         email = request.form.get('email', '').strip().lower()
         password = request.form.get('password', '')
 
-        usuarios = load_usuarios()
-        usuario = next((u for u in usuarios if u.get('email', '').lower() == email), None)
+        # 1. Abre conexão com o banco Votahub
+        conn = get_db_connection()
+        if not conn:
+            flash('Erro interno: Falha ao conectar ao banco de dados.', 'danger')
+            return render_template('auth/login.html')
 
-        if usuario and check_password_hash(usuario['senha'], password):
+        usuario = None
+        try:
+            # 2. Busca indexada e blindada contra SQL Injection (%s)
+            with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+                cursor.execute("SELECT * FROM usuarios WHERE email = %s AND status = 'ativo'", (email,))
+                usuario = cursor.fetchone()
+        except Exception as e:
+            print(f"Erro na query de login: {e}")
+        finally:
+            conn.close()
+
+        # 3. Validação de senha usando a coluna 'senha_hash'
+        if usuario and check_password_hash(usuario['senha_hash'], password):
             
             # --- TRAVA DE SEGURANÇA: PRIMEIRO ACESSO ---
-            if usuario.get('precisa_trocar_senha'):
+            if usuario.get('primeiro_acesso'):
                 codigo = gerar_codigo_verificacao()
                 session['reset_code'] = codigo
                 session['temp_email'] = email
                 
-                # SIMULADOR DE DISPARO DE E-MAIL (Vai aparecer no seu Terminal)
                 print(f"\n{'='*50}")
                 print(f"📧 E-MAIL ENVIADO PARA: {email}")
                 print(f"🔑 CÓDIGO DE SEGURANÇA: {codigo}")
@@ -76,7 +75,7 @@ def login():
 
 @auth_bp.route('/trocar-senha', methods=['POST'])
 def trocar_senha():
-    email = request.form.get('email')
+    email = request.form.get('email', '').strip().lower()
     codigo_digitado = request.form.get('codigo', '').strip().upper()
     nova_senha = request.form.get('nova_senha')
 
@@ -84,23 +83,36 @@ def trocar_senha():
         flash('O Código de verificação está incorreto.', 'danger')
         return render_template('auth/login.html', show_reset_modal=True, temp_email=email)
 
-    usuarios = load_usuarios()
-    usuario = next((u for u in usuarios if u.get('email', '').lower() == email.lower()), None)
+    conn = get_db_connection()
+    if not conn:
+        flash('Erro interno no servidor.', 'danger')
+        return redirect(url_for('auth.login'))
 
-    if usuario:
-        # Grava a nova senha com Hash Forte e remove a trava
-        usuario['senha'] = generate_password_hash(nova_senha)
-        usuario['precisa_trocar_senha'] = False
-        save_usuarios(usuarios)
-
-        # Limpa o lixo da sessão
+    try:
+        with conn.cursor() as cursor:
+            novo_hash = generate_password_hash(nova_senha)
+            # Atualiza a senha e destrava a conta simultaneamente
+            cursor.execute("""
+                UPDATE usuarios 
+                SET senha_hash = %s, primeiro_acesso = FALSE 
+                WHERE email = %s
+            """, (novo_hash, email))
+        
+        # COMMIT: Confirma a gravação no banco
+        conn.commit()
+        
         session.pop('reset_code', None)
         session.pop('temp_email', None)
 
         flash('Senha atualizada com sucesso! Faça login com a sua nova senha.', 'success')
-        return redirect(url_for('auth.login'))
-    
-    flash('Erro de validação. Tente novamente.', 'danger')
+    except Exception as e:
+        # ROLLBACK: Se algo falhar, desfaz tudo para não corromper o banco
+        conn.rollback()
+        print(f"Erro Crítico ao trocar senha: {e}")
+        flash('Erro de validação. Tente novamente.', 'danger')
+    finally:
+        conn.close()
+
     return redirect(url_for('auth.login'))
 
 @auth_bp.route('/logout')
