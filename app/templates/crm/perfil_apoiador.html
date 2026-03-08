@@ -136,9 +136,9 @@
                     <div class="timeline-simple" style="max-height: 700px; overflow-y: auto; padding-right: 10px;">
                         
                         {% for t in historico|reverse %}
-                            {% set cor_borda = 'border-danger' if t.status|lower == 'cancelada' else 'border-success' %}
-                            {% set cor_bg = 'bg-danger' if t.status|lower == 'cancelada' else 'bg-success' %}
-                            {% set texto_status = 'Cancelado' if t.status|lower == 'cancelada' else 'Concluído' %}
+                            {% set cor_borda = 'border-danger' if t.status|string|lower == 'cancelada' else 'border-success' %}
+                            {% set cor_bg = 'bg-danger' if t.status|string|lower == 'cancelada' else 'bg-success' %}
+                            {% set texto_status = 'Cancelado' if t.status|string|lower == 'cancelada' else 'Concluído' %}
                             
                             {% set delegado = 'Candidato' %}
                             {% for a in assessores %}
@@ -233,11 +233,20 @@
                     </div>
 
                     <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted">Status</label>
+                        <select name="status" class="form-select border-light bg-light" required>
+                            <option value="pendente" {% if t.status == 'pendente' %}selected{% endif %}>Pendente</option>
+                            <option value="concluida" {% if t.status == 'concluida' %}selected{% endif %}>Concluída</option>
+                            <option value="cancelada" {% if t.status == 'cancelada' %}selected{% endif %}>Cancelada</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
                         <label class="form-label small fw-bold text-muted">Delegar para</label>
                         <select name="assessor_id" class="form-select border-light bg-light">
                             <option value="">Fazer eu mesmo</option>
                             {% for assessor in assessores %}
-                                <option value="{{ assessor.id }}" {% if str(t.assessor_id) == str(assessor.id) %}selected{% endif %}>{{ assessor.nome }}</option>
+                                <option value="{{ assessor.id }}" {% if t.assessor_id|string == assessor.id|string %}selected{% endif %}>{{ assessor.nome }}</option>
                             {% endfor %}
                         </select>
                     </div>

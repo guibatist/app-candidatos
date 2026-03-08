@@ -261,10 +261,18 @@ class CRMService:
         try:
             with conn.cursor() as cursor:
                 novo_id = f"tar_{uuid.uuid4().hex[:12]}"
+                
+                # Captura o assessor escolhido no select do HTML
+                assessor_id = dados.get('assessor_id')
+                # Se vier vazio do HTML, transforma em None (NULL no banco)
+                if not assessor_id or assessor_id.strip() == '':
+                    assessor_id = None
+                    
                 cursor.execute("""
-                    INSERT INTO tarefas (id, cliente_id, apoiador_id, tipo, descricao, data_limite, status)
-                    VALUES (%s, %s, %s, %s, %s, %s, 'pendente')
-                """, (novo_id, str(cliente_id), str(apoiador_id), dados.get('tipo'), dados.get('descricao'), dados.get('data_limite')))
+                    INSERT INTO tarefas (id, cliente_id, apoiador_id, assessor_id, tipo, descricao, data_limite, status)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, 'pendente')
+                """, (novo_id, str(cliente_id), str(apoiador_id), assessor_id, 
+                      dados.get('tipo'), dados.get('descricao'), dados.get('data_limite')))
             conn.commit()
         except Exception as e:
             conn.rollback()
@@ -273,16 +281,20 @@ class CRMService:
             conn.close()
 
     @staticmethod
-    def concluir_tarefa(cliente_id, tarefa_id):
+    def alterar_status_tarefa(cliente_id, tarefa_id, novo_status):
         conn = get_db_connection()
         if not conn: return
         try:
             with conn.cursor() as cursor:
-                cursor.execute("UPDATE tarefas SET status = 'concluida' WHERE id = %s AND cliente_id = %s", (str(tarefa_id), str(cliente_id)))
+                cursor.execute("""
+                    UPDATE tarefas 
+                    SET status = %s 
+                    WHERE id = %s AND cliente_id = %s
+                """, (novo_status, str(tarefa_id), str(cliente_id)))
             conn.commit()
         except Exception as e:
             conn.rollback()
-            print(f"Erro ao concluir tarefa: {e}")
+            print(f"Erro ao alterar status: {e}")
         finally:
             conn.close()
 
@@ -380,11 +392,22 @@ class CRMService:
         if not conn: return
         try:
             with conn.cursor() as cursor:
+                # O COALESCE garante que, se o formulário não enviar o status, ele mantém o atual
                 cursor.execute("""
                     UPDATE tarefas 
-                    SET tipo = %s, descricao = %s, data_limite = %s 
+                    SET tipo = %s, 
+                        descricao = %s, 
+                        data_limite = %s,
+                        status = COALESCE(%s, status)
                     WHERE id = %s AND cliente_id = %s
-                """, (dados.get('tipo'), dados.get('descricao'), dados.get('data_limite'), str(tarefa_id), str(cliente_id)))
+                """, (
+                    dados.get('tipo'), 
+                    dados.get('descricao'), 
+                    dados.get('data_limite'), 
+                    dados.get('status'), # <-- Agora o status é capturado do formulário
+                    str(tarefa_id), 
+                    str(cliente_id)
+                ))
             conn.commit()
         except Exception as e:
             conn.rollback()

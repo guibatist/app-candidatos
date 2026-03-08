@@ -156,12 +156,17 @@ def atualizar_status_tarefa(id):
     ctx = obter_contexto_acesso()
     if not ctx: return redirect(url_for('auth.login'))
     
-    # Chama o service para atualizar no Postgres (muda para 'concluida')
-    CRMService.concluir_tarefa(ctx['cliente_id'], id)
+    # Agora o Flask vai ler o que escolheu no dropdown!
+    novo_status = request.form.get('status', 'concluida')
     
-    flash('Tarefa concluída com sucesso!', 'success')
+    # Chama o novo serviço que sabe lidar com estados dinâmicos
+    CRMService.alterar_status_tarefa(ctx['cliente_id'], id, novo_status)
     
-    # request.referrer é um truque elegante: ele devolve você para a página exata de onde veio
+    if novo_status == 'cancelada':
+        flash('Tarefa cancelada.', 'warning')
+    else:
+        flash('Tarefa concluída com sucesso!', 'success')
+    
     return redirect(request.referrer or url_for('crm.listar_apoiadores'))
 
 @crm_bp.route('/tarefas/<id>/editar', methods=['POST'])
