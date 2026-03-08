@@ -569,3 +569,137 @@ class CRMService:
                 return cursor.fetchall()
         finally:
             conn.close()
+
+# === BLOCO: ATUALIZAÇÃO MESTRE DE CAMPANHA (SUPERADMIN) ===
+    @staticmethod
+    def atualizar_campanha_completa(campanha_id, dados):
+        conn = get_db_connection()
+        if not conn: return False
+        try:
+            with conn.cursor() as cursor:
+                # 1. Atualiza a Campanha (Tabela Clientes)
+                cursor.execute("""
+                    UPDATE clientes SET 
+                        nome_candidato = %s, partido_sigla = %s, partido_numero = %s,
+                        cargo_disputado = %s, territorio_estado = %s, territorio_cidade = %s
+                    WHERE id = %s
+                """, (
+                    dados.get('nome_completo'), dados.get('partido_sigla'), 
+                    dados.get('partido_numero'), dados.get('cargo'), 
+                    dados.get('estado'), dados.get('cidade'), campanha_id
+                ))
+
+                # 2. Atualiza o Candidato (Tabela Usuarios)
+                # Filtramos pelo cliente_id e pelo role 'candidato'
+                cursor.execute("""
+                    UPDATE usuarios SET 
+                        nome = %s, email = %s, cpf = %s, sexo = %s, 
+                        idade = %s, telefone = %s
+                    WHERE cliente_id = %s AND role = 'candidato'
+                """, (
+                    dados.get('nome_completo'), dados.get('email_candidato'),
+                    dados.get('cpf_candidato'), dados.get('sexo_candidato'),
+                    dados.get('idade_candidato'), dados.get('tel_candidato'),
+                    campanha_id
+                ))
+                
+            conn.commit()
+            return True
+        except Exception as e:
+            conn.rollback()
+            print(f"Erro Crítico na Atualização: {e}")
+            return False
+        finally:
+            conn.close()
+
+# === BLOCO: GESTÃO DE TENANT (CAMPANHA COMPLETA) ===
+    @staticmethod
+    def get_detalhes_campanha_completa(campanha_id):
+        conn = get_db_connection()
+        if not conn: return None
+        try:
+            with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+                # 1. Busca Dados da Campanha
+                cursor.execute("SELECT * FROM clientes WHERE id = %s", (campanha_id,))
+                campanha = cursor.fetchone()
+                
+                if not campanha: return None
+
+                # 2. Busca Todos os Usuários vinculados (Candidato e Assessores)
+                cursor.execute("""
+                    SELECT id, nome, email, cpf, sexo, idade, telefone, role, data_criacao 
+                    FROM usuarios 
+                    WHERE cliente_id = %s 
+                    ORDER BY role ASC, nome ASC
+                """, (campanha_id,))
+                usuarios = cursor.fetchall()
+                
+                return {
+                    "campanha": campanha,
+                    "candidato": next((u for u in usuarios if u['role'] == 'candidato'), None),
+                    "assessores": [u for u in usuarios if u['role'] == 'assessor']
+                }
+        finally:
+            conn.close()
+
+# === BLOCO: ATUALIZAÇÃO UNIFICADA (CANDIDATO + PARTIDO) ===
+    @staticmethod
+    def salvar_dados_mestre_campanha(campanha_id, dados):
+        """
+        Atualiza simultaneamente a tabela de Clientes (Partido/Cargo) 
+        e a tabela de Usuários (Dados do Candidato).
+        """
+        conn = get_db_connection()
+        if not conn: 
+            return False
+            
+        try:
+            with conn.cursor() as cursor:
+                # 1. Atualiza a Tabela de Clientes (Partido e Cargo)
+                # Note a indentação: 8 espaços para dentro da classe/método
+                cursor.execute("""
+                    UPDATE clientes SET 
+                        partido_sigla = %s, 
+                        partido_numero = %s, 
+                        cargo_disputado = %s
+                    WHERE id = %s
+                """, (
+                    dados.get('partido_sigla', '').upper(),
+                    dados.get('partido_numero'),
+                    dados.get('cargo'),  # Certifique-se que o <select> no HTML chama-se 'cargo'
+                    campanha_id
+                ))
+
+                # 2. Atualiza a Tabela de Usuários (Dados Pessoais do Candidato)
+                cursor.execute("""
+                    UPDATE usuarios SET 
+                        nome = %s, 
+                        email = %s, 
+                        cpf = %s, 
+                        sexo = %s, 
+                        idade = %s, 
+                        telefone = %s
+                    WHERE cliente_id = %s AND role = 'candidato'
+                """, (
+                    dados.get('nome'), 
+                    dados.get('email'), 
+                    dados.get('cpf'),
+                    dados.get('sexo'), 
+                    dados.get('idade'), 
+                    dados.get('telefone'),
+                    campanha_id
+                ))
+                
+            # Confirma a transação atômica (ou muda tudo ou não muda nada)
+            conn.commit()
+            return True
+            
+        except Exception as e:
+            if conn:
+                conn.rollback()
+            print(f"❌ Erro ao salvar dados mestre: {e}")
+            return False
+            
+        finally:
+            if conn:
+                conn.close()

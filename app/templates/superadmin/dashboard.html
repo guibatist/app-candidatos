@@ -1,137 +1,258 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
 
 {% block content %}
-<div class="container-fluid py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2 class="fw-bold text-dark mb-0"><i class="fa-solid fa-crown text-warning me-2"></i>Painel Master (SaaS)</h2>
-            <p class="text-muted small mb-0">Gestão de licenças, campanhas e acessos.</p>
-        </div>
-        <button class="btn btn-dark rounded-pill px-4 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#modalNovaCampanha">
+<style>
+    .stats-card {
+        border-radius: 16px;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .stats-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.05) !important;
+    }
+    .icon-shape {
+        width: 48px;
+        height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 12px;
+    }
+    .table-container {
+        background: #ffffff;
+        border-radius: 16px;
+        overflow: hidden;
+    }
+    .badge-soft-success { background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
+    .badge-soft-primary { background: #e0e7ff; color: #3730a3; border: 1px solid #c7d2fe; }
+    .party-tag {
+        font-weight: 700;
+        padding: 4px 10px;
+        border-radius: 8px;
+        font-size: 0.85rem;
+        background: #f3f4f6;
+        color: #374151;
+    }
+</style>
+
+<div class="row mb-4 align-items-center">
+    <div class="col-md-6">
+        <h2 class="fw-bold mb-1" style="letter-spacing: -1px;">Central de Governança</h2>
+        <p class="text-muted">Gestão estratégica de campanhas e ativos eleitorais.</p>
+    </div>
+    <div class="col-md-6 text-md-end">
+        <button class="btn btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#modalNovaCampanha">
             <i class="fa-solid fa-plus me-2"></i>Nova Campanha
         </button>
     </div>
+</div>
 
-    <div class="row g-4">
-        {% for camp in campanhas %}
-        <div class="col-12">
-            <div class="card border-0 shadow-sm rounded-4">
-                <div class="card-header bg-white border-bottom-0 pt-4 px-4 d-flex justify-content-between align-items-center">
-                    <div>
-                        <span class="badge bg-success bg-opacity-10 text-success border border-success mb-2">Ativa</span>
-                        <h4 class="fw-bold text-dark mb-0">{{ camp.nome_campanha }}</h4>
-                        <p class="text-muted small mb-0">Candidato: {{ camp.candidato_nome }} | Criada em: {{ camp.data_criacao }}</p>
-                    </div>
-                    <button class="btn btn-outline-primary btn-sm rounded-pill px-3 fw-bold" data-bs-toggle="modal" data-bs-target="#modalNovoAssessor{{ camp.id }}">
-                        <i class="fa-solid fa-user-plus me-1"></i> Liberar Acesso (Assessor)
-                    </button>
+<div class="row g-4 mb-5">
+    <div class="col-md-4">
+        <div class="card stats-card border-0 shadow-sm p-3">
+            <div class="d-flex align-items-center">
+                <div class="icon-shape bg-primary bg-opacity-10 text-primary me-3">
+                    <i class="fa-solid fa-flag-checkered fs-4"></i>
                 </div>
-                
-                <div class="card-body p-4">
-                    <h6 class="fw-bold text-muted text-uppercase small mb-3">Acessos Liberados</h6>
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0">
-                            <thead class="table-light">
-                                <tr>
-                                    <th class="text-muted small fw-bold">Nome / E-mail</th>
-                                    <th class="text-muted small fw-bold">Nível de Acesso</th>
-                                    <th class="text-muted small fw-bold text-end">Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for usr in camp.usuarios %}
-                                <tr>
-                                    <td>
-                                        <div class="fw-bold text-dark">{{ usr.nome }}</div>
-                                        <div class="text-muted small">{{ usr.email }}</div>
-                                    </td>
-                                    <td>
-                                        {% if usr.role == 'candidato' %}
-                                            <span class="badge bg-primary">Candidato (Dono)</span>
-                                        {% else %}
-                                            <span class="badge bg-secondary">{{ usr.cargo }}</span>
-                                        {% endif %}
-                                    </td>
-                                    <td class="text-end">
-                                        <form action="{{ url_for('superadmin.excluir_usuario', usuario_id=usr.id) }}" method="POST" class="m-0" onsubmit="return confirm('Revogar acesso?');">
-                                            <button type="submit" class="btn btn-sm btn-link text-danger p-0"><i class="fa-solid fa-trash"></i></button>
+                <div>
+                    <h6 class="text-muted mb-0 small uppercase">Campanhas Ativas</h6>
+                    <h3 class="fw-bold mb-0">{{ campanhas|length }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+    </div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-white border-0 py-4 px-4 d-flex justify-content-between align-items-center">
+        <h5 class="fw-bold mb-0">Monitoramento de Clientes</h5>
+        <div class="input-group input-group-sm w-25">
+            <span class="input-group-text bg-light border-0"><i class="fa-solid fa-magnifying-glass"></i></span>
+            <input type="text" class="form-control bg-light border-0" placeholder="Filtrar candidato...">
+        </div>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="bg-light">
+                <tr>
+                    <th class="ps-4 text-muted fw-semibold small">CANDIDATO / ID</th>
+                    <th class="text-muted fw-semibold small">PARTIDO</th>
+                    <th class="text-muted fw-semibold small">CARGO / BASE</th>
+                    <th class="text-muted fw-semibold small">USUÁRIOS</th>
+                    <th class="text-muted fw-semibold small">STATUS</th>
+                    <th class="text-end pe-4 text-muted fw-semibold small">AÇÕES</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for camp in campanhas %}
+                <tr>
+                    <td class="ps-4">
+                        <div class="d-flex align-items-center">
+                            <div class="avatar-sm me-3 bg-light rounded-circle p-2">
+                                <i class="fa-solid fa-user-tie text-primary"></i>
+                            </div>
+                            <div>
+                                <div class="fw-bold text-dark">{{ camp.nome_candidato }}</div>
+                                <div class="text-muted x-small">ID: {{ camp.id }}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="party-tag">
+                            <i class="fa-solid fa-building-columns me-2"></i>{{ camp.partido_sigla }} {{ camp.partido_numero }}
+                        </span>
+                    </td>
+                    <td>
+                        <div class="fw-semibold">{{ camp.cargo_disputado }}</div>
+                        <div class="text-muted small">{{ camp.territorio_cidade or camp.territorio_estado or 'Brasil' }}</div>
+                    </td>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <i class="fa-solid fa-users-gear me-2 text-muted"></i>
+                            <span>{{ camp.usuarios|length }}</span>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="badge badge-soft-success rounded-pill px-3">Ativo</span>
+                    </td>
+                    <td class="text-end pe-4">
+                        <div class="d-flex justify-content-end gap-2">
+                            <a href="{{ url_for('superadmin.perfil_campanha', campanha_id=camp.id) }}" 
+                            class="btn btn-sm btn-light border-0 shadow-sm" 
+                            title="Gerenciar Campanha">
+                                <i class="fa-solid fa-gear text-primary me-1"></i> Gerenciar
+                            </a>
+                            
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-light border-0" type="button" data-bs-toggle="dropdown">
+                                    <i class="fa-solid fa-ellipsis-vertical"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end shadow border-0">
+                                    <li>
+                                        <form action="{{ url_for('superadmin.excluir_usuario', usuario_id=camp.id) }}" method="POST" onsubmit="return confirm('Tem certeza que deseja suspender esta campanha?')">
+                                            <button type="submit" class="dropdown-item text-danger small">
+                                                <i class="fa-solid fa-ban me-2"></i>Suspender Acesso
+                                            </button>
                                         </form>
-                                    </td>
-                                </tr>
-                                {% else %}
-                                <tr>
-                                    <td colspan="3" class="text-center text-muted small py-3">Nenhum acesso criado.</td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="modal fade" id="modalNovaCampanha" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+            <form action="{{ url_for('superadmin.criar_campanha_completa') }}" method="POST">
+                <div class="modal-header border-0 px-4 pt-4">
+                    <h4 class="fw-bold mb-0">Lançar Nova Campanha</h4>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body px-4 pb-4">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Nome Completo do Candidato</label>
+                            <input type="text" name="nome_completo" class="form-control form-control-lg bg-light border-0" required placeholder="Ex: Maria Oliveira">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Cargo Disputado</label>
+                            <select name="cargo" id="selectCargo" class="form-select form-select-lg bg-light border-0" required>
+                                <option value="" disabled selected>Selecione o cargo...</option>
+                                <option value="Presidente">Presidente</option>
+                                <option value="Governador">Governador</option>
+                                <option value="Senador">Senador</option>
+                                <option value="Deputado Federal">Deputado Federal</option>
+                                <option value="Deputado Estadual">Deputado Estadual</option>
+                                <option value="Prefeito">Prefeito</option>
+                                <option value="Vereador">Vereador</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold">Sigla Partido</label>
+                            <input type="text" name="partido_sigla" class="form-control form-control-lg bg-light border-0" placeholder="Ex: PL">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold">Nº Partido</label>
+                            <input type="number" name="partido_numero" class="form-control form-control-lg bg-light border-0" placeholder="00">
+                        </div>
+                        
+                        <div class="col-md-6" id="divEstado">
+                            <label class="form-label fw-semibold">Estado (UF)</label>
+                            <select name="estado" class="form-select form-select-lg bg-light border-0">
+                                <option value="SP" selected>São Paulo (SP)</option>
+                                <option value="RJ">Rio de Janeiro (RJ)</option>
+                                <option value="MG">Minas Gerais (MG)</option>
+                                </select>
+                        </div>
+                        <div class="col-md-6 d-none" id="divCidade">
+                            <label class="form-label fw-semibold">Cidade</label>
+                            <input type="text" name="cidade" class="form-control form-control-lg bg-light border-0" placeholder="Digite o nome da cidade">
+                        </div>
+
+                        <div class="col-12 mt-4">
+                            <div class="p-3 rounded-4 bg-light border">
+                                <h6 class="fw-bold mb-3"><i class="fa-solid fa-lock me-2 text-primary"></i>Configurações de Acesso</h6>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-semibold">E-mail do Candidato</label>
+                                        <input type="email" name="email_candidato" class="form-control border-0" required placeholder="candidato@email.com">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-semibold">CPF</label>
+                                        <input type="text" name="cpf_candidato" id="cpfInput" class="form-control border-0" placeholder="000.000.000-00">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
-        </div>
-        {% else %}
-        <div class="col-12">
-            <div class="text-center py-5 border rounded-4 bg-white shadow-sm">
-                <i class="fa-solid fa-rocket text-muted mb-3" style="font-size: 3rem; opacity: 0.3;"></i>
-                <h5 class="fw-bold text-dark">Nenhum cliente cadastrado.</h5>
-                <button class="btn btn-dark rounded-pill px-4 fw-bold mt-2" data-bs-toggle="modal" data-bs-target="#modalNovaCampanha">Criar Primeira Campanha</button>
-            </div>
-        </div>
-        {% endfor %}
-    </div>
-</div>
-
-<div class="modal fade" id="modalNovaCampanha" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow rounded-4">
-            <div class="modal-header border-0 bg-light">
-                <h5 class="modal-title fw-bold text-dark">Novo Cliente</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body p-4">
-                <form action="{{ url_for('superadmin.criar_campanha') }}" method="POST">
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold text-muted">Campanha</label>
-                        <input type="text" name="nome_campanha" class="form-control bg-light border-0 py-2" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold text-muted">Candidato</label>
-                        <input type="text" name="nome_candidato" class="form-control bg-light border-0 py-2" required>
-                    </div>
-                    <div class="mb-4">
-                        <label class="form-label small fw-bold text-muted">E-mail de Acesso</label>
-                        <input type="email" name="email_candidato" class="form-control bg-light border-0 py-2" required>
-                    </div>
-                    <button type="submit" class="btn btn-dark w-100 rounded-pill fw-bold py-2">Salvar e Gerar Acesso</button>
-                </form>
-            </div>
+                <div class="modal-footer border-0 px-4 pb-4">
+                    <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary px-5 shadow">Criar Ambiente da Campanha</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
 
-{% for camp in campanhas %}
-<div class="modal fade" id="modalNovoAssessor{{ camp.id }}" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow rounded-4">
-            <div class="modal-header border-0 bg-light">
-                <h5 class="modal-title fw-bold text-dark">Acesso - {{ camp.nome_campanha }}</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body p-4">
-                <form action="{{ url_for('superadmin.adicionar_assessor', campanha_id=camp.id) }}" method="POST">
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold text-muted">Nome do Assessor</label>
-                        <input type="text" name="nome" class="form-control bg-light border-0 py-2" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold text-muted">E-mail de Acesso</label>
-                        <input type="email" name="email" class="form-control bg-light border-0 py-2" required>
-                    </div>
-                    <button type="submit" class="btn btn-primary w-100 rounded-pill fw-bold py-2 shadow-sm">Criar Acesso</button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-{% endfor %}
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const selectCargo = document.getElementById('selectCargo');
+    const divCidade = document.getElementById('divCidade');
+    const divEstado = document.getElementById('divEstado');
+
+    selectCargo.addEventListener('change', function() {
+        const cargo = this.value;
+        
+        // Controle de visibilidade da Cidade
+        if (cargo === 'Prefeito' || cargo === 'Vereador') {
+            divCidade.classList.remove('d-none');
+        } else {
+            divCidade.classList.add('d-none');
+        }
+
+        // Controle de visibilidade do Estado
+        if (cargo === 'Presidente') {
+            divEstado.classList.add('d-none');
+        } else {
+            divEstado.classList.remove('d-none');
+        }
+    });
+
+    // Máscara de CPF básica
+    document.getElementById('cpfInput').addEventListener('input', function(e) {
+        let v = e.target.value.replace(/\D/g,"");
+        v=v.replace(/(\d{3})(\d)/,"$1.$2");
+        v=v.replace(/(\d{3})(\d)/,"$1.$2");
+        v=v.replace(/(\d{3})(\d{1,2})$/,"$1-$2");
+        e.target.value = v;
+    });
+});
+</script>
 {% endblock %}
