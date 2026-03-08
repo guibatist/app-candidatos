@@ -199,3 +199,13 @@ def editar_perfil_detalhado(id):
     
     flash('Perfil demográfico atualizado com sucesso!', 'success')
     return redirect(url_for('crm.perfil_apoiador', apoiador_id=id))
+
+@crm_bp.route('/apoiadores/<id>/editar-cadastro', methods=['POST'])
+def editar_cadastro_geral(id):
+    ctx = obter_contexto_acesso()
+    if not ctx: return redirect(url_for('auth.login'))
+    
+    CRMService.atualizar_cadastro_geral(ctx['cliente_id'], id, request.form)
+    flash('Dados cadastrais e endereço atualizados com sucesso.', 'success')
+    
+    return redirect(url_for('crm.perfil_apoiador', apoiador_id=id))

@@ -12,7 +12,12 @@
                                 <i class="fa-solid fa-user"></i>
                             </div>
                             <div>
-                                <h3 class="mb-0 fw-bold">{{ apoiador.nome }}</h3>
+                                <h3 class="mb-0 fw-bold d-flex align-items-center gap-2">
+                                    {{ apoiador.nome }}
+                                    <button type="button" class="btn btn-sm btn-light text-indigo rounded-circle shadow-sm" data-bs-toggle="modal" data-bs-target="#modalEditarCadastro" title="Editar Dados Básicos">
+                                        <i class="fa-solid fa-pen" style="font-size: 0.8rem;"></i>
+                                    </button>
+                                </h3>
                                 <div class="d-flex flex-wrap gap-2 mt-2">
                                     <span class="badge bg-white bg-opacity-25 text-white border-0">
                                         <i class="fa-solid fa-location-dot me-1"></i> {{ apoiador.bairro or 'Bairro não informado' }}
@@ -375,5 +380,113 @@
     .timeline-simple::-webkit-scrollbar-thumb { background: #c7c7cc; border-radius: 4px; }
     .timeline-simple::-webkit-scrollbar-thumb:hover { background: #a1a1aa; }
 </style>
+<div class="modal fade" id="modalEditarCadastro" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow rounded-4">
+            <div class="modal-header border-0 bg-light">
+                <h5 class="modal-title fw-bold text-indigo"><i class="fa-solid fa-user-pen me-2"></i>Editar Cadastro e Endereço</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4 bg-light">
+                <form action="{{ url_for('crm.editar_cadastro_geral', id=apoiador.id) }}" method="POST">
+                    
+                    <h6 class="fw-bold text-dark mb-3">1. Dados Pessoais e Estratégia</h6>
+                    <div class="row g-3 mb-4 bg-white p-3 rounded-4 shadow-sm">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted">Nome</label>
+                            <input type="text" name="nome" class="form-control bg-light border-light" value="{{ apoiador.nome }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted">Telefone</label>
+                            <input type="text" name="telefone" id="telefone_edit" class="form-control bg-light border-light" value="{{ apoiador.telefone }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted">Grau de Apoio</label>
+                            <select name="grau_apoio" class="form-select bg-light border-light">
+                                <option value="forte" {% if apoiador.grau_apoio == 'forte' %}selected{% endif %}>Forte</option>
+                                <option value="medio" {% if apoiador.grau_apoio == 'medio' %}selected{% endif %}>Médio</option>
+                                <option value="fraco" {% if apoiador.grau_apoio == 'fraco' %}selected{% endif %}>Fraco</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted">Votos na Família</label>
+                            <input type="number" name="votos_familia" class="form-control bg-light border-light" value="{{ apoiador.votos_familia or 1 }}" min="1">
+                        </div>
+                        <div class="col-12 mt-3">
+                            <div class="d-flex flex-wrap gap-3">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" name="oferece_muro" id="edit_muro" {% if apoiador.oferece_muro %}checked{% endif %}>
+                                    <label class="form-check-label small fw-bold" for="edit_muro">Oferece Muro</label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" name="oferece_carro" id="edit_carro" {% if apoiador.oferece_carro %}checked{% endif %}>
+                                    <label class="form-check-label small fw-bold" for="edit_carro">Oferece Carro</label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" name="lideranca" id="edit_lideranca" {% if apoiador.lideranca %}checked{% endif %}>
+                                    <label class="form-check-label small fw-bold text-indigo" for="edit_lideranca">Liderança</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
+                    <h6 class="fw-bold text-dark mb-3">2. Endereço (Atualiza o Mapa)</h6>
+                    <div class="row g-3 bg-white p-3 rounded-4 shadow-sm">
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold text-muted">CEP</label>
+                            <input type="text" name="cep" id="cep_edit" class="form-control bg-light border-light" value="{{ apoiador.cep }}">
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label small fw-bold text-muted">Logradouro</label>
+                            <input type="text" name="logradouro" id="logradouro_edit" class="form-control bg-light border-light" value="{{ apoiador.logradouro or apoiador.rua }}">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small fw-bold text-muted">Número</label>
+                            <input type="text" name="numero" class="form-control bg-light border-light" value="{{ apoiador.numero }}">
+                        </div>
+                        <div class="col-md-9">
+                            <label class="form-label small fw-bold text-muted">Complemento</label>
+                            <input type="text" name="complemento" class="form-control bg-light border-light" value="{{ apoiador.complemento }}">
+                        </div>
+                        <div class="col-md-5">
+                            <label class="form-label small fw-bold text-muted">Bairro</label>
+                            <input type="text" name="bairro" id="bairro_edit" class="form-control bg-light border-light" value="{{ apoiador.bairro }}">
+                        </div>
+                        <div class="col-md-5">
+                            <label class="form-label small fw-bold text-muted">Cidade</label>
+                            <input type="text" name="cidade" id="cidade_edit" class="form-control bg-light border-light" value="{{ apoiador.cidade }}" readonly>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small fw-bold text-muted">UF</label>
+                            <input type="text" name="uf" id="uf_edit" class="form-control bg-light border-light" value="{{ apoiador.uf }}" readonly>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 text-end">
+                        <button type="submit" class="btn btn-indigo rounded-pill px-5 fw-bold shadow-sm">Gravar Alterações</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ViaCEP para o Modal de Edição
+    document.getElementById('cep_edit').addEventListener('blur', function() {
+        let cep = this.value.replace(/\D/g, ''); 
+        if (cep.length === 8) {
+            fetch(`https://viacep.com.br/ws/${cep}/json/`)
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.erro) {
+                        document.getElementById('logradouro_edit').value = data.logradouro;
+                        document.getElementById('bairro_edit').value = data.bairro;
+                        document.getElementById('cidade_edit').value = data.localidade;
+                        document.getElementById('uf_edit').value = data.uf;
+                    }
+                });
+        }
+    });
+</script>
 {% endblock %}

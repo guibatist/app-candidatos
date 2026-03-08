@@ -471,3 +471,47 @@ class CRMService:
             print(f"Erro ao atualizar perfil demográfico: {e}")
         finally:
             conn.close()
+
+    @staticmethod
+    def atualizar_cadastro_geral(cliente_id, apoiador_id, dados_form):
+        nome = dados_form.get('nome', '').strip()
+        telefone = dados_form.get('telefone', '').strip()
+        cep = dados_form.get('cep', '').strip()
+        logradouro = dados_form.get('logradouro', '').strip()
+        numero = dados_form.get('numero', '').strip()
+        complemento = dados_form.get('complemento', '').strip()
+        bairro = dados_form.get('bairro', '').strip()
+        cidade = dados_form.get('cidade', '').strip()
+        uf = dados_form.get('uf', '').strip()
+        grau_apoio = dados_form.get('grau_apoio', 'medio')
+        votos_familia = int(dados_form.get('votos_familia', 1) or 1)
+
+        oferece_muro = str(dados_form.get('oferece_muro')).lower() in ['on', 'true', '1']
+        oferece_carro = str(dados_form.get('oferece_carro')).lower() in ['on', 'true', '1']
+        lideranca = str(dados_form.get('lideranca')).lower() in ['on', 'true', '1']
+
+        # Refaz a busca no mapa caso o endereço tenha sido alterado
+        lat, lon = CRMService.buscar_coordenadas(logradouro, numero, bairro, cidade, uf, cep)
+
+        conn = get_db_connection()
+        if not conn: return
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                    UPDATE apoiadores 
+                    SET nome = %s, telefone = %s, cep = %s, logradouro = %s, numero = %s,
+                        complemento = %s, bairro = %s, cidade = %s, uf = %s,
+                        lat = %s, lon = %s, grau_apoio = %s, votos_familia = %s,
+                        oferece_muro = %s, oferece_carro = %s, lideranca = %s
+                    WHERE id = %s AND cliente_id = %s
+                """, (
+                    nome, telefone, cep, logradouro, numero, complemento,
+                    bairro, cidade, uf, lat, lon, grau_apoio, votos_familia,
+                    oferece_muro, oferece_carro, lideranca, str(apoiador_id), str(cliente_id)
+                ))
+            conn.commit()
+        except Exception as e:
+            conn.rollback()
+            print(f"Erro ao atualizar cadastro geral: {e}")
+        finally:
+            conn.close()
