@@ -9,46 +9,75 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <style>
-        /* 1. SEUS ESTILOS ORIGINAIS INTACTOS (Reseta o B.I para o padrão Premium) */
-        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; color: #1f2937; margin: 0; overflow-x: hidden; }
-        .topbar { background-color: #ffffff; border-bottom: 1px solid #e5e7eb; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); padding: 12px 0; z-index: 1050; position: relative;}
+<style>
+        :root {
+            --sidebar-width: 260px;
+            --sidebar-collapsed-width: 70px;
+            --topbar-height: 65px;
+        }
+
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #f3f4f6; 
+            color: #1f2937; 
+            margin: 0; 
+            overflow-x: hidden; 
+        }
+
+        /* --- 1. TOPBAR FIXA --- */
+        .topbar { 
+            background-color: #ffffff; 
+            border-bottom: 1px solid #e5e7eb; 
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); 
+            padding: 0; 
+            height: var(--topbar-height);
+            z-index: 1050; 
+            position: fixed; /* Fixa no topo */
+            top: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            align-items: center;
+        }
+
         .topbar-brand { font-weight: 700; font-size: 1.25rem; color: #111827; text-decoration: none; letter-spacing: -0.5px; }
         .topbar-brand i { color: #4f46e5; }
         
-        /* A MÁGICA DOS GRÁFICOS E BOTÕES VOLTOU AQUI: */
-        .card { border: none; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); background-color: #ffffff; }
-        .btn { border-radius: 8px; font-weight: 500; padding: 8px 16px; transition: all 0.2s; }
-        .btn-primary { background-color: #4f46e5; border-color: #4f46e5; }
-        
-        /* 2. MECÂNICA DA NOVA SIDEBAR (Layout e Margens) */
+        /* --- 2. LAYOUT E SIDEBAR --- */
         #main-content {
-            margin-left: 260px; /* var(--sidebar-width) */
+            margin-top: var(--topbar-height); /* Compensa a topbar fixa */
+            margin-left: var(--sidebar-width);
             transition: margin-left 0.3s ease;
-            min-height: calc(100vh - 65px);
+            min-height: calc(100vh - var(--topbar-height));
+            padding: 20px;
         }
 
         #main-content.expanded {
-            margin-left: 70px; /* var(--sidebar-collapsed-width) */
+            margin-left: var(--sidebar-collapsed-width);
         }
 
+        /* Classe utilitária para quando não estiver logado */
         body.not-logged-in #main-content {
-            margin-left: 0;
+            margin-left: 0 !important;
         }
 
+        .card { border: none; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); background-color: #ffffff; }
+        
+        /* Ajuste para Mobile */
         @media (max-width: 768px) {
             #main-content { margin-left: 70px; }
+            #main-content.expanded { margin-left: 0; }
         }
     </style>
 </head>
 
 <body class="{% if not session.user_id %}not-logged-in{% endif %}">
 
-    <header class="topbar sticky-top">
-        <div class="container-fluid px-4 d-flex justify-content-between align-items-center">
+<header class="topbar">
+        <div class="container-fluid px-4 d-flex justify-content-between align-items-center w-100">
             <div class="d-flex align-items-center">
                 {% if session.user_id %}
-                <button class="btn btn-sm btn-light me-3 border-0 d-md-none d-lg-block" id="toggleSidebar" style="color:#4b5563; background: transparent;">
+                <button class="btn btn-sm btn-light me-3 border-0" id="toggleSidebar" style="color:#4b5563; background: transparent;">
                     <i class="fa-solid fa-bars fs-5"></i>
                 </button>
                 {% endif %}
@@ -59,7 +88,7 @@
             
             <div class="d-flex align-items-center gap-3">
                 {% if session.user_id %}
-                    <span class="text-muted text-sm"><i class="fa-regular fa-user me-2"></i>{{ session.nome }}</span>
+                    <span class="text-muted text-sm d-none d-md-inline"><i class="fa-regular fa-user me-2"></i>{{ session.nome }}</span>
                     <a href="/auth/logout" class="btn btn-sm btn-outline-secondary">Sair</a>
                 {% endif %}
             </div>
@@ -78,17 +107,37 @@
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
-    <script>
+<script>
         document.addEventListener("DOMContentLoaded", function() {
             const toggleBtn = document.getElementById('toggleSidebar');
             const sidebar = document.getElementById('sidebar');
             const mainContent = document.getElementById('main-content');
 
-            if (toggleBtn && sidebar) {
+            // === LÓGICA DE PERSISTÊNCIA DA SIDEBAR ===
+            
+            // 1. Verifica se existe um estado salvo no navegador
+            const sidebarState = localStorage.getItem('sidebarStatus');
+
+            // 2. Se estiver salvo como 'collapsed', aplica as classes antes de mostrar a página
+            if (sidebarState === 'collapsed' && sidebar && mainContent) {
+                sidebar.classList.add('collapsed');
+                mainContent.classList.add('expanded');
+            }
+
+            if (toggleBtn && sidebar && mainContent) {
                 toggleBtn.addEventListener('click', function() {
+                    // Alterna as classes
                     sidebar.classList.toggle('collapsed');
                     mainContent.classList.toggle('expanded');
                     
+                    // 3. Salva o novo estado no localStorage
+                    if (sidebar.classList.contains('collapsed')) {
+                        localStorage.setItem('sidebarStatus', 'collapsed');
+                    } else {
+                        localStorage.setItem('sidebarStatus', 'expanded');
+                    }
+                    
+                    // Avisa os gráficos (Chart.js etc) que o tamanho mudou
                     setTimeout(() => { window.dispatchEvent(new Event('resize')); }, 300);
                 });
             }
