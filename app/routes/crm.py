@@ -36,12 +36,16 @@ def obter_contexto_acesso():
 
 
 # === BLOCO 3: DASHBOARD E GEOINTELIGÊNCIA ===
-@crm_bp.route('/')
+@crm_bp.route('/dashboard') 
 def dashboard_index():
     ctx = obter_contexto_acesso()
-    if not ctx: return redirect(url_for('auth.login'))
+    if not ctx: 
+        return redirect(url_for('auth.login'))
+        
     resumo = CRMService.get_dashboard_data(ctx['cliente_id'])
-    return render_template('crm/dashboard.html', resumo=resumo, permissoes=ctx['permissoes'])
+    return render_template('crm/dashboard.html', 
+                           resumo=resumo, 
+                           permissoes=ctx['permissoes'])
 
 @crm_bp.route('/mapa')
 def mapa_bairros():
@@ -192,15 +196,60 @@ def excluir_tarefa(id):
 
 
 # === BLOCO 6: EQUIPE E ADMINISTRAÇÃO ===
-@crm_bp.route('/minha-equipe')
+@crm_bp.route('/equipe', methods=['GET'])
 def minha_equipe():
+    """
+    Carrega a lista da equipe no CRM com base na hierarquia:
+    - Se for Candidato: Vê apenas os assessores.
+    - Se for Assessor: Vê o Candidato no topo + outros assessores.
+    Nenhum usuário vê a si mesmo na lista.
+    """
     ctx = obter_contexto_acesso()
-    if not ctx: return redirect(url_for('auth.login'))
+    if not ctx: 
+        return redirect(url_for('auth.login'))
+        
+    cliente_id = ctx['cliente_id']
     
-    # Busca a equipe direto no banco de dados via Service
-    equipe = CRMService.listar_equipe(ctx['cliente_id'])
+    # CORREÇÃO AQUI: Pegamos direto da sessão do Flask para evitar o KeyError
+    user_id = session.get('user_id') 
+    role_logado = session.get('role') 
     
-    return render_template('crm/equipe.html', equipe=equipe)
+    conn = get_db_connection()
+    if not conn:
+        flash('Erro de conexão com o banco de dados.', 'danger')
+        return redirect(url_for('crm.dashboard_index'))
+
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            if role_logado == 'candidato':
+                # REGRA 1: É candidato. Mostra apenas os assessores/coordenadores.
+                cursor.execute("""
+                    SELECT id, nome, email, telefone, cpf, role, status 
+                    FROM usuarios 
+                    WHERE cliente_id = %s AND role != 'candidato' AND id != %s
+                    ORDER BY nome ASC
+                """, (cliente_id, user_id))
+            else:
+                # REGRA 2: É assessor. Mostra o Candidato (peso 1) no topo, depois assessores (peso 2).
+                cursor.execute("""
+                    SELECT id, nome, email, telefone, cpf, role, status 
+                    FROM usuarios 
+                    WHERE cliente_id = %s AND id != %s
+                    ORDER BY 
+                        CASE WHEN role = 'candidato' THEN 1 ELSE 2 END,
+                        nome ASC
+                """, (cliente_id, user_id))
+                
+            equipe = cursor.fetchall()
+            
+    except Exception as e:
+        print(f"❌ Erro ao carregar equipe no CRM: {e}")
+        equipe = []
+        flash('Erro técnico ao carregar a equipe.', 'danger')
+    finally:
+        conn.close()
+
+    return render_template('crm/equipe.html', equipe=equipe, permissoes=ctx['permissoes'], role_logado=role_logado)
 
 @crm_bp.route('/equipe')
 def listar_equipe():

@@ -1,122 +1,93 @@
-{% extends 'base.html' %}
-
+{% extends "base.html" %}
 {% block content %}
+
+<style>
+    .card-premium { border: none; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); background: #fff; }
+    .table > :not(caption) > * > * { padding: 1rem 1.5rem; border-bottom-color: #f1f5f9; }
+    .role-badge { font-size: 0.75rem; letter-spacing: 0.5px; font-weight: 700; text-transform: uppercase; }
+    /* Efeito hover no botão de chat */
+    .btn-chat { transition: all 0.3s; }
+    .btn-chat:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(79, 70, 229, 0.3) !important; }
+</style>
+
 <div class="container-fluid py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h2 class="fw-bold mb-1" style="color: #111827;">Minha Equipe</h2>
-            <p class="text-muted small">Gerencie assessores, visualize membros ativos e acompanhe a hierarquia da campanha.</p>
+            <h2 class="fw-bold mb-0"><i class="fa-solid fa-users me-2 text-primary"></i>Equipe de Campanha</h2>
+            <p class="text-muted mb-0 mt-1">
+                {% if role_logado == 'candidato' %}
+                    Visão geral de todos os seus assessores e mobilizadores.
+                {% else %}
+                    Comunicação e alinhamento com a sua equipe e candidato.
+                {% endif %}
+            </p>
         </div>
-        <button class="btn btn-primary shadow-sm rounded-pill px-4" data-bs-toggle="modal" data-bs-target="#modalInfoAcesso">
-            <i class="fa-solid fa-user-plus me-2"></i>Novo Assessor
-        </button>
+        <div>
+            <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-2 rounded-pill fw-bold shadow-sm">
+                <i class="fa-solid fa-network-wired me-1"></i> Conectado
+            </span>
+        </div>
     </div>
 
-    <div class="row g-4">
-        <div class="col-lg-8">
-            <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="bg-light text-muted small text-uppercase">
-                            <tr>
-                                <th class="ps-4 py-3 border-0">Membro</th>
-                                <th class="py-3 border-0">E-mail</th>
-                                <th class="py-3 border-0">Nível de Acesso</th>
-                                <th class="pe-4 py-3 border-0 text-end">Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for membro in equipe %}
-                            <tr>
-                                <td class="ps-4 py-3">
-                                    <div class="d-flex align-items-center gap-2">
-                                        <div class="bg-primary bg-opacity-10 rounded-circle p-2 text-primary d-flex align-items-center justify-content-center" style="width: 35px; height: 35px;">
-                                            <i class="fa-solid fa-user-shield small"></i>
-                                        </div>
-                                        <span class="fw-bold text-dark">{{ membro.nome }}</span>
-                                    </div>
-                                </td>
-                                <td class="text-muted small">{{ membro.email }}</td>
-                                <td>
-                                    <span class="badge rounded-pill {% if membro.role == 'admin' or membro.role == 'candidato' %}bg-danger{% else %}bg-primary{% endif %} bg-opacity-10 {% if membro.role == 'admin' or membro.role == 'candidato' %}text-danger{% else %}text-primary{% endif %} px-3">
-                                        {{ (membro.role or 'assessor')|upper }}
-                                    </span>
-                                </td>
-                                <td class="pe-4 text-end">
-                                    <button class="btn btn-sm btn-light rounded-pill border shadow-sm">
-                                        <i class="fa-solid fa-ellipsis-vertical"></i>
-                                    </button>
-                                </td>
-                            </tr>
+    <div class="card card-premium overflow-hidden">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light">
+                    <tr>
+                        <th class="text-muted small fw-bold ps-4">NOME DO MEMBRO</th>
+                        <th class="text-muted small fw-bold">CONTATO</th>
+                        <th class="text-muted small fw-bold">HIERARQUIA</th>
+                        <th class="text-muted small fw-bold text-end pe-4">AÇÃO</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for membro in equipe %}
+                    <tr class="{% if membro.role == 'candidato' %}bg-warning bg-opacity-10{% endif %}">
+                        <td class="ps-4">
+                            <div class="fw-bold text-dark d-flex align-items-center">
+                                {{ membro.nome }}
+                                {% if membro.status == 'ativo' %}
+                                    <span class="ms-2 text-success" title="Online/Ativo"><i class="fa-solid fa-circle" style="font-size: 8px;"></i></span>
+                                {% endif %}
+                            </div>
+                            <div class="small text-muted">ID: {{ membro.id[:8] }}...</div>
+                        </td>
+                        <td>
+                            <div class="fw-semibold text-dark">{{ membro.email }}</div>
+                            <div class="small text-muted">{{ membro.telefone or 'Sem telefone' }}</div>
+                        </td>
+                        <td>
+                            {% if membro.role == 'candidato' %}
+                                <span class="badge bg-warning text-dark role-badge px-3 py-2 rounded-pill shadow-sm border border-warning">
+                                    <i class="fa-solid fa-star me-1"></i> Líder da Campanha
+                                </span>
                             {% else %}
-                            <tr>
-                                <td colspan="4" class="text-center py-5 text-muted">
-                                    <div class="mb-3">
-                                        <i class="fa-solid fa-users-slash fs-1 opacity-25"></i>
-                                    </div>
-                                    <p class="mb-0">Nenhum assessor encontrado para este cliente ID.</p>
-                                    <small>Verifique se o 'cliente_id' no banco Neon está vinculado corretamente.</small>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-lg-4">
-            <div class="card border-0 shadow-sm rounded-4 mb-4">
-                <div class="card-body p-4 text-center">
-                    <div class="d-inline-flex align-items-center justify-content-center bg-primary bg-opacity-10 text-primary rounded-circle mb-3" style="width: 60px; height: 60px;">
-                        <i class="fa-solid fa-users-viewfinder fa-xl"></i>
-                    </div>
-                    <h5 class="fw-bold mb-1">Total da Equipe</h5>
-                    <h2 class="fw-bold text-primary mb-1">{{ equipe|length }}</h2>
-                    <p class="text-muted small mb-0">Assessores ativos</p>
-                </div>
-            </div>
-
-            <div class="card border-0 shadow-sm rounded-4 bg-dark text-white p-4">
-                <h6 class="fw-bold"><i class="fa-solid fa-lightbulb text-warning me-2"></i>Gestão Centralizada</h6>
-                <p class="small opacity-75 mb-0">
-                    A criação de novos acessos é restrita ao administrador do sistema para garantir a segurança dos dados da campanha.
-                </p>
-            </div>
+                                <span class="badge bg-primary bg-opacity-10 text-primary role-badge px-3 py-2 rounded-pill">
+                                    {{ membro.role }}
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end pe-4">
+                            <a href="/crm/chat/{{ membro.id }}" class="btn btn-sm btn-primary btn-chat rounded-pill px-4 shadow-sm fw-bold">
+                                <i class="fa-solid fa-comment-dots me-1"></i> Mensagem
+                            </a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" class="text-center py-5">
+                            <div class="text-muted opacity-50 mb-3">
+                                <i class="fa-solid fa-user-group fa-3x"></i>
+                            </div>
+                            <h5 class="fw-bold text-dark">Nenhum membro encontrado</h5>
+                            <p class="text-muted mb-0">Não há outros usuários atrelados a esta campanha.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </div>
 </div>
 
-<div class="modal fade" id="modalInfoAcesso" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow rounded-4">
-            <div class="modal-header border-0 bg-light p-4">
-                <h5 class="modal-title fw-bold text-dark">Adicionar Membro</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body p-4 text-center">
-                <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 70px; height: 70px;">
-                    <i class="fa-solid fa-shield-halved fa-2xl"></i>
-                </div>
-                <h5 class="fw-bold">Controle de Hierarquia</h5>
-                <p class="text-muted">Neste nível de acesso, você pode visualizar e gerenciar as tarefas da equipe. A criação de novos logins (E-mail e Senha) deve ser solicitada ao <strong>Administrador Master</strong>.</p>
-                
-                <div class="alert alert-info border-0 rounded-4 small text-start mt-3">
-                    <i class="fa-solid fa-info-circle me-2"></i> 
-                    Para expandir sua equipe, entre em contato com o suporte técnico da plataforma.
-                </div>
-            </div>
-            <div class="modal-footer border-0 p-4 pt-0">
-                <button type="button" class="btn btn-light rounded-pill w-100 fw-bold" data-bs-dismiss="modal">Fechar</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<style>
-    .bg-primary.bg-opacity-10 { background-color: rgba(79, 70, 229, 0.1) !important; }
-    .text-primary { color: #4f46e5 !important; }
-    .btn-primary { background-color: #4f46e5; border: none; }
-    .btn-primary:hover { background-color: #3f36c5; }
-</style>
 {% endblock %}

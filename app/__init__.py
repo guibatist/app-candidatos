@@ -1,29 +1,23 @@
 from flask import Flask
-import os
+from app.routes.public import public_bp
+from app.routes.auth import auth_bp
+from app.routes.superadmin import superadmin_bp
+from app.routes.crm import crm_bp
 
 def create_app():
     app = Flask(__name__)
-    
-    # Configurações Básicas
-    app.config['SECRET_KEY'] = 'sua_chave_secreta_aqui_mude_em_producao'
-    
-    # Caminho para os dados JSON 
-    app.config['DATA_DIR'] = os.path.join(app.root_path, 'data')
+    app.secret_key = 'sua_chave_secreta'
 
-    # Importação das Blueprints (Rotas) - CORRIGIDO cm_bp para crm_bp
-    from app.routes.auth import auth_bp
-    from app.routes.crm import crm_bp 
-    from app.routes.superadmin import superadmin_bp 
+    # 1. REGISTRE O SITE PRIMEIRO (Sem prefixo, ele é o dono da "/")
+    app.register_blueprint(public_bp)
 
-    # Registro das Blueprints
+    # 2. AUTH (Geralmente /login, /logout)
     app.register_blueprint(auth_bp, url_prefix='/auth')
-    app.register_blueprint(crm_bp, url_prefix='/crm')
-    app.register_blueprint(superadmin_bp, url_prefix='/master')
 
-    # Rota de redirecionamento inicial
-    @app.route('/')
-    def index():
-        from flask import redirect, url_for
-        return redirect(url_for('auth.login'))
+    # 3. CRM (IMPORTANTE: Adicione um prefixo aqui para desocupar a "/")
+    app.register_blueprint(crm_bp, url_prefix='/crm')
+
+    # 4. SUPERADMIN
+    app.register_blueprint(superadmin_bp, url_prefix='/master')
 
     return app

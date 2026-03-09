@@ -1,4 +1,5 @@
 from app import create_app
+from app.routes.public import public_bp
 
 app = create_app()
 
