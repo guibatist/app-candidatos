@@ -2,7 +2,9 @@
 {% block content %}
 
 <style>
-    /* Estilos Premium para Notificações */
+    /* ==========================================
+       ESTILOS PREMIUM PARA NOTIFICAÇÕES
+       ========================================== */
     .nav-pills-custom .nav-link {
         color: #64748b;
         font-weight: 600;
@@ -22,9 +24,7 @@
         box-shadow: 0 4px 10px rgba(79, 70, 229, 0.2); 
     }
     
-    /* ==========================================
-       BLINDAGEM CONTRA O VAZAMENTO DA SIDEBAR
-       ========================================== */
+    /* BLINDAGEM CONTRA O VAZAMENTO DA SIDEBAR */
     .nav-pills-custom .nav-item {
         background-color: transparent !important;
         border-left: none !important;
@@ -32,7 +32,7 @@
     .nav-pills-custom .nav-item:hover {
         background-color: transparent !important;
     }
-    
+
     /* BLINDAGEM CONTRA O FUNDO PRETO NOS LINKS */
     a.notification-link {
         display: block;
@@ -87,7 +87,7 @@
         <div class="d-flex align-items-center gap-3">
             {% if total_notificacoes > 0 %}
                 <form action="{{ url_for('crm.limpar_notificacoes') }}" method="POST" class="m-0">
-                    <button type="submit" class="btn btn-light border shadow-sm rounded-pill px-4 fw-bold text-muted hover-primary">
+                    <button type="submit" class="btn btn-light border shadow-sm rounded-pill px-4 fw-bold text-muted btn-limpar">
                         <i class="fa-solid fa-check-double me-2"></i>Marcar tudo como lido
                     </button>
                 </form>
@@ -102,14 +102,17 @@
                 <li class="nav-item" role="presentation">
                     <button class="nav-link active d-flex align-items-center gap-2" id="msg-tab" data-bs-toggle="pill" data-bs-target="#msg-pane" type="button" role="tab">
                         <i class="fa-solid fa-comment-dots"></i> Mensagens
-                        {% if total_notificacoes > 0 %}
-                            <span class="badge bg-white text-primary rounded-pill ms-1">{{ total_notificacoes }}</span>
+                        {% if msgs_nao_lidas and msgs_nao_lidas > 0 %}
+                            <span class="badge bg-danger rounded-pill ms-1">{{ msgs_nao_lidas }}</span>
                         {% endif %}
                     </button>
                 </li>
                 <li class="nav-item" role="presentation">
                     <button class="nav-link d-flex align-items-center gap-2" id="tarefas-tab" data-bs-toggle="pill" data-bs-target="#tarefas-pane" type="button" role="tab">
                         <i class="fa-solid fa-list-check"></i> Tarefas & Sistema
+                        {% if tarefas_pendentes and tarefas_pendentes > 0 %}
+                            <span class="badge bg-warning text-dark rounded-pill ms-1">{{ tarefas_pendentes }}</span>
+                        {% endif %}
                     </button>
                 </li>
             </ul>
@@ -120,7 +123,7 @@
                     {% if alertas_chat %}
                         <div class="d-flex flex-column gap-3">
                             {% for alerta in alertas_chat %}
-                            <a href="{{ url_for('crm.chat', destinatario_id=alerta.remetente_id) }}" class="text-decoration-none text-dark">
+                            <a href="{{ url_for('crm.chat', destinatario_id=alerta.remetente_id) }}" class="notification-link text-dark">
                                 <div class="card border-0 rounded-4 shadow-sm notification-card p-3">
                                     <div class="d-flex justify-content-between align-items-center">
                                         <div class="d-flex align-items-center gap-3">
@@ -161,13 +164,47 @@
                 </div>
 
                 <div class="tab-pane fade" id="tarefas-pane" role="tabpanel" tabindex="0">
-                    <div class="card border-0 rounded-4 shadow-sm text-center py-5 bg-light border border-dashed">
-                        <div class="my-4 opacity-75">
-                            <div class="text-muted mb-3"><i class="fa-solid fa-list-check fa-3x"></i></div>
-                            <h5 class="fw-bold text-dark">Gestor de Tarefas</h5>
-                            <p class="text-muted mb-0">Em breve, a coordenação poderá delegar visitas a bairros<br>e organização de eventos diretamente por aqui.</p>
+                    {% if tarefas_notificacoes %}
+                        <div class="d-flex flex-column gap-3">
+                            {% for tarefa in tarefas_notificacoes %}
+                            <div class="card border-0 rounded-4 shadow-sm p-3 border-start border-4 border-{{ tarefa.cor }}" style="background-color: #ffffff;">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div class="avatar-wrapper">
+                                            <div class="bg-{{ tarefa.cor }} bg-opacity-10 text-{{ tarefa.cor }} rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width: 50px; height: 50px; font-size: 1.2rem;">
+                                                <i class="fa-solid {{ tarefa.icone }}"></i>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <h6 class="mb-0 fw-bold text-dark">{{ tarefa.titulo }}</h6>
+                                            {% if tarefa.descricao %}
+                                                <p class="mb-1 text-muted small">{{ tarefa.descricao }}</p>
+                                            {% endif %}
+                                            <p class="mb-0 text-muted small">
+                                                <span class="fw-bold text-{{ tarefa.cor }}">{{ tarefa.mensagem }}</span> 
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div class="text-end">
+                                        <button class="btn btn-sm btn-outline-success rounded-pill px-3 shadow-sm">
+                                            <i class="fa-solid fa-check me-1"></i> Concluir
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
                         </div>
-                    </div>
+                    {% else %}
+                        <div class="card border-0 rounded-4 shadow-sm text-center py-5 bg-white">
+                            <div class="my-4">
+                                <div class="bg-success bg-opacity-10 text-success rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
+                                    <i class="fa-solid fa-check-double fa-2x"></i>
+                                </div>
+                                <h4 class="fw-bold text-dark">Agenda Limpa</h4>
+                                <p class="text-muted mb-0">Você não tem tarefas pendentes ou em atraso para cumprir.</p>
+                            </div>
+                        </div>
+                    {% endif %}
                 </div>
 
             </div> </div>

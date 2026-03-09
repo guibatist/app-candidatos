@@ -263,43 +263,7 @@ def listar_equipe():
     return render_template('crm/equipe.html', equipe=equipe)
 
 
-# === BLOCO 7: FUNÇÕES DE CHAT ===
-@crm_bp.context_processor
-def injetar_notificacoes():
-    """
-    Injeta o contador de notificações globalmente em todas as páginas do CRM.
-    Verifica mensagens não lidas e (futuramente) tarefas pendentes.
-    """
-    if 'user_id' not in session:
-        return dict(total_notificacoes=0)
-        
-    user_id = session.get('user_id')
-    conn = get_db_connection()
-    msgs_nao_lidas = 0
-    
-    if conn:
-        try:
-            with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-                # Conta mensagens não lidas direcionadas a este utilizador
-                cursor.execute("""
-                    SELECT COUNT(*) as total FROM mensagens 
-                    WHERE destinatario_id = %s AND lida = FALSE AND apagada = FALSE
-                """, (user_id,))
-                resultado = cursor.fetchone()
-                if resultado:
-                    msgs_nao_lidas = resultado['total']
-        except Exception as e:
-            print(f"Erro no motor de notificações: {e}")
-        finally:
-            conn.close()
-            
-    # Aqui, futuramente, somaremos as Tarefas Pendentes (msgs_nao_lidas + tarefas_pendentes)
-    return dict(total_notificacoes=msgs_nao_lidas)
-
-
-# ==========================================
-# NOVA ROTA: PÁGINA DE NOTIFICAÇÕES
-# ==========================================
+# === BLOCO 7: FUNÇÕES DE CHAT E NOTIFICAÇÕES ===
 
 @crm_bp.route('/chat/<destinatario_id>', methods=['GET', 'POST'])
 def chat(destinatario_id):
@@ -412,23 +376,44 @@ def editar_mensagem(mensagem_id):
 
     return redirect(url_for('crm.chat', destinatario_id=destinatario_id))
 
+@crm_bp.context_processor
+def injetar_notificacoes():
+    if 'user_id' not in session:
+        return dict(total_notificacoes=0, msgs_nao_lidas=0, tarefas_pendentes=0)
 
-# === BLOCO: APIs DE SUPORTE AO FRONT-END ===
-@crm_bp.route('/api/apoiadores/busca')
-def api_busca_apoiadores():
-    """Endpoint para busca dinâmica via JavaScript (Autocomplete)"""
-    ctx = obter_contexto_acesso()
-    if not ctx: return jsonify([])
-    
-    termo = request.args.get('q', '')
-    # O CRMService agora encapsula a query SQL de busca
-    resultados = CRMService.buscar_apoiadores_por_nome(ctx['cliente_id'], termo)
-    return jsonify(resultados)
+    user_id = session.get('user_id')
+    conn = get_db_connection()
+    msgs_nao_lidas = 0
+    tarefas_pendentes = 0
+
+    if conn:
+        try:
+            with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+                # 1. Mensagens
+                cursor.execute("""
+                    SELECT COUNT(*) as total FROM mensagens 
+                    WHERE destinatario_id = %s AND lida = FALSE AND apagada = FALSE
+                """, (user_id,))
+                res1 = cursor.fetchone()
+                if res1: msgs_nao_lidas = res1['total']
+
+                # 2. Tarefas Pendentes (Leitura direta e exata)
+                cursor.execute("""
+                    SELECT COUNT(*) as total FROM tarefas 
+                    WHERE assessor_id = %s AND status = 'pendente'
+                """, (user_id,))
+                res2 = cursor.fetchone()
+                if res2: tarefas_pendentes = res2['total']
+                
+        except Exception as e:
+            print(f"Erro no context_processor: {e}")
+        finally:
+            conn.close()
+            
+    total = msgs_nao_lidas + tarefas_pendentes
+    return dict(total_notificacoes=total, msgs_nao_lidas=msgs_nao_lidas, tarefas_pendentes=tarefas_pendentes)
 
 
-# ==========================================
-# NOVA ROTA: PÁGINA DE NOTIFICAÇÕES
-# ==========================================
 @crm_bp.route('/notificacoes', methods=['GET'])
 def notificacoes():
     ctx = obter_contexto_acesso()
@@ -437,10 +422,11 @@ def notificacoes():
     user_id = session.get('user_id')
     conn = get_db_connection()
     alertas_chat = []
+    tarefas_notificacoes = []
     
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-            # Agrupa as mensagens não lidas por remetente para criar alertas organizados
+            # 1. Mensagens
             cursor.execute("""
                 SELECT m.remetente_id, u.nome, COUNT(m.id) as qtd, MAX(m.data_envio) as ultima_msg
                 FROM mensagens m
@@ -451,12 +437,62 @@ def notificacoes():
             """, (user_id,))
             alertas_chat = cursor.fetchall()
             
+            # 2. Tarefas (Leitura direta dos dados reais da sua tabela)
+            cursor.execute("""
+                SELECT id, tipo, descricao, data_limite
+                FROM tarefas
+                WHERE assessor_id = %s AND status = 'pendente'
+                ORDER BY data_limite ASC
+            """, (user_id,))
+            tarefas_db = cursor.fetchall()
+            
+            from datetime import datetime, timedelta
+            hoje = datetime.now().date()
+            amanha = hoje + timedelta(days=1)
+            
+            for t in tarefas_db:
+                venc = t['data_limite']
+                
+                # Previne erros caso a data venha como string do Postgres
+                if isinstance(venc, str):
+                    try:
+                        venc = datetime.strptime(venc, '%Y-%m-%d').date()
+                    except ValueError:
+                        venc = None
+                elif isinstance(venc, datetime):
+                    venc = venc.date()
+
+                titulo = t['tipo'] or 'Tarefa'
+                descricao = t['descricao'] or ''
+                
+                if not venc:
+                    cor, icone, msg = 'secondary', 'fa-thumbtack', "Sem data"
+                elif venc < hoje:
+                    cor, icone, msg = 'danger', 'fa-triangle-exclamation', f"Atrasada (era para {venc.strftime('%d/%m')})"
+                elif venc == hoje:
+                    cor, icone, msg = 'primary', 'fa-calendar-day', "Vence HOJE"
+                elif venc == amanha:
+                    cor, icone, msg = 'warning', 'fa-clock', "Para amanhã"
+                else:
+                    cor, icone, msg = 'info', 'fa-calendar-check', f"Para dia {venc.strftime('%d/%m')}"
+
+                tarefas_notificacoes.append({
+                    'titulo': titulo,
+                    'descricao': descricao,
+                    'mensagem': msg,
+                    'cor': cor,
+                    'icone': icone
+                })
+                    
     except Exception as e:
-        print(f"Erro ao carregar ecrã de notificações: {e}")
+        print(f"Erro nas notificações: {e}")
     finally:
         if conn: conn.close()
         
-    return render_template('crm/notificacoes.html', alertas_chat=alertas_chat, permissoes=ctx['permissoes'])
+    return render_template('crm/notificacoes.html', 
+                           alertas_chat=alertas_chat, 
+                           tarefas_notificacoes=tarefas_notificacoes,
+                           permissoes=ctx['permissoes'])
 
 @crm_bp.route('/notificacoes/limpar', methods=['POST'])
 def limpar_notificacoes():
@@ -482,3 +518,17 @@ def limpar_notificacoes():
         if conn: conn.close()
         
     return redirect(url_for('crm.notificacoes'))
+
+
+# === BLOCO: APIs DE SUPORTE AO FRONT-END ===
+@crm_bp.route('/api/apoiadores/busca')
+def api_busca_apoiadores():
+    """Endpoint para busca dinâmica via JavaScript (Autocomplete)"""
+    ctx = obter_contexto_acesso()
+    if not ctx: return jsonify([])
+    
+    termo = request.args.get('q', '')
+    # O CRMService agora encapsula a query SQL de busca
+    resultados = CRMService.buscar_apoiadores_por_nome(ctx['cliente_id'], termo)
+    return jsonify(resultados)
+
