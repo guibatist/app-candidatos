@@ -2,14 +2,24 @@
 {% block content %}
 
 <style>
+    /* === IDENTIDADE VISUAL VOTAHUB CHAT === */
+    :root {
+        --chat-bg: #f8fafc;        /* Cinza muito claro, executivo */
+        --chat-primary: #4f46e5;   /* O Índigo do site Institucional */
+        --chat-primary-dark: #3730a3;
+        --text-light: #ffffff;
+        --text-dark: #1e293b;
+    }
+
     .chat-container {
         height: calc(100vh - 180px);
         display: flex;
         flex-direction: column;
-        background-color: #efeae2; 
+        background-color: var(--chat-bg); 
         border-radius: 16px;
         overflow: hidden;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.03);
+        border: 1px solid #e2e8f0;
     }
     
     .chat-header {
@@ -19,61 +29,97 @@
         display: flex;
         align-items: center;
         gap: 15px;
+        z-index: 2;
     }
 
     .chat-messages {
         flex: 1;
         overflow-y: auto;
-        padding: 20px;
+        padding: 25px 20px;
         display: flex;
         flex-direction: column;
-        gap: 10px;
+        gap: 12px;
     }
 
+    /* === BOLHAS DE MENSAGEM === */
     .msg-bubble {
         max-width: 75%;
-        padding: 10px 15px;
-        border-radius: 12px;
+        padding: 12px 18px;
+        border-radius: 18px;
         position: relative;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.1);
         word-wrap: break-word;
+        font-size: 0.95rem;
+        line-height: 1.4;
     }
 
+    /* Mensagem que EU envio (Índigo Executivo) */
     .msg-sent {
         align-self: flex-end;
-        background-color: #d9fdd3; 
-        border-top-right-radius: 0;
+        background-color: var(--chat-primary); 
+        color: var(--text-light);
+        border-bottom-right-radius: 4px; /* Ponta sutil */
+        box-shadow: 0 4px 10px rgba(79, 70, 229, 0.2);
     }
 
+    /* Mensagem que ELES enviam (Branco Limpo) */
     .msg-received {
         align-self: flex-start;
         background-color: #ffffff;
-        border-top-left-radius: 0;
+        color: var(--text-dark);
+        border-bottom-left-radius: 4px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        border: 1px solid #f1f5f9;
     }
 
+    /* === TIMESTAMPS === */
     .msg-time {
         font-size: 0.65rem;
-        color: #667781;
-        margin-top: 4px;
+        margin-top: 6px;
+        font-weight: 500;
+        letter-spacing: 0.5px;
+    }
+    .msg-sent .msg-time { color: rgba(255, 255, 255, 0.7); }
+    .msg-received .msg-time { color: #94a3b8; }
+
+    /* === CAIXA DE CITAÇÃO (REPLY) === */
+    .reply-box-sent {
+        background-color: rgba(255, 255, 255, 0.15);
+        border-left: 4px solid #ffffff;
+        border-radius: 6px;
+        padding: 8px 10px;
+        margin-bottom: 8px;
+    }
+    .reply-box-received {
+        background-color: #f1f5f9;
+        border-left: 4px solid var(--chat-primary);
+        border-radius: 6px;
+        padding: 8px 10px;
+        margin-bottom: 8px;
     }
 
+    /* === ÁREA DE DIGITAÇÃO === */
     .chat-input-area {
-        background-color: #f0f2f5;
+        background-color: #ffffff;
         padding: 15px 20px;
+        border-top: 1px solid #e2e8f0;
         display: flex;
-        gap: 10px;
+        gap: 12px;
         align-items: center;
+        z-index: 11;
     }
 
     .chat-input-area input {
-        border-radius: 24px;
-        padding: 12px 20px;
-        border: none;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        border-radius: 30px;
+        padding: 14px 24px;
+        border: 1px solid #e2e8f0;
+        background-color: #f8fafc;
+        transition: all 0.3s;
     }
     
     .chat-input-area input:focus {
-        box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        background-color: #ffffff;
+        border-color: var(--chat-primary);
+        box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
         outline: none;
     }
 </style>
@@ -96,53 +142,61 @@
 
         <div class="chat-messages" id="chatBox">
             {% for msg in mensagens %}
-                {% set alinhamento = 'msg-sent' if msg.remetente_id == meu_id else 'msg-received' %}
+                {% set is_mine = (msg.remetente_id == meu_id) %}
+                {% set alinhamento = 'msg-sent' if is_mine else 'msg-received' %}
                 
                 <div class="msg-bubble {{ alinhamento }} d-flex align-items-start gap-2">
                     <div class="flex-grow-1" style="min-width: 120px;">
                         
                         {% if msg.respondendo_a_conteudo %}
-                        <div class="p-2 mb-2 rounded bg-dark bg-opacity-10 border-start border-4 border-primary" style="font-size: 0.8rem;">
-                            <div class="fw-bold opacity-75">
-                                {% if msg.respondendo_a_remetente == meu_id %}Você{% else %}{{ destinatario.nome }}{% endif %}
+                            {% set reply_class = 'reply-box-sent' if is_mine else 'reply-box-received' %}
+                            <div class="{{ reply_class }}" style="font-size: 0.8rem;">
+                                <div class="fw-bold {% if is_mine %}text-white{% else %}text-primary{% endif %} opacity-75 mb-1" style="font-size: 0.75rem;">
+                                    {% if msg.respondendo_a_remetente == meu_id %}Você{% else %}{{ destinatario.nome }}{% endif %}
+                                </div>
+                                <div class="text-truncate" style="max-width: 200px; {% if is_mine %}color: rgba(255,255,255,0.9);{% else %}color: #475569;{% endif %}">
+                                    {{ msg.respondendo_a_conteudo }}
+                                </div>
                             </div>
-                            <div class="text-truncate" style="max-width: 200px;">{{ msg.respondendo_a_conteudo }}</div>
-                        </div>
                         {% endif %}
 
                         {% if msg.apagada %}
-                            <div class="text-muted fst-italic"><i class="fa-solid fa-ban me-1"></i> Mensagem apagada</div>
+                            <div class="fst-italic opacity-50"><i class="fa-solid fa-ban me-1"></i> Mensagem apagada</div>
                         {% else %}
-                            <div class="text-dark">{{ msg.conteudo }}</div>
+                            <div>{{ msg.conteudo }}</div>
                         {% endif %}
                         
                         <span class="msg-time d-flex justify-content-end align-items-center gap-1">
                             {{ msg.data_envio_local.strftime('%H:%M') }}
-                            {% if msg.remetente_id == meu_id %}
-                                {% if msg.lida %}<i class="fa-solid fa-check-double text-info"></i>{% else %}<i class="fa-solid fa-check"></i>{% endif %}
+                            {% if is_mine %}
+                                {% if msg.lida %}
+                                    <i class="fa-solid fa-check-double" style="color: #a5b4fc;"></i>
+                                {% else %}
+                                    <i class="fa-solid fa-check" style="opacity: 0.7;"></i>
+                                {% endif %}
                             {% endif %}
                         </span>
                     </div>
 
                     {% if not msg.apagada %}
                     <div class="dropdown">
-                        <button class="btn btn-sm btn-link text-muted p-0 border-0" type="button" data-bs-toggle="dropdown">
+                        <button class="btn btn-sm btn-link p-0 border-0 {% if is_mine %}text-white opacity-75{% else %}text-muted{% endif %}" type="button" data-bs-toggle="dropdown">
                             <i class="fa-solid fa-chevron-down" style="font-size: 0.7rem;"></i>
                         </button>
-                        <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" style="font-size: 0.85rem;">
+                        <ul class="dropdown-menu dropdown-menu-end shadow border-0" style="font-size: 0.85rem; border-radius: 12px;">
                             <li>
-                                <button type="button" class="dropdown-item text-primary btn-responder" 
+                                <button type="button" class="dropdown-item text-primary btn-responder py-2" 
                                         data-msg-id="{{ msg.id }}" 
-                                        data-msg-nome="{% if msg.remetente_id == meu_id %}Você{% else %}{{ destinatario.nome }}{% endif %}"
+                                        data-msg-nome="{% if is_mine %}Você{% else %}{{ destinatario.nome }}{% endif %}"
                                         data-msg-texto="{{ msg.conteudo }}">
                                     <i class="fa-solid fa-reply me-2"></i>Responder
                                 </button>
                             </li>
-                            {% if msg.remetente_id == meu_id %}
+                            {% if is_mine %}
                             <li>
                                 <form action="{{ url_for('crm.apagar_mensagem', mensagem_id=msg.id) }}" method="POST" class="m-0 p-0">
                                     <input type="hidden" name="destinatario_id" value="{{ destinatario.id }}">
-                                    <button type="submit" class="dropdown-item text-danger"><i class="fa-solid fa-trash me-2"></i>Apagar</button>
+                                    <button type="submit" class="dropdown-item text-danger py-2"><i class="fa-solid fa-trash me-2"></i>Apagar</button>
                                 </form>
                             </li>
                             {% endif %}
@@ -152,8 +206,11 @@
                 </div>
             {% else %}
                 <div class="text-center text-muted my-auto opacity-50">
-                    <i class="fa-solid fa-comments fa-3x mb-2"></i>
-                    <p>Nenhuma mensagem ainda. Inicie a conversa!</p>
+                    <div class="bg-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3 shadow-sm" style="width: 80px; height: 80px;">
+                        <i class="fa-solid fa-bolt-lightning fa-2x text-primary"></i>
+                    </div>
+                    <h5 class="fw-bold text-dark">Canal Seguro</h5>
+                    <p>Inicie a comunicação estratégica com sua equipe.</p>
                 </div>
             {% endfor %}
         </div>
