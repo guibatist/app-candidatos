@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+    .chat-container {
+        height: calc(100vh - 180px); /* Altura dinâmica baseada na tela */
+        display: flex;
+        flex-direction: column;
+        background-color: #efeae2; /* Fundo clássico de chat */
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    }
+    
+    .chat-header {
+        background-color: #ffffff;
+        padding: 15px 20px;
+        border-bottom: 1px solid #e2e8f0;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .chat-messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    /* Bolhas de Mensagem */
+    .msg-bubble {
+        max-width: 75%;
+        padding: 10px 15px;
+        border-radius: 12px;
+        position: relative;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        word-wrap: break-word;
+    }
+
+    .msg-sent {
+        align-self: flex-end;
+        background-color: #d9fdd3; /* Verde clarinho */
+        border-top-right-radius: 0;
+    }
+
+    .msg-received {
+        align-self: flex-start;
+        background-color: #ffffff;
+        border-top-left-radius: 0;
+    }
+
+    .msg-time {
+        font-size: 0.65rem;
+        color: #667781;
+        text-align: right;
+        margin-top: 4px;
+        display: block;
+    }
+
+    .chat-input-area {
+        background-color: #f0f2f5;
+        padding: 15px 20px;
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+
+    .chat-input-area input {
+        border-radius: 24px;
+        padding: 12px 20px;
+        border: none;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+    
+    .chat-input-area input:focus {
+        box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        outline: none;
+    }
+</style>
+
+<div class="container-fluid py-4">
+    <a href="{{ url_for('crm.minha_equipe') }}" class="btn btn-sm btn-light text-muted mb-3 border-0 shadow-sm fw-bold">
+        <i class="fa-solid fa-arrow-left me-2"></i> Voltar para Equipe
+    </a>
+
+    <div class="chat-container">
+        <div class="chat-header">
+            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold shadow-sm" style="width: 45px; height: 45px; font-size: 1.2rem;">
+                {{ destinatario.nome[0] | upper }}
+            </div>
+            <div>
+                <h5 class="mb-0 fw-bold">{{ destinatario.nome }}</h5>
+                <span class="badge bg-light text-dark border">{{ destinatario.role | capitalize }}</span>
+            </div>
+        </div>
+
+        <div class="chat-messages" id="chatBox">
+            {% for msg in mensagens %}
+                {% if msg.remetente_id == meu_id %}
+                    <div class="msg-bubble msg-sent">
+                        <div class="text-dark">{{ msg.conteudo }}</div>
+                        <span class="msg-time">
+                            {{ msg.data_envio.strftime('%H:%M') }}
+                            {% if msg.lida %}
+                                <i class="fa-solid fa-check-double text-info ms-1"></i>
+                            {% else %}
+                                <i class="fa-solid fa-check ms-1"></i>
+                            {% endif %}
+                        </span>
+                    </div>
+                {% else %}
+                    <div class="msg-bubble msg-received">
+                        <div class="text-dark">{{ msg.conteudo }}</div>
+                        <span class="msg-time">{{ msg.data_envio.strftime('%H:%M') }}</span>
+                    </div>
+                {% endif %}
+            {% else %}
+                <div class="text-center text-muted my-auto opacity-50">
+                    <i class="fa-solid fa-comments fa-3x mb-2"></i>
+                    <p>Nenhuma mensagem ainda. Inicie a conversa!</p>
+                </div>
+            {% endfor %}
+        </div>
+
+        <div class="chat-input-area">
+            <form action="{{ url_for('crm.chat', destinatario_id=destinatario.id) }}" method="POST" class="w-100 d-flex gap-2 m-0">
+                <input type="text" name="conteudo" class="form-control" placeholder="Digite uma mensagem..." required autocomplete="off" autofocus>
+                <button type="submit" class="btn btn-primary rounded-circle shadow-sm" style="width: 48px; height: 48px; flex-shrink: 0;">
+                    <i class="fa-solid fa-paper-plane"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Rolar automaticamente para a última mensagem ao carregar a página
+    document.addEventListener("DOMContentLoaded", function() {
+        const chatBox = document.getElementById("chatBox");
+        chatBox.scrollTop = chatBox.scrollHeight;
+    });
+</script>
+
+{% endblock %}

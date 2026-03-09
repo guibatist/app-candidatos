@@ -263,6 +263,80 @@ def listar_equipe():
     return render_template('crm/equipe.html', equipe=equipe)
 
 
+# === BLOCO 7: FUNÇÕES DE CHAT ===
+@crm_bp.route('/chat/<destinatario_id>', methods=['GET', 'POST'])
+def chat(destinatario_id):
+    """
+    Sistema de Mensageria Interna da Campanha.
+    """
+    ctx = obter_contexto_acesso()
+    if not ctx:
+        return redirect(url_for('auth.login'))
+        
+    remetente_id = session.get('user_id')
+    
+    # Previne que o usuário converse consigo mesmo
+    if remetente_id == destinatario_id:
+        flash('Você não pode iniciar um chat consigo mesmo.', 'warning')
+        return redirect(url_for('crm.minha_equipe'))
+
+    conn = get_db_connection()
+    if not conn:
+        flash('Erro de conexão com o banco.', 'danger')
+        return redirect(url_for('crm.minha_equipe'))
+
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            # 1. SE FOR POST (Enviando mensagem)
+            if request.method == 'POST':
+                conteudo = request.form.get('conteudo', '').strip()
+                if conteudo:
+                    cursor.execute("""
+                        INSERT INTO mensagens (remetente_id, destinatario_id, conteudo)
+                        VALUES (%s, %s, %s)
+                    """, (remetente_id, destinatario_id, conteudo))
+                    conn.commit()
+                return redirect(url_for('crm.chat', destinatario_id=destinatario_id))
+
+            # 2. SE FOR GET (Carregando a tela)
+            
+            # Buscar dados do destinatário (para mostrar no cabeçalho)
+            cursor.execute("SELECT id, nome, role FROM usuarios WHERE id = %s", (destinatario_id,))
+            destinatario = cursor.fetchone()
+            
+            if not destinatario:
+                flash('Usuário não encontrado.', 'danger')
+                return redirect(url_for('crm.minha_equipe'))
+
+            # Marcar mensagens recebidas como lidas
+            cursor.execute("""
+                UPDATE mensagens SET lida = TRUE 
+                WHERE destinatario_id = %s AND remetente_id = %s AND lida = FALSE
+            """, (remetente_id, destinatario_id))
+            conn.commit()
+
+            # Buscar o histórico de conversas entre os dois
+            cursor.execute("""
+                SELECT * FROM mensagens 
+                WHERE (remetente_id = %s AND destinatario_id = %s)
+                   OR (remetente_id = %s AND destinatario_id = %s)
+                ORDER BY data_envio ASC
+            """, (remetente_id, destinatario_id, destinatario_id, remetente_id))
+            mensagens = cursor.fetchall()
+            
+    except Exception as e:
+        print(f"❌ Erro no chat: {e}")
+        conn.rollback()
+        flash('Erro ao carregar o chat.', 'danger')
+        return redirect(url_for('crm.minha_equipe'))
+    finally:
+        conn.close()
+
+    return render_template('crm/chat.html', 
+                           destinatario=destinatario, 
+                           mensagens=mensagens, 
+                           meu_id=remetente_id)
+
 # === BLOCO: APIs DE SUPORTE AO FRONT-END ===
 
 @crm_bp.route('/api/apoiadores/busca')
@@ -275,3 +349,4 @@ def api_busca_apoiadores():
     # O CRMService agora encapsula a query SQL de busca
     resultados = CRMService.buscar_apoiadores_por_nome(ctx['cliente_id'], termo)
     return jsonify(resultados)
+
