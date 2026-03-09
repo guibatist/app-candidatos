@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+    /* Estilos Premium para Notificações */
+    .nav-pills-custom .nav-link {
+        color: #64748b;
+        font-weight: 600;
+        border-radius: 30px;
+        padding: 8px 20px;
+        margin-right: 10px;
+        transition: all 0.3s;
+        background-color: transparent; /* Impede herança de cor escura */
+    }
+    .nav-pills-custom .nav-link:hover { 
+        background-color: #f1f5f9 !important; /* Força um cinza ultra claro no hover */
+        color: #1e293b !important; 
+    }
+    .nav-pills-custom .nav-link.active { 
+        background-color: #4f46e5 !important; 
+        color: #ffffff !important; 
+        box-shadow: 0 4px 10px rgba(79, 70, 229, 0.2); 
+    }
+    
+    /* ==========================================
+       BLINDAGEM CONTRA O VAZAMENTO DA SIDEBAR
+       ========================================== */
+    .nav-pills-custom .nav-item {
+        background-color: transparent !important;
+        border-left: none !important;
+    }
+    .nav-pills-custom .nav-item:hover {
+        background-color: transparent !important;
+    }
+    
+    /* BLINDAGEM CONTRA O FUNDO PRETO NOS LINKS */
+    a.notification-link {
+        display: block;
+        text-decoration: none;
+        background-color: transparent !important;
+    }
+    a.notification-link:hover, 
+    a.notification-link:focus {
+        background-color: transparent !important;
+        outline: none;
+    }
+
+    .notification-card {
+        transition: all 0.3s ease;
+        border-left: 4px solid transparent;
+        background-color: #ffffff;
+    }
+    .notification-card:hover {
+        transform: translateX(5px);
+        border-left: 4px solid #4f46e5;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.05) !important;
+        background-color: #f8fafc;
+    }
+    
+    .avatar-wrapper { position: relative; }
+    .status-dot {
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        width: 12px;
+        height: 12px;
+        background-color: #22c55e;
+        border: 2px solid #ffffff;
+        border-radius: 50%;
+    }
+
+    /* Botão de Limpar */
+    .btn-limpar { transition: all 0.3s; }
+    .btn-limpar:hover {
+        background-color: #f1f5f9 !important;
+        color: #4f46e5 !important;
+    }
+</style>
+
+<div class="container-fluid py-4">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+        <div>
+            <h2 class="fw-bold mb-0 text-dark"><i class="fa-regular fa-bell me-2 text-primary"></i>Caixa de Entrada</h2>
+            <p class="text-muted mb-0 mt-1">Gira as suas comunicações e obrigações operacionais.</p>
+        </div>
+        
+        <div class="d-flex align-items-center gap-3">
+            {% if total_notificacoes > 0 %}
+                <form action="{{ url_for('crm.limpar_notificacoes') }}" method="POST" class="m-0">
+                    <button type="submit" class="btn btn-light border shadow-sm rounded-pill px-4 fw-bold text-muted hover-primary">
+                        <i class="fa-solid fa-check-double me-2"></i>Marcar tudo como lido
+                    </button>
+                </form>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            
+            <ul class="nav nav-pills nav-pills-custom mb-4 border-bottom pb-3" id="notificationTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active d-flex align-items-center gap-2" id="msg-tab" data-bs-toggle="pill" data-bs-target="#msg-pane" type="button" role="tab">
+                        <i class="fa-solid fa-comment-dots"></i> Mensagens
+                        {% if total_notificacoes > 0 %}
+                            <span class="badge bg-white text-primary rounded-pill ms-1">{{ total_notificacoes }}</span>
+                        {% endif %}
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link d-flex align-items-center gap-2" id="tarefas-tab" data-bs-toggle="pill" data-bs-target="#tarefas-pane" type="button" role="tab">
+                        <i class="fa-solid fa-list-check"></i> Tarefas & Sistema
+                    </button>
+                </li>
+            </ul>
+
+            <div class="tab-content" id="notificationTabsContent">
+                
+                <div class="tab-pane fade show active" id="msg-pane" role="tabpanel" tabindex="0">
+                    {% if alertas_chat %}
+                        <div class="d-flex flex-column gap-3">
+                            {% for alerta in alertas_chat %}
+                            <a href="{{ url_for('crm.chat', destinatario_id=alerta.remetente_id) }}" class="text-decoration-none text-dark">
+                                <div class="card border-0 rounded-4 shadow-sm notification-card p-3">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div class="d-flex align-items-center gap-3">
+                                            <div class="avatar-wrapper">
+                                                <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width: 50px; height: 50px; font-size: 1.2rem;">
+                                                    {{ alerta.nome[0] | upper }}
+                                                </div>
+                                                <div class="status-dot"></div>
+                                            </div>
+                                            <div>
+                                                <h6 class="mb-1 fw-bold">{{ alerta.nome }}</h6>
+                                                <p class="mb-0 text-muted small">
+                                                    Tem <span class="fw-bold text-dark">{{ alerta.qtd }} novas mensagens</span> à sua espera no chat seguro.
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div class="text-end">
+                                            <span class="badge bg-danger rounded-pill px-3 py-2 shadow-sm">{{ alerta.qtd }}</span>
+                                            <div class="text-muted small mt-2"><i class="fa-solid fa-clock me-1"></i>Pendente</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </a>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="card border-0 rounded-4 shadow-sm text-center py-5 bg-white">
+                            <div class="my-4">
+                                <div class="bg-success bg-opacity-10 text-success rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
+                                    <i class="fa-solid fa-inbox fa-2x"></i>
+                                </div>
+                                <h4 class="fw-bold text-dark">Zero Inbox Alcançado</h4>
+                                <p class="text-muted mb-0">Não tem mensagens pendentes da sua equipa.</p>
+                                <p class="text-muted small">Pode voltar ao painel principal ou consultar a geointeligência.</p>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="tab-pane fade" id="tarefas-pane" role="tabpanel" tabindex="0">
+                    <div class="card border-0 rounded-4 shadow-sm text-center py-5 bg-light border border-dashed">
+                        <div class="my-4 opacity-75">
+                            <div class="text-muted mb-3"><i class="fa-solid fa-list-check fa-3x"></i></div>
+                            <h5 class="fw-bold text-dark">Gestor de Tarefas</h5>
+                            <p class="text-muted mb-0">Em breve, a coordenação poderá delegar visitas a bairros<br>e organização de eventos diretamente por aqui.</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div> </div>
+        
+        <div class="col-lg-4 d-none d-lg-block">
+            <div class="card border-0 rounded-4 shadow-sm bg-primary text-white overflow-hidden position-relative">
+                <div class="position-absolute end-0 top-0 opacity-10 p-3" style="font-size: 8rem; margin-top: -30px; margin-right: -20px;">
+                    <i class="fa-solid fa-bolt"></i>
+                </div>
+                
+                <div class="card-body p-4 position-relative z-index-1">
+                    <h5 class="fw-bold mb-3">Resumo da Campanha</h5>
+                    <ul class="list-unstyled mb-0" style="font-size: 0.9rem;">
+                        <li class="mb-3 d-flex align-items-center">
+                            <div class="bg-white bg-opacity-25 rounded p-2 me-3"><i class="fa-solid fa-users fa-fw"></i></div>
+                            <div>A sua equipa está <strong>ativa</strong></div>
+                        </li>
+                        <li class="mb-3 d-flex align-items-center">
+                            <div class="bg-white bg-opacity-25 rounded p-2 me-3"><i class="fa-solid fa-shield-halved fa-fw"></i></div>
+                            <div>Comunicações <strong>criptografadas</strong></div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+    </div>
+</div>
+
+{% endblock %}

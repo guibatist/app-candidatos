@@ -264,6 +264,43 @@ def listar_equipe():
 
 
 # === BLOCO 7: FUNÇÕES DE CHAT ===
+@crm_bp.context_processor
+def injetar_notificacoes():
+    """
+    Injeta o contador de notificações globalmente em todas as páginas do CRM.
+    Verifica mensagens não lidas e (futuramente) tarefas pendentes.
+    """
+    if 'user_id' not in session:
+        return dict(total_notificacoes=0)
+        
+    user_id = session.get('user_id')
+    conn = get_db_connection()
+    msgs_nao_lidas = 0
+    
+    if conn:
+        try:
+            with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+                # Conta mensagens não lidas direcionadas a este utilizador
+                cursor.execute("""
+                    SELECT COUNT(*) as total FROM mensagens 
+                    WHERE destinatario_id = %s AND lida = FALSE AND apagada = FALSE
+                """, (user_id,))
+                resultado = cursor.fetchone()
+                if resultado:
+                    msgs_nao_lidas = resultado['total']
+        except Exception as e:
+            print(f"Erro no motor de notificações: {e}")
+        finally:
+            conn.close()
+            
+    # Aqui, futuramente, somaremos as Tarefas Pendentes (msgs_nao_lidas + tarefas_pendentes)
+    return dict(total_notificacoes=msgs_nao_lidas)
+
+
+# ==========================================
+# NOVA ROTA: PÁGINA DE NOTIFICAÇÕES
+# ==========================================
+
 @crm_bp.route('/chat/<destinatario_id>', methods=['GET', 'POST'])
 def chat(destinatario_id):
     ctx = obter_contexto_acesso()
@@ -388,3 +425,60 @@ def api_busca_apoiadores():
     resultados = CRMService.buscar_apoiadores_por_nome(ctx['cliente_id'], termo)
     return jsonify(resultados)
 
+
+# ==========================================
+# NOVA ROTA: PÁGINA DE NOTIFICAÇÕES
+# ==========================================
+@crm_bp.route('/notificacoes', methods=['GET'])
+def notificacoes():
+    ctx = obter_contexto_acesso()
+    if not ctx: return redirect(url_for('auth.login'))
+    
+    user_id = session.get('user_id')
+    conn = get_db_connection()
+    alertas_chat = []
+    
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            # Agrupa as mensagens não lidas por remetente para criar alertas organizados
+            cursor.execute("""
+                SELECT m.remetente_id, u.nome, COUNT(m.id) as qtd, MAX(m.data_envio) as ultima_msg
+                FROM mensagens m
+                JOIN usuarios u ON m.remetente_id = u.id
+                WHERE m.destinatario_id = %s AND m.lida = FALSE AND m.apagada = FALSE
+                GROUP BY m.remetente_id, u.nome
+                ORDER BY ultima_msg DESC
+            """, (user_id,))
+            alertas_chat = cursor.fetchall()
+            
+    except Exception as e:
+        print(f"Erro ao carregar ecrã de notificações: {e}")
+    finally:
+        if conn: conn.close()
+        
+    return render_template('crm/notificacoes.html', alertas_chat=alertas_chat, permissoes=ctx['permissoes'])
+
+@crm_bp.route('/notificacoes/limpar', methods=['POST'])
+def limpar_notificacoes():
+    """Marca todas as mensagens direcionadas a este utilizador como lidas."""
+    ctx = obter_contexto_acesso()
+    if not ctx: return redirect(url_for('auth.login'))
+    
+    user_id = session.get('user_id')
+    conn = get_db_connection()
+    
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                UPDATE mensagens SET lida = TRUE 
+                WHERE destinatario_id = %s AND lida = FALSE
+            """, (user_id,))
+        conn.commit()
+        flash('Todas as notificações foram marcadas como lidas.', 'success')
+    except Exception as e:
+        print(f"Erro ao limpar notificações: {e}")
+        flash('Erro ao atualizar notificações.', 'danger')
+    finally:
+        if conn: conn.close()
+        
+    return redirect(url_for('crm.notificacoes'))

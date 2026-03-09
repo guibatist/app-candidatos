@@ -7,7 +7,8 @@
         --sidebar-hover: #1f2937;
         --sidebar-text: #9ca3af;
         --sidebar-active-text: #ffffff;
-        --sidebar-active-bg: #4f46e5; /* Corrigido para a sua cor primária original */
+        --sidebar-active-bg: #1f2937; /* Fundo ativo tranquilo (cinza escuro) */
+        --sidebar-active-border: #4f46e5; /* Apenas um detalhe lateral na cor primária */
     }
 
     #sidebar {
@@ -52,21 +53,34 @@
         white-space: nowrap;
         border-radius: 0 8px 8px 0;
         margin-right: 15px;
+        border-left: 3px solid transparent; /* Prepara o espaço para a borda ativa */
     }
 
-    .nav-item:hover { background-color: var(--sidebar-hover); color: var(--sidebar-active-text); }
+    .nav-item:hover { 
+        background-color: var(--sidebar-hover); 
+        color: var(--sidebar-active-text); 
+    }
 
-    .nav-item.active { background-color: var(--sidebar-active-bg); color: var(--sidebar-active-text); }
+    /* ESTILO ATIVO PREMIUM E TRANQUILO */
+    .nav-item.active { 
+        background-color: var(--sidebar-active-bg); 
+        color: var(--sidebar-active-text); 
+        border-left: 3px solid var(--sidebar-active-border);
+    }
 
     .nav-icon { width: 24px; font-size: 1.1rem; text-align: center; margin-right: 15px; }
 
     #sidebar.collapsed .nav-text { display: none; }
-    #sidebar.collapsed .nav-item { justify-content: center; padding: 15px 0; border-radius: 0; margin-right: 0;}
+    #sidebar.collapsed .nav-item { justify-content: center; padding: 15px 0; border-radius: 0; margin-right: 0; border-left: 3px solid transparent;}
+    #sidebar.collapsed .nav-item.active { border-left: 3px solid var(--sidebar-active-border); }
     #sidebar.collapsed .nav-icon { margin-right: 0; }
     
     /* Área de bloqueio (Premium) */
     .nav-item.locked { opacity: 0.5; cursor: not-allowed; }
     .nav-item.locked:hover { background-color: transparent; color: var(--sidebar-text); }
+
+    /* Esconde a bolinha de notificação quando a sidebar estiver fechada */
+    #sidebar.collapsed .hide-on-collapse { display: none !important; }
 </style>
 
 <nav id="sidebar">
@@ -106,6 +120,16 @@
             <a href="#" class="nav-item">
                 <i class="fa-solid fa-bullhorn nav-icon"></i>
                 <span class="nav-text">Central de Comunicação</span>
+            </a>
+
+            <a href="{{ url_for('crm.notificacoes') }}" class="nav-item {% if request.endpoint == 'crm.notificacoes' %}active{% endif %}">
+                <i class="fa-solid fa-bell nav-icon"></i>
+                <span class="nav-text">Notificações</span>
+                {% if total_notificacoes > 0 %}
+                    <span class="badge bg-danger rounded-pill shadow-sm ms-auto hide-on-collapse" style="font-size: 0.7rem;">
+                        {{ total_notificacoes }}
+                    </span>
+                {% endif %}
             </a>
 
             <div class="nav-category mt-4">Inteligência Estratégica</div>
