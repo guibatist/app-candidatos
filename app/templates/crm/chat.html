@@ -3,10 +3,10 @@
 
 <style>
     .chat-container {
-        height: calc(100vh - 180px); /* Altura dinâmica baseada na tela */
+        height: calc(100vh - 180px);
         display: flex;
         flex-direction: column;
-        background-color: #efeae2; /* Fundo clássico de chat */
+        background-color: #efeae2; 
         border-radius: 16px;
         overflow: hidden;
         box-shadow: 0 4px 15px rgba(0,0,0,0.05);
@@ -30,7 +30,6 @@
         gap: 10px;
     }
 
-    /* Bolhas de Mensagem */
     .msg-bubble {
         max-width: 75%;
         padding: 10px 15px;
@@ -42,7 +41,7 @@
 
     .msg-sent {
         align-self: flex-end;
-        background-color: #d9fdd3; /* Verde clarinho */
+        background-color: #d9fdd3; 
         border-top-right-radius: 0;
     }
 
@@ -55,9 +54,7 @@
     .msg-time {
         font-size: 0.65rem;
         color: #667781;
-        text-align: right;
         margin-top: 4px;
-        display: block;
     }
 
     .chat-input-area {
@@ -86,7 +83,7 @@
         <i class="fa-solid fa-arrow-left me-2"></i> Voltar para Equipe
     </a>
 
-    <div class="chat-container">
+<div class="chat-container position-relative">
         <div class="chat-header">
             <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold shadow-sm" style="width: 45px; height: 45px; font-size: 1.2rem;">
                 {{ destinatario.nome[0] | upper }}
@@ -99,24 +96,60 @@
 
         <div class="chat-messages" id="chatBox">
             {% for msg in mensagens %}
-                {% if msg.remetente_id == meu_id %}
-                    <div class="msg-bubble msg-sent">
-                        <div class="text-dark">{{ msg.conteudo }}</div>
-                        <span class="msg-time">
-                            {{ msg.data_envio.strftime('%H:%M') }}
-                            {% if msg.lida %}
-                                <i class="fa-solid fa-check-double text-info ms-1"></i>
-                            {% else %}
-                                <i class="fa-solid fa-check ms-1"></i>
+                {% set alinhamento = 'msg-sent' if msg.remetente_id == meu_id else 'msg-received' %}
+                
+                <div class="msg-bubble {{ alinhamento }} d-flex align-items-start gap-2">
+                    <div class="flex-grow-1" style="min-width: 120px;">
+                        
+                        {% if msg.respondendo_a_conteudo %}
+                        <div class="p-2 mb-2 rounded bg-dark bg-opacity-10 border-start border-4 border-primary" style="font-size: 0.8rem;">
+                            <div class="fw-bold opacity-75">
+                                {% if msg.respondendo_a_remetente == meu_id %}Você{% else %}{{ destinatario.nome }}{% endif %}
+                            </div>
+                            <div class="text-truncate" style="max-width: 200px;">{{ msg.respondendo_a_conteudo }}</div>
+                        </div>
+                        {% endif %}
+
+                        {% if msg.apagada %}
+                            <div class="text-muted fst-italic"><i class="fa-solid fa-ban me-1"></i> Mensagem apagada</div>
+                        {% else %}
+                            <div class="text-dark">{{ msg.conteudo }}</div>
+                        {% endif %}
+                        
+                        <span class="msg-time d-flex justify-content-end align-items-center gap-1">
+                            {{ msg.data_envio_local.strftime('%H:%M') }}
+                            {% if msg.remetente_id == meu_id %}
+                                {% if msg.lida %}<i class="fa-solid fa-check-double text-info"></i>{% else %}<i class="fa-solid fa-check"></i>{% endif %}
                             {% endif %}
                         </span>
                     </div>
-                {% else %}
-                    <div class="msg-bubble msg-received">
-                        <div class="text-dark">{{ msg.conteudo }}</div>
-                        <span class="msg-time">{{ msg.data_envio.strftime('%H:%M') }}</span>
+
+                    {% if not msg.apagada %}
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-link text-muted p-0 border-0" type="button" data-bs-toggle="dropdown">
+                            <i class="fa-solid fa-chevron-down" style="font-size: 0.7rem;"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" style="font-size: 0.85rem;">
+                            <li>
+                                <button type="button" class="dropdown-item text-primary btn-responder" 
+                                        data-msg-id="{{ msg.id }}" 
+                                        data-msg-nome="{% if msg.remetente_id == meu_id %}Você{% else %}{{ destinatario.nome }}{% endif %}"
+                                        data-msg-texto="{{ msg.conteudo }}">
+                                    <i class="fa-solid fa-reply me-2"></i>Responder
+                                </button>
+                            </li>
+                            {% if msg.remetente_id == meu_id %}
+                            <li>
+                                <form action="{{ url_for('crm.apagar_mensagem', mensagem_id=msg.id) }}" method="POST" class="m-0 p-0">
+                                    <input type="hidden" name="destinatario_id" value="{{ destinatario.id }}">
+                                    <button type="submit" class="dropdown-item text-danger"><i class="fa-solid fa-trash me-2"></i>Apagar</button>
+                                </form>
+                            </li>
+                            {% endif %}
+                        </ul>
                     </div>
-                {% endif %}
+                    {% endif %}
+                </div>
             {% else %}
                 <div class="text-center text-muted my-auto opacity-50">
                     <i class="fa-solid fa-comments fa-3x mb-2"></i>
@@ -125,8 +158,16 @@
             {% endfor %}
         </div>
 
-        <div class="chat-input-area">
+        <div id="replyPreviewBox" class="d-none bg-white p-2 mx-3 mt-2 rounded border-start border-4 border-primary position-relative shadow-sm" style="z-index: 10;">
+            <button type="button" class="btn-close position-absolute top-0 end-0 m-2" style="font-size: 0.6rem;" onclick="cancelarResposta()"></button>
+            <div class="fw-bold small text-primary" id="replyPreviewName">Respondendo a...</div>
+            <div class="text-muted small text-truncate pe-4" id="replyPreviewText"></div>
+        </div>
+
+        <div class="chat-input-area" style="position: relative; z-index: 11;">
             <form action="{{ url_for('crm.chat', destinatario_id=destinatario.id) }}" method="POST" class="w-100 d-flex gap-2 m-0">
+                <input type="hidden" name="respondendo_a_id" id="respondendoAIdInput" value="">
+                
                 <input type="text" name="conteudo" class="form-control" placeholder="Digite uma mensagem..." required autocomplete="off" autofocus>
                 <button type="submit" class="btn btn-primary rounded-circle shadow-sm" style="width: 48px; height: 48px; flex-shrink: 0;">
                     <i class="fa-solid fa-paper-plane"></i>
@@ -137,11 +178,71 @@
 </div>
 
 <script>
-    // Rolar automaticamente para a última mensagem ao carregar a página
-    document.addEventListener("DOMContentLoaded", function() {
-        const chatBox = document.getElementById("chatBox");
+    const chatBox = document.getElementById("chatBox");
+    const replyPreviewBox = document.getElementById("replyPreviewBox");
+    const respondendoAIdInput = document.getElementById("respondendoAIdInput");
+
+    function scrollToBottom() {
         chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+        scrollToBottom();
+        setInterval(atualizarChatSilenciosamente, 3000);
     });
+
+    // Lógica do botão de "Responder"
+    document.addEventListener('click', function(e) {
+        let btnResponder = e.target.closest('.btn-responder');
+        if (btnResponder) {
+            e.preventDefault();
+            
+            // Pega os dados
+            let msgId = btnResponder.getAttribute('data-msg-id');
+            let msgNome = btnResponder.getAttribute('data-msg-nome');
+            let msgTexto = btnResponder.getAttribute('data-msg-texto');
+            
+            // Preenche o Preview
+            document.getElementById('replyPreviewName').innerText = msgNome;
+            document.getElementById('replyPreviewText').innerText = msgTexto;
+            
+            // Insere o ID no campo escondido do formulário
+            respondendoAIdInput.value = msgId;
+            
+            // Mostra a caixinha em cima do input e foca para digitar
+            replyPreviewBox.classList.remove('d-none');
+            document.querySelector('input[name="conteudo"]').focus();
+        }
+    });
+
+    // Função para cancelar a resposta (Botão X)
+    function cancelarResposta() {
+        replyPreviewBox.classList.add('d-none');
+        respondendoAIdInput.value = "";
+    }
+
+    function atualizarChatSilenciosamente() {
+        let dropdownAberto = document.querySelector('[data-bs-toggle="dropdown"][aria-expanded="true"]');
+        if (dropdownAberto) return; 
+
+        let isAtBottom = (chatBox.scrollHeight - chatBox.scrollTop - chatBox.clientHeight) < 50;
+
+        fetch(window.location.href)
+            .then(response => response.text())
+            .then(html => {
+                let parser = new DOMParser();
+                let doc = parser.parseFromString(html, "text/html");
+                
+                let novoConteudo = doc.getElementById("chatBox").innerHTML;
+                let conteudoAtual = chatBox.innerHTML;
+
+                if (novoConteudo !== conteudoAtual) {
+                    chatBox.innerHTML = novoConteudo;
+                    if (isAtBottom) scrollToBottom();
+                }
+            })
+            .catch(error => console.error("Erro ao buscar novas mensagens:", error));
+    }
 </script>
 
 {% endblock %}

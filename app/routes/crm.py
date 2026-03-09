@@ -266,79 +266,117 @@ def listar_equipe():
 # === BLOCO 7: FUNÇÕES DE CHAT ===
 @crm_bp.route('/chat/<destinatario_id>', methods=['GET', 'POST'])
 def chat(destinatario_id):
-    """
-    Sistema de Mensageria Interna da Campanha.
-    """
     ctx = obter_contexto_acesso()
-    if not ctx:
-        return redirect(url_for('auth.login'))
+    if not ctx: return redirect(url_for('auth.login'))
         
     remetente_id = session.get('user_id')
     
-    # Previne que o usuário converse consigo mesmo
     if remetente_id == destinatario_id:
         flash('Você não pode iniciar um chat consigo mesmo.', 'warning')
         return redirect(url_for('crm.minha_equipe'))
 
     conn = get_db_connection()
-    if not conn:
-        flash('Erro de conexão com o banco.', 'danger')
-        return redirect(url_for('crm.minha_equipe'))
-
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-            # 1. SE FOR POST (Enviando mensagem)
+            # 1. ENVIANDO MENSAGEM (POST)
             if request.method == 'POST':
                 conteudo = request.form.get('conteudo', '').strip()
+                respondendo_a_id = request.form.get('respondendo_a_id') or None # Pega o ID da resposta
+                
                 if conteudo:
                     cursor.execute("""
-                        INSERT INTO mensagens (remetente_id, destinatario_id, conteudo)
-                        VALUES (%s, %s, %s)
-                    """, (remetente_id, destinatario_id, conteudo))
+                        INSERT INTO mensagens (remetente_id, destinatario_id, conteudo, respondendo_a_id)
+                        VALUES (%s, %s, %s, %s)
+                    """, (remetente_id, destinatario_id, conteudo, respondendo_a_id))
                     conn.commit()
                 return redirect(url_for('crm.chat', destinatario_id=destinatario_id))
 
-            # 2. SE FOR GET (Carregando a tela)
-            
-            # Buscar dados do destinatário (para mostrar no cabeçalho)
+            # 2. CARREGANDO A TELA (GET)
             cursor.execute("SELECT id, nome, role FROM usuarios WHERE id = %s", (destinatario_id,))
             destinatario = cursor.fetchone()
-            
-            if not destinatario:
-                flash('Usuário não encontrado.', 'danger')
-                return redirect(url_for('crm.minha_equipe'))
 
-            # Marcar mensagens recebidas como lidas
             cursor.execute("""
                 UPDATE mensagens SET lida = TRUE 
                 WHERE destinatario_id = %s AND remetente_id = %s AND lida = FALSE
             """, (remetente_id, destinatario_id))
             conn.commit()
 
-            # Buscar o histórico de conversas entre os dois
+            # O PULO DO GATO: Hora do Brasil (America/Sao_Paulo) e JOIN para puxar a mensagem respondida
             cursor.execute("""
-                SELECT * FROM mensagens 
-                WHERE (remetente_id = %s AND destinatario_id = %s)
-                   OR (remetente_id = %s AND destinatario_id = %s)
-                ORDER BY data_envio ASC
+                SELECT m.*, 
+                       m.data_envio AT TIME ZONE 'America/Sao_Paulo' AS data_envio_local,
+                       r.conteudo AS respondendo_a_conteudo,
+                       r.remetente_id AS respondendo_a_remetente
+                FROM mensagens m
+                LEFT JOIN mensagens r ON m.respondendo_a_id = r.id
+                WHERE (m.remetente_id = %s AND m.destinatario_id = %s)
+                   OR (m.remetente_id = %s AND m.destinatario_id = %s)
+                ORDER BY m.data_envio ASC
             """, (remetente_id, destinatario_id, destinatario_id, remetente_id))
             mensagens = cursor.fetchall()
             
     except Exception as e:
         print(f"❌ Erro no chat: {e}")
         conn.rollback()
-        flash('Erro ao carregar o chat.', 'danger')
-        return redirect(url_for('crm.minha_equipe'))
+        mensagens = []
+        destinatario = {}
     finally:
         conn.close()
 
-    return render_template('crm/chat.html', 
-                           destinatario=destinatario, 
-                           mensagens=mensagens, 
-                           meu_id=remetente_id)
+    return render_template('crm/chat.html', destinatario=destinatario, mensagens=mensagens, meu_id=remetente_id)
+
+@crm_bp.route('/chat/apagar/<mensagem_id>', methods=['POST'])
+def apagar_mensagem(mensagem_id):
+    ctx = obter_contexto_acesso()
+    if not ctx: return redirect(url_for('auth.login'))
+    
+    meu_id = session.get('user_id')
+    destinatario_id = request.form.get('destinatario_id') # Para saber pra onde voltar
+
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            # Soft Delete: Apenas atualiza a flag se eu for o dono da mensagem
+            cursor.execute("""
+                UPDATE mensagens SET apagada = TRUE 
+                WHERE id = %s AND remetente_id = %s
+            """, (mensagem_id, meu_id))
+        conn.commit()
+    except Exception as e:
+        print(f"Erro ao apagar: {e}")
+    finally:
+        conn.close()
+
+    return redirect(url_for('crm.chat', destinatario_id=destinatario_id))
+
+@crm_bp.route('/chat/editar/<mensagem_id>', methods=['POST'])
+def editar_mensagem(mensagem_id):
+    ctx = obter_contexto_acesso()
+    if not ctx: return redirect(url_for('auth.login'))
+    
+    meu_id = session.get('user_id')
+    destinatario_id = request.form.get('destinatario_id')
+    novo_conteudo = request.form.get('novo_conteudo', '').strip()
+
+    if novo_conteudo:
+        conn = get_db_connection()
+        try:
+            with conn.cursor() as cursor:
+                # Atualiza o texto e marca como editada
+                cursor.execute("""
+                    UPDATE mensagens SET conteudo = %s, editada = TRUE 
+                    WHERE id = %s AND remetente_id = %s AND apagada = FALSE
+                """, (novo_conteudo, mensagem_id, meu_id))
+            conn.commit()
+        except Exception as e:
+            print(f"Erro ao editar: {e}")
+        finally:
+            conn.close()
+
+    return redirect(url_for('crm.chat', destinatario_id=destinatario_id))
+
 
 # === BLOCO: APIs DE SUPORTE AO FRONT-END ===
-
 @crm_bp.route('/api/apoiadores/busca')
 def api_busca_apoiadores():
     """Endpoint para busca dinâmica via JavaScript (Autocomplete)"""
