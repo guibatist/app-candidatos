@@ -102,7 +102,7 @@
             
             <div class="nav-category">Operação & Base</div>
             
-            <a href="/crm/" class="nav-item {% if request.endpoint == 'crm.dashboard_index' %}active{% endif %}">
+            <a href="/crm/dashboard" class="nav-item {% if request.endpoint == 'crm.dashboard_index' %}active{% endif %}">
                 <i class="fa-solid fa-chart-pie nav-icon"></i>
                 <span class="nav-text">Painel Principal</span>
             </a>
@@ -121,7 +121,10 @@
                 <i class="fa-solid fa-bullhorn nav-icon"></i>
                 <span class="nav-text">Central de Comunicação</span>
             </a>
-
+            <a href="/crm/tarefas" class="nav-item {% if 'tarefas' in request.path %}active{% endif %}">
+                <i class="badge bg-danger rounded-pill shadow-sm ms-auto hide-on-collapse" style="font-size: 0.7rem;"></i>
+                <span class="nav-text">Tarefas da Campanha</span>
+            </a>
             <a href="{{ url_for('crm.notificacoes') }}" class="nav-item {% if request.endpoint == 'crm.notificacoes' %}active{% endif %}">
                 <i class="fa-solid fa-bell nav-icon"></i>
                 <span class="nav-text">Notificações</span>

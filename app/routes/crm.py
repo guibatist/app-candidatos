@@ -477,6 +477,7 @@ def notificacoes():
                     cor, icone, msg = 'info', 'fa-calendar-check', f"Para dia {venc.strftime('%d/%m')}"
 
                 tarefas_notificacoes.append({
+                    'id': t['id'], 
                     'titulo': titulo,
                     'descricao': descricao,
                     'mensagem': msg,
@@ -532,3 +533,135 @@ def api_busca_apoiadores():
     resultados = CRMService.buscar_apoiadores_por_nome(ctx['cliente_id'], termo)
     return jsonify(resultados)
 
+# === BLOCO 8: GESTÃO DE TAREFAS ===
+@crm_bp.route('/tarefas', methods=['GET'])
+def listar_todas_tarefas():
+    """Painel Global de Tarefas da Campanha (Com Paginação)."""
+    ctx = obter_contexto_acesso()
+    if not ctx: return redirect(url_for('auth.login'))
+    
+    cliente_id = ctx['cliente_id']
+    conn = get_db_connection()
+    tarefas = []
+    
+    # 1. Configurações da Paginação
+    page = request.args.get('page', 1, type=int)
+    per_page = 10
+    offset = (page - 1) * per_page
+    
+    kpis = {'total': 0, 'atrasadas': 0, 'concluidas': 0}
+    total_pages = 1
+    
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            # 2. Atualizar Atrasadas Automaticamente
+            cursor.execute("""
+                UPDATE tarefas 
+                SET status = 'atrasada' 
+                WHERE cliente_id = %s AND status = 'pendente' 
+                AND NULLIF(data_limite, '')::DATE < CURRENT_DATE
+            """, (cliente_id,))
+            conn.commit()
+
+            # 3. Matemática dos KPIs Globais (Conta a base toda, não apenas a página)
+            cursor.execute("""
+                SELECT 
+                    COUNT(*) as total,
+                    SUM(CASE WHEN status = 'atrasada' THEN 1 ELSE 0 END) as atrasadas,
+                    SUM(CASE WHEN status IN ('concluida', 'concluído') THEN 1 ELSE 0 END) as concluidas
+                FROM tarefas
+                WHERE cliente_id = %s
+            """, (cliente_id,))
+            kpis_db = cursor.fetchone()
+            
+            if kpis_db:
+                kpis['total'] = kpis_db['total'] or 0
+                kpis['atrasadas'] = kpis_db['atrasadas'] or 0
+                kpis['concluidas'] = kpis_db['concluidas'] or 0
+                
+            # Calcular quantas páginas existem no total
+            import math
+            total_pages = math.ceil(kpis['total'] / per_page) if kpis['total'] > 0 else 1
+
+            # 4. Buscar as 10 Tarefas da Página Atual (LIMIT e OFFSET)
+            cursor.execute("""
+                SELECT t.id, t.tipo, t.status, t.data_limite, 
+                       u.nome as delegado_nome, a.nome as apoiador_nome
+                FROM tarefas t
+                LEFT JOIN usuarios u ON t.assessor_id = u.id
+                LEFT JOIN apoiadores a ON t.apoiador_id = a.id
+                WHERE t.cliente_id = %s
+                ORDER BY 
+                    CASE WHEN t.status = 'atrasada' THEN 1 WHEN t.status = 'pendente' THEN 2 ELSE 3 END,
+                    NULLIF(t.data_limite, '')::DATE ASC NULLS LAST
+                LIMIT %s OFFSET %s
+            """, (cliente_id, per_page, offset))
+            tarefas = cursor.fetchall()
+            
+            # 5. Tradutor de Datas para o HTML
+            from datetime import datetime
+            for t in tarefas:
+                if t['data_limite'] and isinstance(t['data_limite'], str):
+                    try:
+                        t['data_limite'] = datetime.strptime(t['data_limite'], '%Y-%m-%d').date()
+                    except ValueError:
+                        t['data_limite'] = None
+                        
+    except Exception as e:
+        print(f"Erro ao carregar painel de tarefas: {e}")
+    finally:
+        if conn: conn.close()
+        
+    return render_template('crm/tarefas_lista.html', 
+                           tarefas=tarefas, kpis=kpis, 
+                           page=page, total_pages=total_pages, 
+                           permissoes=ctx['permissoes'])
+
+@crm_bp.route('/tarefas/<tarefa_id>', methods=['GET'])
+def detalhe_tarefa(tarefa_id):
+    """Página de detalhes com Chat e Gestão de Acesso."""
+    ctx = obter_contexto_acesso()
+    if not ctx: return redirect(url_for('auth.login'))
+    
+    user_id = session.get('user_id')
+    conn = get_db_connection()
+    tarefa = None
+    membros = []
+    mensagens_chat = []
+    
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            # 1. Carregar Dados da Tarefa
+            cursor.execute("SELECT * FROM tarefas WHERE id = %s", (tarefa_id,))
+            tarefa = cursor.fetchone()
+            
+            if not tarefa:
+                flash('Tarefa não encontrada.', 'danger')
+                return redirect(url_for('crm.listar_todas_tarefas'))
+
+            # 2. Carregar Membros e Administradores
+            cursor.execute("SELECT m.*, u.nome FROM tarefa_membros m JOIN usuarios u ON m.usuario_id = u.id WHERE m.tarefa_id = %s", (tarefa_id,))
+            membros = cursor.fetchall()
+
+            # 3. Carregar Chat da Tarefa
+            cursor.execute("SELECT c.*, u.nome FROM tarefa_chat c JOIN usuarios u ON c.usuario_id = u.id WHERE c.tarefa_id = %s ORDER BY data_envio ASC", (tarefa_id,))
+            mensagens_chat = cursor.fetchall()
+            
+            # 4. LÓGICA DE PERMISSÃO
+            # É Dono se: assessor_id == user_id OU criador_id == user_id
+            # É Admin se: está na tabela tarefa_membros como 'admin'
+            is_owner = (tarefa['assessor_id'] == user_id or tarefa.get('criador_id') == user_id)
+            is_admin = any(m['usuario_id'] == user_id and m['papel'] == 'admin' for m in membros)
+            
+            pode_editar = is_owner or is_admin
+
+    except Exception as e:
+        print(f"Erro no detalhe da tarefa: {e}")
+    finally:
+        if conn: conn.close()
+        
+    return render_template('crm/tarefa_view.html', 
+                           tarefa=tarefa, 
+                           membros=membros, 
+                           mensagens=mensagens_chat,
+                           pode_editar=pode_editar)
