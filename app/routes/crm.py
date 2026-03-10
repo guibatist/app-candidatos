@@ -859,3 +859,68 @@ def abrir_chamado():
         if conn: conn.close()
         
     return redirect(request.referrer or url_for('crm.dashboard_index'))
+
+# ==========================================
+# GESTÃO DE PERFIL DO USUÁRIO
+# ==========================================
+from psycopg2.extras import RealDictCursor
+from werkzeug.security import generate_password_hash
+
+@crm_bp.route('/meu-perfil', methods=['GET', 'POST'])
+def meu_perfil():
+    if 'user_id' not in session:
+        return redirect(url_for('auth.login'))
+        
+    conn = get_db_connection()
+    
+    if request.method == 'POST':
+        nome = request.form.get('nome', '').strip()
+        telefone = request.form.get('telefone', '').strip()
+        cpf = request.form.get('cpf', '').strip()
+        nova_senha = request.form.get('nova_senha')
+        confirmar_senha = request.form.get('confirmar_senha')
+        
+        try:
+            with conn.cursor() as cursor:
+                # 1. Atualiza dados básicos
+                cursor.execute("""
+                    UPDATE usuarios 
+                    SET nome = %s, telefone = %s, cpf = %s 
+                    WHERE id = %s
+                """, (nome, telefone, cpf, session['user_id']))
+                
+                # 2. Atualiza senha (se o usuário preencheu)
+                if nova_senha:
+                    if nova_senha == confirmar_senha and len(nova_senha) >= 8:
+                        senha_hash = generate_password_hash(nova_senha)
+                        cursor.execute("UPDATE usuarios SET senha_hash = %s WHERE id = %s", (senha_hash, session['user_id']))
+                        flash('Senha atualizada com sucesso!', 'success')
+                    else:
+                        flash('As senhas não coincidem ou a senha é muito curta (mínimo 8 caracteres).', 'warning')
+
+                conn.commit()
+                # Atualiza o nome na sessão para refletir imediatamente na UI
+                session['nome'] = nome 
+                flash('Perfil atualizado com sucesso.', 'success')
+                
+        except Exception as e:
+            conn.rollback()
+            print(f"[DB-ERROR] Erro ao atualizar perfil: {e}")
+            flash('Erro ao salvar as alterações.', 'danger')
+        finally:
+            if conn: conn.close()
+            
+        return redirect(url_for('auth.meu_perfil'))
+
+    # Método GET: Carrega a página
+    usuario = {}
+    if conn:
+        try:
+            with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+                cursor.execute("SELECT * FROM usuarios WHERE id = %s", (session['user_id'],))
+                usuario = cursor.fetchone()
+        finally:
+            conn.close()
+
+    # Pode renderizar na pasta 'auth' ou 'crm', ajuste conforme sua estrutura
+    return render_template('crm/perfil.html', usuario=usuario)

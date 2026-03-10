@@ -142,6 +142,10 @@
     </div>
 
     <div class="sidebar-footer" style="border-top: 1px solid #1f2937; padding: 10px 0;">
+        <a href="{{ url_for('crm.meu_perfil') }}" class="nav-item {% if request.endpoint == 'crm.meu_perfil' %}active{% endif %}">
+            <div class="nav-icon-wrapper"><i class="fa-solid fa-user-circle nav-icon"></i></div>
+            <span class="nav-text">Meu Perfil</span>
+        </a>
         {% if session.role != 'superadmin' %}
         <a class="nav-item" data-bs-toggle="offcanvas" data-bs-target="#offcanvasChamados">
             <div class="nav-icon-wrapper"><i class="fa-solid fa-headset nav-icon text-info"></i></div>
@@ -149,10 +153,6 @@
         </a>
         {% endif %}
 
-        <a href="#" class="nav-item">
-            <div class="nav-icon-wrapper"><i class="fa-solid fa-user-circle nav-icon"></i></div>
-            <span class="nav-text">Meu Perfil</span>
-        </a>
         <a href="/auth/logout" class="nav-item text-danger">
             <div class="nav-icon-wrapper"><i class="fa-solid fa-right-from-bracket nav-icon"></i></div>
             <span class="nav-text">Sair do Hub</span>
