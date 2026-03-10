@@ -4,11 +4,34 @@
 <style>
     .profile-header { background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); border-radius: 20px; padding: 30px; color: white; margin-bottom: 30px; box-shadow: 0 10px 20px rgba(79, 70, 229, 0.2); }
     .card-premium { border: none; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); background: #fff; }
-    .input-premium { border-radius: 12px; background-color: #f8fafc !important; border: 1px solid #e2e8f0 !important; padding: 10px 14px; }
+    .input-premium { border-radius: 12px; background-color: #f8fafc !important; border: 1px solid #e2e8f0 !important; padding: 10px 14px; transition: all 0.2s; }
+    .input-premium:focus { background-color: #fff !important; border-color: #4f46e5 !important; box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1); }
     .form-label-sm { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; font-weight: 700; margin-bottom: 5px; }
+    
+    /* Botões de Ação na Tabela */
+    .btn-action-icon {
+        width: 32px; height: 32px; padding: 0; display: inline-flex; align-items: center; justify-content: center;
+        border-radius: 8px; transition: all 0.2s; border: 1px solid transparent;
+    }
+    .btn-edit { background-color: #f8fafc; color: #4f46e5; border-color: #e2e8f0; }
+    .btn-edit:hover { background-color: #e0e7ff; }
+    .btn-reset { background-color: #fff1f2; color: #e11d48; border-color: #ffe4e6; }
+    .btn-reset:hover { background-color: #ffe4e6; }
 </style>
 
 <div class="container-fluid py-4">
+    
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show border-0 shadow-sm rounded-3 mb-4" role="alert">
+                    <i class="fa-solid fa-circle-info me-2"></i>{{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
     <div class="profile-header d-flex justify-content-between align-items-center">
         <div>
             <span class="badge bg-white bg-opacity-20 text-white mb-2 px-3 py-1 rounded-pill small">ID: {{ campanha.id }}</span>
@@ -22,15 +45,25 @@
 
     <div class="row g-4">
         <div class="col-lg-5">
-            <div class="card card-premium shadow-sm border-0">
-                <div class="card-body p-4">
-                    <h5 class="fw-bold mb-4"><i class="fa-solid fa-user-tie me-2 text-primary"></i>Gestão Estratégica</h5>
-                    <form action="{{ url_for('superadmin.salvar_usuario_campanha', campanha_id=campanha.id) }}" method="POST">
+            <div class="card card-premium shadow-sm border-0 h-100">
+                <div class="card-body p-4 d-flex flex-column">
+                    <div class="d-flex justify-content-between align-items-start mb-4">
+                        <h5 class="fw-bold mb-0"><i class="fa-solid fa-user-tie me-2 text-primary"></i>Gestão Estratégica</h5>
+                        
+                        <form action="{{ url_for('superadmin.resetar_senha_usuario', usuario_id=candidato.id) }}" method="POST" class="m-0" onsubmit="return confirm('Isso resetará a senha do Candidato e enviará um e-mail de acesso. Confirmar?');">
+                            <input type="hidden" name="campanha_id" value="{{ campanha.id }}">
+                            <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill fw-bold" title="Reenviar e-mail de Boas-vindas">
+                                <i class="fa-solid fa-envelope-open-text me-1"></i> Re-Onboarding
+                            </button>
+                        </form>
+                    </div>
+
+                    <form action="{{ url_for('superadmin.salvar_usuario_campanha', campanha_id=campanha.id) }}" method="POST" class="flex-grow-1 d-flex flex-column">
                         <input type="hidden" name="usuario_id" value="{{ candidato.id }}">
                         <input type="hidden" name="role" value="candidato">
                         <input type="hidden" name="cargo" value="{{ campanha.cargo_disputado }}">
 
-                        <div class="row g-3">
+                        <div class="row g-3 flex-grow-1">
                             <div class="col-12">
                                 <label class="form-label-sm">Nome de Campanha</label>
                                 <input type="text" name="nome" class="form-control input-premium" value="{{ candidato.nome }}" required>
@@ -45,32 +78,33 @@
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label-sm">CPF</label>
-                                <input type="text" name="cpf" class="form-control input-premium cpf-mask" value="{{ candidato.cpf }}">
+                                <input type="text" name="cpf" class="form-control input-premium cpf-mask" value="{{ candidato.cpf or '' }}">
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label-sm">Telefone</label>
-                                <input type="text" name="telefone" class="form-control input-premium" value="{{ candidato.telefone }}">
+                                <input type="text" name="telefone" class="form-control input-premium" value="{{ candidato.telefone or '' }}">
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label-sm">Sexo</label>
                                 <select name="sexo" class="form-select input-premium">
+                                    <option value="" {% if not candidato.sexo %}selected{% endif %}>Selecione</option>
                                     <option value="Masculino" {% if candidato.sexo == 'Masculino' %}selected{% endif %}>Masculino</option>
                                     <option value="Feminino" {% if candidato.sexo == 'Feminino' %}selected{% endif %}>Feminino</option>
                                 </select>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label-sm">Idade</label>
-                                <input type="number" name="idade" class="form-control input-premium" value="{{ candidato.idade }}">
+                                <input type="number" name="idade" class="form-control input-premium" value="{{ candidato.idade or '' }}">
                             </div>
-                            <div class="col-12">
-                                <label class="form-label-sm">E-mail de Login</label>
+                            <div class="col-12 mt-auto pt-3">
+                                <label class="form-label-sm">E-mail de Login <i class="fa-solid fa-circle-info text-primary ms-1" title="Se você alterar este e-mail, uma nova senha será enviada ao usuário."></i></label>
                                 <input type="email" name="email" class="form-control input-premium" value="{{ candidato.email }}" required>
                             </div>
-                            <div class="col-12 mt-4">
-                                <button type="submit" class="btn btn-primary w-100 py-3 fw-bold shadow">
-                                    Salvar Alterações Mestre
-                                </button>
-                            </div>
+                        </div>
+                        <div class="mt-4 pt-2 border-top">
+                            <button type="submit" class="btn btn-primary w-100 py-3 fw-bold shadow-sm">
+                                Salvar Alterações Mestre
+                            </button>
                         </div>
                     </form>
                 </div>
@@ -78,38 +112,56 @@
         </div>
 
         <div class="col-lg-7">
-            <div class="card card-premium shadow-sm border-0">
+            <div class="card card-premium shadow-sm border-0 h-100">
                 <div class="card-header bg-transparent border-0 p-4 d-flex justify-content-between align-items-center">
-                    <h5 class="fw-bold mb-0"><i class="fa-solid fa-users me-2 text-primary"></i>Assessores</h5>
-                    <button type="button" class="btn btn-primary btn-sm rounded-pill px-4" onclick="btnNovoAssessor()">
+                    <h5 class="fw-bold mb-0"><i class="fa-solid fa-users me-2 text-primary"></i>Equipe de Assessoria</h5>
+                    <button type="button" class="btn btn-primary btn-sm rounded-pill px-4 fw-bold" onclick="btnNovoAssessor()">
                         <i class="fa-solid fa-plus me-1"></i> Adicionar
                     </button>
                 </div>
-                <div class="table-responsive">
+                <div class="table-responsive px-2">
                     <table class="table table-hover align-middle mb-0">
                         <thead class="bg-light">
                             <tr>
-                                <th class="ps-4 small text-muted">NOME</th>
-                                <th class="small text-muted">CONTATO</th>
-                                <th class="text-end pe-4 small text-muted">AÇÕES</th>
+                                <th class="ps-4 small text-muted border-0 rounded-start">NOME</th>
+                                <th class="small text-muted border-0">CONTATO</th>
+                                <th class="text-end pe-4 small text-muted border-0 rounded-end">AÇÕES</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for ass in assessores %}
                             <tr>
-                                <td class="ps-4">
-                                    <div class="fw-bold">{{ ass.nome }}</div>
-                                    <div class="text-muted small">CPF: {{ ass.cpf or '---' }}</div>
+                                <td class="ps-4 border-bottom-0 py-3">
+                                    <div class="fw-bold text-dark">{{ ass.nome }}</div>
+                                    <div class="text-muted small" style="font-size: 0.75rem;">CPF: {{ ass.cpf or 'Não informado' }}</div>
                                 </td>
-                                <td>
-                                    <div class="small fw-semibold">{{ ass.email }}</div>
-                                    <div class="text-muted small">{{ ass.telefone or '--' }}</div>
+                                <td class="border-bottom-0 py-3">
+                                    <div class="small fw-semibold text-primary">{{ ass.email }}</div>
+                                    <div class="text-muted small" style="font-size: 0.75rem;">{{ ass.telefone or '--' }}</div>
                                 </td>
-                                <td class="text-end pe-4">
-                                    <button class="btn btn-sm btn-light border shadow-sm" 
-                                        onclick="btnEditarAssessor('{{ ass.id }}', '{{ ass.nome }}', '{{ ass.email }}', '{{ ass.cpf }}', '{{ ass.sexo }}', '{{ ass.idade }}', '{{ ass.telefone }}')">
-                                        <i class="fa-solid fa-user-pen text-primary"></i>
-                                    </button>
+                                <td class="text-end pe-4 border-bottom-0 py-3">
+                                    <div class="d-flex justify-content-end gap-2">
+                                        
+                                        <button type="button" class="btn btn-action-icon btn-edit" title="Editar Assessor"
+                                            onclick="btnEditarAssessor('{{ ass.id }}', '{{ ass.nome }}', '{{ ass.email }}', '{{ ass.cpf or '' }}', '{{ ass.sexo or '' }}', '{{ ass.idade or '' }}', '{{ ass.telefone or '' }}')">
+                                            <i class="fa-solid fa-pen-to-square"></i>
+                                        </button>
+
+                                        <form action="{{ url_for('superadmin.resetar_senha_usuario', usuario_id=ass.id) }}" method="POST" class="m-0" onsubmit="return confirm('Deseja reenviar o convite de acesso para {{ ass.nome }}? A senha atual será invalidada.');">
+                                            <input type="hidden" name="campanha_id" value="{{ campanha.id }}">
+                                            <button type="submit" class="btn btn-action-icon btn-reset" title="Resetar Acesso e Reenviar Email">
+                                                <i class="fa-solid fa-envelope-open-text"></i>
+                                            </button>
+                                        </form>
+
+                                    </div>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="3" class="text-center py-5 text-muted">
+                                    <i class="fa-solid fa-users-slash fs-1 mb-3 opacity-25"></i>
+                                    <p class="mb-0">Nenhum assessor cadastrado nesta campanha.</p>
                                 </td>
                             </tr>
                             {% endfor %}
@@ -121,25 +173,30 @@
     </div>
 </div>
 
-<div class="modal fade" id="modalAssessor" tabindex="-1" aria-labelledby="modalAssessorLabel" aria-hidden="true">
+<div class="modal fade" id="modalAssessor" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
             <form action="{{ url_for('superadmin.salvar_usuario_campanha', campanha_id=campanha.id) }}" method="POST">
                 <input type="hidden" name="usuario_id" id="modal_uid" value="">
                 <input type="hidden" name="role" value="assessor">
 
-                <div class="modal-header border-0 px-4 pt-4">
-                    <h4 class="fw-bold mb-0" id="modalTitle">Novo Assessor</h4>
+                <div class="modal-header border-0 px-4 pt-4 pb-2">
+                    <h5 class="fw-bold mb-0" id="modalTitle">Novo Assessor</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body px-4">
+                    <div class="alert alert-info bg-primary bg-opacity-10 border-0 text-primary small py-2 mb-4 d-flex align-items-center rounded-3">
+                        <i class="fa-solid fa-circle-info me-2 fs-5"></i>
+                        <span>Ao salvar, um e-mail de acesso será enviado automaticamente (se for cadastro novo ou alteração de e-mail).</span>
+                    </div>
+
                     <div class="row g-3">
                         <div class="col-12">
                             <label class="form-label-sm">Nome Completo</label>
                             <input type="text" name="nome" id="modal_nome" class="form-control input-premium" required>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label-sm">E-mail</label>
+                        <div class="col-12">
+                            <label class="form-label-sm">E-mail (Login)</label>
                             <input type="email" name="email" id="modal_email" class="form-control input-premium" required>
                         </div>
                         <div class="col-md-6">
@@ -150,21 +207,22 @@
                             <label class="form-label-sm">CPF</label>
                             <input type="text" name="cpf" id="modal_cpf" class="form-control input-premium cpf-mask">
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-6">
                             <label class="form-label-sm">Sexo</label>
                             <select name="sexo" id="modal_sexo" class="form-select input-premium">
-                                <option value="Masculino">M</option>
-                                <option value="Feminino">F</option>
+                                <option value="">Selecione</option>
+                                <option value="Masculino">Masculino</option>
+                                <option value="Feminino">Feminino</option>
                             </select>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-6">
                             <label class="form-label-sm">Idade</label>
                             <input type="number" name="idade" id="modal_idade" class="form-control input-premium">
                         </div>
                     </div>
                 </div>
-                <div class="modal-footer border-0 px-4 pb-4 mt-2">
-                    <button type="submit" class="btn btn-primary w-100 py-3 fw-bold shadow">Salvar Assessor</button>
+                <div class="modal-footer border-0 px-4 pb-4 pt-2">
+                    <button type="submit" class="btn btn-primary w-100 py-3 fw-bold shadow-sm">Salvar Registro</button>
                 </div>
             </form>
         </div>
@@ -172,39 +230,13 @@
 </div>
 
 <script>
-// USAMOS O DISPATCHER PARA GARANTIR QUE O BOOTSTRAP JÁ CARREGOU
 document.addEventListener("DOMContentLoaded", function() {
-    // Inicializa a instância do modal via JS (Padrão Bootstrap 5)
     const elAssessor = document.getElementById('modalAssessor');
     const instanceModal = new bootstrap.Modal(elAssessor);
 
-    // FUNÇÃO: NOVO ASSESSOR
-    window.btnNovoAssessor = function() {
-        document.getElementById('modalTitle').innerText = "Novo Assessor";
-        document.getElementById('modal_uid').value = ""; // Importante: Limpa o ID
-        document.getElementById('modal_nome').value = "";
-        document.getElementById('modal_email').value = "";
-        document.getElementById('modal_cpf').value = "";
-        document.getElementById('modal_tel').value = "";
-        document.getElementById('modal_idade').value = "";
-        instanceModal.show();
-    };
-
-    // FUNÇÃO: EDITAR ASSESSOR
-    window.btnEditarAssessor = function(id, nome, email, cpf, sexo, idade, tel) {
-        document.getElementById('modalTitle').innerText = "Editar Assessor";
-        document.getElementById('modal_uid').value = id; // Define o ID para a rota fazer UPDATE
-        document.getElementById('modal_nome').value = nome;
-        document.getElementById('modal_email').value = email;
-        document.getElementById('modal_cpf').value = cpf;
-        document.getElementById('modal_sexo').value = sexo;
-        document.getElementById('modal_idade').value = (idade && idade !== 'None') ? idade : '';
-        document.getElementById('modal_tel').value = (tel && tel !== 'None') ? tel : '';
-        instanceModal.show();
-    };
-
-    // MÁSCARA DE CPF EM TEMPO REAL
-    document.querySelectorAll('.cpf-mask').forEach(input => {
+    // MÁSCARA DE CPF
+    const cpfMasks = document.querySelectorAll('.cpf-mask');
+    cpfMasks.forEach(input => {
         input.addEventListener('input', e => {
             let v = e.target.value.replace(/\D/g, "");
             if (v.length > 11) v = v.slice(0, 11);
@@ -214,6 +246,37 @@ document.addEventListener("DOMContentLoaded", function() {
             e.target.value = v;
         });
     });
+
+    window.btnNovoAssessor = function() {
+        document.getElementById('modalTitle').innerText = "Novo Assessor";
+        document.getElementById('modal_uid').value = ""; 
+        document.getElementById('modal_nome').value = "";
+        document.getElementById('modal_email').value = "";
+        document.getElementById('modal_cpf').value = "";
+        document.getElementById('modal_tel').value = "";
+        document.getElementById('modal_idade').value = "";
+        document.getElementById('modal_sexo').value = "";
+        instanceModal.show();
+    };
+
+    window.btnEditarAssessor = function(id, nome, email, cpf, sexo, idade, tel) {
+        document.getElementById('modalTitle').innerText = "Editar Assessor";
+        document.getElementById('modal_uid').value = id; 
+        document.getElementById('modal_nome').value = nome;
+        document.getElementById('modal_email').value = email;
+        document.getElementById('modal_cpf').value = (cpf && cpf !== 'None') ? cpf : '';
+        document.getElementById('modal_sexo').value = (sexo && sexo !== 'None') ? sexo : '';
+        document.getElementById('modal_idade').value = (idade && idade !== 'None') ? idade : '';
+        document.getElementById('modal_tel').value = (tel && tel !== 'None') ? tel : '';
+        
+        // Dispara o evento de input para a máscara de CPF formatar o valor que veio do banco
+        const cpfInput = document.getElementById('modal_cpf');
+        if(cpfInput.value) {
+            cpfInput.dispatchEvent(new Event('input'));
+        }
+        
+        instanceModal.show();
+    };
 });
 </script>
 
