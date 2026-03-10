@@ -1,312 +1,178 @@
-{% extends 'base.html' %}
-
+{% extends "base.html" %}
 {% block content %}
+
+<style>
+    /* === VOTAHUB PREMIUM PROFILE DESIGN === */
+    :root { 
+        --indigo-primary: #4f46e5; 
+        --indigo-hover: #4338ca; 
+        --slate-200: #e2e8f0;
+    }
+    
+    .text-indigo { color: var(--indigo-primary) !important; }
+    .bg-indigo { background-color: var(--indigo-primary) !important; }
+    .btn-indigo { background-color: var(--indigo-primary); color: white; border: none; transition: all 0.2s; }
+    .btn-indigo:hover { background-color: var(--indigo-hover) !important; color: white !important; transform: translateY(-1px); }
+    
+    .card-profile { border: none; border-radius: 20px; height: 100%; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+    .info-label { font-size: 0.65rem; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 2px; }
+    .info-value { font-weight: 700; color: #1e293b; font-size: 0.95rem; }
+
+    /* Botão Voltar SaaS */
+    .btn-back-hub { 
+        background: #fff; border: 1px solid var(--slate-200); color: #64748b; 
+        font-weight: 700; padding: 10px 20px; border-radius: 12px; transition: all 0.2s;
+        display: inline-flex; align-items: center; text-decoration: none; font-size: 0.85rem;
+    }
+    .btn-back-hub:hover { border-color: var(--indigo-primary); color: var(--indigo-primary); transform: translateX(-4px); }
+
+    /* Estilo das Notas e Histórico */
+    .modal-scroll, .history-scroll { max-height: 480px; overflow-y: auto; padding-right: 12px; }
+    .note-bubble { background: #f8fafc; border-radius: 16px; padding: 15px; border-left: 5px solid var(--slate-200); margin-bottom: 15px; transition: 0.2s; }
+    .note-bubble:hover { border-left-color: var(--indigo-primary); background: #f1f5f9; }
+    
+    .tag-pauta { background-color: #eef2ff !important; color: #4338ca !important; border: 1px solid #c7d2fe !important; padding: 5px 12px; font-weight: 600; font-size: 0.75rem; border-radius: 30px; }
+
+    /* Estilo Premium para Modais */
+    .modal-content { border-radius: 24px; border: none; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); }
+    .modal-section-title { font-size: 0.75rem; font-weight: 800; color: var(--indigo-primary); text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; margin-top: 1.5rem; margin-bottom: 1rem; }
+    .modal-section-title::after { content: ""; flex: 1; height: 1px; background: #e2e8f0; margin-left: 15px; }
+    
+    .form-control-premium { background-color: #f1f5f9 !important; border: 2px solid transparent !important; border-radius: 12px; padding: 12px 15px; font-weight: 500; transition: all 0.2s; }
+    .form-control-premium:focus { background-color: #ffffff !important; border-color: var(--indigo-primary) !important; box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1) !important; }
+</style>
+
 <div class="container-fluid py-4">
-    <div class="mb-3">
-        <a href="{{ url_for('crm.listar_apoiadores') }}" class="btn btn-sm btn-outline-secondary rounded-pill px-3 fw-bold bg-white shadow-sm">
-            <i class="fa-solid fa-arrow-left me-2"></i>Voltar para Apoiadores
-        </a>
+    
+    <div class="d-flex justify-content-between align-items-center mb-5">
+        <div>
+            <a href="{{ url_for('crm.listar_apoiadores') }}" class="btn-back-hub mb-3">
+                <i class="fa-solid fa-arrow-left me-2"></i> Base Geral de Apoio
+            </a>
+            <h2 class="fw-bold text-dark mb-0">{{ apoiador.nome }}</h2>
+            <div class="d-flex align-items-center gap-3 mt-1">
+                <span class="badge {% if apoiador.grau_apoio == 'forte' %}bg-success{% elif apoiador.grau_apoio == 'medio' %}bg-warning{% else %}bg-danger{% endif %} rounded-pill px-3 py-2 fw-bold">
+                    Apoio {{ apoiador.grau_apoio|capitalize }}
+                </span>
+                <span class="text-muted small fw-bold">• Origem: {{ apoiador.origem_cadastro or 'Direto' }}</span>
+            </div>
+        </div>
+        <div class="d-flex gap-3">
+            <button class="btn btn-white border-2 border-light shadow-sm rounded-pill px-4 fw-bold" data-bs-toggle="modal" data-bs-target="#modalEditarPerfil">
+                <i class="fa-solid fa-user-pen me-2 text-primary"></i> Editar Perfil
+            </button>
+            <a href="https://wa.me/55{{ apoiador.telefone|replace('(', '')|replace(')', '')|replace('-', '')|replace(' ', '') }}" target="_blank" class="btn btn-success rounded-pill px-4 fw-bold shadow-lg">
+                <i class="fa-brands fa-whatsapp me-2"></i> WhatsApp
+            </a>
+        </div>
     </div>
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
-                <div class="card-body p-0">
-                    <div class="bg-indigo p-4 text-white d-flex align-items-center justify-content-between flex-wrap gap-3" style="background-color: #4f46e5;">
-                        <div class="d-flex align-items-center gap-3">
-                            <div class="bg-white rounded-circle d-flex justify-content-center align-items-center text-indigo" style="width: 60px; height: 60px; font-size: 24px;">
-                                <i class="fa-solid fa-user"></i>
-                            </div>
-                            <div>    
-                                <h3 class="mb-0 fw-bold d-flex align-items-center gap-2">
-                                    {{ apoiador.nome }}
-                                    <button type="button" class="btn btn-sm btn-light text-indigo rounded-circle shadow-sm" data-bs-toggle="modal" data-bs-target="#modalEditarCadastro" title="Editar Dados Básicos">
-                                        <i class="fa-solid fa-pen" style="font-size: 0.8rem;"></i>
-                                    </button>
-                                </h3>
-                                <div class="d-flex flex-wrap gap-2 mt-2">
-                                    <span class="badge bg-white bg-opacity-25 text-white border-0">
-                                        <i class="fa-solid fa-location-dot me-1"></i> {{ apoiador.bairro or 'Bairro não informado' }}
-                                    </span>
-                                    <span class="badge text-white border-0" style="background-color: rgba(255,255,255,0.15);">
-                                        <i class="fa-solid fa-venus-mars me-1"></i> {{ apoiador.sexo or 'Sexo n/i' }}
-                                    </span>
-                                    <span class="badge text-white border-0" style="background-color: rgba(255,255,255,0.15);">
-                                        <i class="fa-solid fa-cake-candles me-1"></i> {{ apoiador.faixa_etaria or 'Idade n/i' }}
-                                    </span>
-                                    <span class="badge bg-warning text-dark border-0">
-                                        <i class="fa-solid fa-scale-balanced me-1"></i> {{ apoiador.posicionamento_politico or 'Neutro' }}
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="d-flex gap-2">
-                            <button type="button" class="btn btn-outline-light rounded-pill px-3 fw-bold" data-bs-toggle="modal" data-bs-target="#modalEditarPerfil">
-                                <i class="fa-solid fa-user-gear me-2"></i> Editar Perfil
-                            </button>
-                            <a href="https://wa.me/55{{ apoiador.telefone|replace('(', '')|replace(')', '')|replace('-', '')|replace(' ', '') }}" target="_blank" class="btn btn-light rounded-pill px-4 fw-bold text-indigo">
-                                <i class="fa-brands fa-whatsapp me-2"></i> WhatsApp
-                            </a>
-                        </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-lg-4">
+            <div class="card card-profile p-4 bg-white">
+                <h6 class="fw-bold text-dark mb-4"><i class="fa-solid fa-id-card text-indigo me-2"></i>Demografia</h6>
+                <div class="row g-3">
+                    <div class="col-6"><label class="info-label">WhatsApp</label><div class="info-value">{{ apoiador.telefone or '-' }}</div></div>
+                    <div class="col-6"><label class="info-label">Sexo/Idade</label><div class="info-value">{{ apoiador.sexo or '-' }}/{{ apoiador.faixa_etaria or '-' }}</div></div>
+                    <div class="col-12"><label class="info-label">Renda/Instrução</label><div class="info-value">{{ apoiador.renda_familiar or '-' }} • {{ apoiador.grau_instrucao or '-' }}</div></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card card-profile p-4 bg-white border-top border-4 border-danger">
+                <h6 class="fw-bold text-dark mb-4"><i class="fa-solid fa-map-location-dot text-danger me-2"></i>Endereço</h6>
+                <div class="info-value mb-1">{{ apoiador.logradouro or 'Não informado' }}, {{ apoiador.numero }}</div>
+                <small class="text-muted d-block mb-3">{{ apoiador.bairro }} | {{ apoiador.cidade }}-{{ apoiador.uf }}</small>
+                <label class="info-label">Indicado por</label>
+                <div class="info-value text-indigo small"><i class="fa-solid fa-handshake-angle me-1"></i> {{ apoiador.indicado_por or 'Direto' }}</div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card card-profile p-4 bg-white border-top border-4 border-warning">
+                <h6 class="fw-bold text-dark mb-3"><i class="fa-solid fa-fire text-warning me-2"></i>Ativos & Pautas</h6>
+                <div class="d-flex flex-wrap gap-2 mb-3">
+                    {% if apoiador.oferece_muro %}<span class="badge bg-success rounded-pill px-3 py-2 fw-bold"><i class="fa-solid fa-paint-roller me-2"></i>Muro</span>{% endif %}
+                    {% if apoiador.oferece_carro %}<span class="badge bg-primary rounded-pill px-3 py-2 fw-bold"><i class="fa-solid fa-car me-2"></i>Carro</span>{% endif %}
+                </div>
+                <div class="d-flex flex-wrap gap-1">
+                    {% if apoiador.tags %}
+                        {% set pautas = apoiador.tags if apoiador.tags is iterable and apoiador.tags is not string else apoiador.tags.split(',') %}
+                        {% for tag in pautas %}{% if tag %}<span class="badge tag-pauta">{{ tag }}</span>{% endif %}{% endfor %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-lg-4">
+            <div class="card card-profile p-4 bg-indigo text-white position-relative overflow-hidden">
+                <label class="small fw-bold text-uppercase opacity-75">Potencial de Votos na Casa</label>
+                <h1 class="display-2 fw-bold mb-0">{{ apoiador.votos_familia or 1 }}</h1>
+                <i class="fa-solid fa-users position-absolute end-0 bottom-0 opacity-25" style="font-size: 8rem; margin-right: -10px; margin-bottom: -10px;"></i>
+            </div>
+        </div>
+        
+        <div class="col-lg-8">
+            <div class="card card-profile p-4 bg-white">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h5 class="fw-bold text-dark mb-0">Gestão de Missões</h5>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-white border-2 fw-bold rounded-pill px-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#modalHistoricoTarefas">
+                            <i class="fa-solid fa-list-check me-2 text-primary"></i> Ver Lista
+                        </button>
+                        <button class="btn btn-indigo rounded-pill px-4 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#modalNovaTarefa">
+                            <i class="fa-solid fa-plus me-2"></i> Criar Tarefa
+                        </button>
                     </div>
+                </div>
+                <div class="row g-3">
+                    <div class="col-md-4"><div class="p-3 bg-light rounded-4 text-center"><label class="info-label d-block mb-1">Total</label><h4 class="fw-bold mb-0 text-dark">{{ resumo.total or 0 }}</h4></div></div>
+                    <div class="col-md-4"><div class="p-3 bg-light rounded-4 text-center border-start border-primary border-4"><label class="info-label d-block mb-1 text-primary">Pendentes</label><h4 class="fw-bold text-primary mb-0">{{ resumo.pendentes or 0 }}</h4></div></div>
+                    <div class="col-md-4"><div class="p-3 bg-light rounded-4 text-center border-start border-danger border-4"><label class="info-label d-block mb-1 text-danger">Atrasadas</label><h4 class="fw-bold text-danger mb-0">{{ resumo.atrasadas or 0 }}</h4></div></div>
                 </div>
             </div>
         </div>
     </div>
 
     <div class="row g-4">
-        
-        <div class="col-lg-8">
-            
-            <div class="card border-0 shadow-sm rounded-4 mb-4">
-                <div class="card-header bg-white border-0 pt-4 px-4">
-                    <h5 class="fw-bold text-dark mb-0"><i class="fa-solid fa-calendar-plus me-2 text-indigo"></i>Agendar Nova Ação</h5>
+        <div class="col-12">
+            <div class="card card-profile p-4 bg-white shadow-sm">
+                <div class="d-flex justify-content-between align-items-center mb-5">
+                    <h5 class="fw-bold text-dark mb-0">Linha do Tempo de Contatos</h5>
+                    <button class="btn btn-indigo btn-sm rounded-pill px-4 fw-bold" data-bs-toggle="collapse" data-bs-target="#collapseNota"><i class="fa-solid fa-pen me-2"></i>Nova Nota</button>
                 </div>
-                <div class="card-body p-4">
-                    <form action="{{ url_for('crm.nova_tarefa', apoiador_id=apoiador.id) }}" method="POST">
-                        <div class="row g-3">
-                            <div class="col-md-4">
-                                <label class="form-label small fw-bold text-muted">Tipo de Ação</label>
-                                <select name="tipo" class="form-select border-light bg-light" required>
-                                    <option value="Ligar">Ligar</option>
-                                    <option value="WhatsApp">Enviar WhatsApp</option>
-                                    <option value="Visitar">Visita Presencial</option>
-                                    <option value="Entregar">Entregar Material</option>
-                                </select>
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label small fw-bold text-muted">Data Limite</label>
-                                <input type="date" name="data_limite" class="form-control border-light bg-light" required>
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label small fw-bold text-muted">Delegar para (Opcional)</label>
-                                <select name="assessor_id" class="form-select border-light bg-light">
-                                    <option value="">Fazer eu mesmo</option>
-                                    {% for assessor in assessores %}
-                                        <option value="{{ assessor.id }}">{{ assessor.nome }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                            <div class="col-12">
-                                <label class="form-label small fw-bold text-muted">Instruções/Descrição</label>
-                                <textarea name="descricao" class="form-control border-light bg-light" rows="2" placeholder="Ex: Pedir para colocar o adesivo no carro..." required></textarea>
-                            </div>
-                            <div class="col-12 text-end">
-                                <button type="submit" class="btn btn-indigo rounded-pill px-5 shadow-sm" style="background-color: #4f46e5; color: white;">Agendar</button>
-                            </div>
+                
+                <div class="collapse mb-4" id="collapseNota">
+                    <form action="{{ url_for('crm.registrar_interacao', apoiador_id=apoiador.id) }}" method="POST" class="p-4 bg-light rounded-4 border">
+                        <textarea name="conteudo" class="form-control border-0 mb-3 shadow-sm" rows="3" placeholder="O que foi conversado?" required></textarea>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <select name="tipo" class="form-select form-select-sm w-auto border-0 bg-white shadow-sm rounded-pill px-4">
+                                <option value="Nota">📝 Nota Geral</option>
+                                <option value="Visita">🏠 Visita Presencial</option>
+                                <option value="Ligação">📞 Ligação / WhatsApp</option>
+                            </select>
+                            <button type="submit" class="btn btn-indigo px-5 rounded-pill fw-bold">Salvar Nota</button>
                         </div>
                     </form>
                 </div>
-            </div>
 
-            <div class="card border-0 shadow-sm rounded-4">
-                <div class="card-header bg-white border-0 pt-4 px-4">
-                    <h5 class="fw-bold text-dark mb-0"><i class="fa-solid fa-list-check me-2 text-indigo"></i>Ações Pendentes</h5>
-                </div>
-                <div class="card-body p-4 d-flex flex-column" style="min-height: 380px;">
-                    <div class="d-flex flex-column gap-3 flex-grow-1">
-                        
-                        {% for t in pendentes[:3] %}
-                            <div class="p-3 border rounded-3 bg-white shadow-sm d-flex justify-content-between align-items-center transition-all">
-                                <div class="d-flex align-items-center gap-3">
-                                    <div class="bg-light rounded-circle d-flex justify-content-center align-items-center text-indigo" style="width: 40px; height: 40px;">
-                                        <i class="fa-solid fa-thumbtack"></i>
-                                    </div>
-                                    <div>
-                                        <h6 class="mb-0 fw-bold text-dark d-flex align-items-center gap-2">
-                                            {{ t.tipo }} 
-                                            <span class="badge bg-light text-secondary border small">
-                                                Até {{ t.data_limite.split('-')|reverse|join('/') if '-' in t.data_limite else t.data_limite }}
-                                            </span>
-                                            <button type="button" class="btn btn-link text-muted p-0 ms-1" data-bs-toggle="modal" data-bs-target="#editModal{{ t.id }}" title="Editar">
-                                                <i class="fa-solid fa-pencil" style="font-size: 0.75rem;"></i>
-                                            </button>
-                                        </h6>
-                                        <span class="text-muted small">{{ t.descricao }}</span>
-                                    </div>
-                                </div>
-                                
-                                <div class="d-flex gap-2">
-                                    <form action="{{ url_for('crm.atualizar_status_tarefa', id=t.id) }}" method="POST" class="m-0">
-                                        <input type="hidden" name="apoiador_id" value="{{ apoiador.id }}">
-                                        <select name="status" class="form-select form-select-sm border-light bg-light fw-bold text-secondary shadow-none cursor-pointer" onchange="this.form.submit()" style="cursor: pointer; min-width: 130px;">
-                                            <option value="pendente" selected>Pendente</option>
-                                            <option value="concluida">Concluído</option>
-                                            <option value="cancelada">Cancelado</option>
-                                        </select>
-                                    </form>
-                                </div>
-                            </div>
-                        {% else %}
-                            <div class="text-center py-4 border rounded-3 bg-light d-flex flex-column justify-content-center h-100" style="border-style: dashed !important;">
-                                <p class="text-muted small mb-0">Nenhuma ação pendente.</p>
-                            </div>
-                        {% endfor %}
-
+                <div class="history-scroll pe-2">
+                    {% for item in interacoes %}
+                    <div class="note-bubble shadow-sm">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="small fw-bold text-indigo"><i class="fa-solid fa-user-circle me-1"></i> {{ item.usuario_nome or 'Sistema' }}</span>
+                            <span class="text-muted" style="font-size: 0.75rem;">{{ item.data_registro.strftime('%d/%m/%Y %H:%M') }}</span>
+                        </div>
+                        <div class="note-text fw-medium text-dark">{{ item.conteudo }}</div>
+                        <div class="mt-2 text-end"><span class="badge bg-white text-muted border small">{{ item.tipo }}</span></div>
                     </div>
-                    
-                    {% if pendentes|length > 3 %}
-                    <div class="mt-3 text-center">
-                        <button class="btn btn-sm rounded-pill px-4 fw-bold" style="background-color: #eef2ff; color: #4f46e5; border: 1px solid #4f46e5;" data-bs-toggle="modal" data-bs-target="#modalPendentes">
-                            Ver todas as {{ pendentes|length }} pendências
-                        </button>
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-
-        <div class="col-lg-4">
-            <div class="card border-0 shadow-sm rounded-4 h-100">
-                <div class="card-header bg-white border-0 pt-4 px-4">
-                    <h5 class="fw-bold text-dark mb-0">Histórico de Contatos</h5>
-                </div>
-                <div class="card-body p-4 pt-2">
-                    <div class="timeline-simple" style="max-height: 700px; overflow-y: auto; padding-right: 10px;">
-                        
-                        {% for t in historico|reverse %}
-                            {% set cor_borda = 'border-danger' if t.status|string|lower == 'cancelada' else 'border-success' %}
-                            {% set cor_bg = 'bg-danger' if t.status|string|lower == 'cancelada' else 'bg-success' %}
-                            {% set texto_status = 'Cancelado' if t.status|string|lower == 'cancelada' else 'Concluído' %}
-                            
-                            {% set delegado = 'Candidato' %}
-                            {% for a in assessores %}
-                                {% if a.id|string == t.assessor_id|string %}
-                                    {% set delegado = a.nome %}
-                                {% endif %}
-                            {% endfor %}
-
-                            <div class="border-start border-2 {{ cor_borda }} ps-3 pb-4 position-relative">
-                                <div class="position-absolute {{ cor_bg }} rounded-circle" style="width: 12px; height: 12px; left: -7px; top: 5px;"></div>
-                                
-                                <h6 class="mb-0 fw-bold small text-dark d-flex align-items-center gap-2">
-                                    {{ t.tipo }} - {{ texto_status }}
-                                </h6>
-                                <p class="text-muted extra-small mb-1">{{ t.data_limite.split('-')|reverse|join('/') if '-' in t.data_limite else t.data_limite }}</p>
-                                <span class="text-muted small d-block mb-1">{{ t.descricao }}</span>
-                                <span class="badge bg-light text-secondary border fw-normal" style="font-size: 0.65rem;">Resp: {{ delegado }}</span>
-                            </div>
-                        {% else %}
-                            <p class="text-muted small text-center py-5">Sem registros no histórico.</p>
-                        {% endfor %}
-
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" id="modalEditarPerfil" tabindex="-1">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content border-0 shadow rounded-4">
-            <div class="modal-header border-0 bg-light">
-                <h5 class="modal-title fw-bold text-indigo"><i class="fa-solid fa-chart-pie me-2"></i> Dados Demográficos e Análise</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body p-4">
-                <form action="{{ url_for('crm.editar_perfil_detalhado', id=apoiador.id) }}" method="POST">
-                    <div class="row g-3">
-                        <div class="col-md-4">
-                            <label class="form-label small fw-bold">Sexo</label>
-                            <select name="sexo" class="form-select">
-                                <option value="" {% if not apoiador.sexo %}selected{% endif %}>Selecione...</option>
-                                <option value="Masculino" {% if apoiador.sexo == 'Masculino' %}selected{% endif %}>Masculino</option>
-                                <option value="Feminino" {% if apoiador.sexo == 'Feminino' %}selected{% endif %}>Feminino</option>
-                                <option value="Outro" {% if apoiador.sexo == 'Outro' %}selected{% endif %}>Outro</option>
-                            </select>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label small fw-bold">Faixa Etária</label>
-                            <select name="faixa_etaria" class="form-select">
-                                <option value="" {% if not apoiador.faixa_etaria %}selected{% endif %}>Selecione...</option>
-                                <option value="16-24" {% if apoiador.faixa_etaria == '16-24' %}selected{% endif %}>16-24</option>
-                                <option value="25-34" {% if apoiador.faixa_etaria == '25-34' %}selected{% endif %}>25-34</option>
-                                <option value="35-60" {% if apoiador.faixa_etaria == '35-60' %}selected{% endif %}>35-60</option>
-                                <option value="60+" {% if apoiador.faixa_etaria == '60+' %}selected{% endif %}>60+</option>
-                            </select>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label small fw-bold">Renda Familiar</label>
-                            <select name="renda_familiar" class="form-select">
-                                <option value="" {% if not apoiador.renda_familiar %}selected{% endif %}>Selecione...</option>
-                                <option value="Até 2 salários" {% if apoiador.renda_familiar == 'Até 2 salários' %}selected{% endif %}>Até 2 salários</option>
-                                <option value="2-5 salários" {% if apoiador.renda_familiar == '2-5 salários' %}selected{% endif %}>2-5 salários</option>
-                                <option value="5-10 salários" {% if apoiador.renda_familiar == '5-10 salários' %}selected{% endif %}>5-10 salários</option>
-                                <option value="10+" {% if apoiador.renda_familiar == '10+' %}selected{% endif %}>10+ salários</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label small fw-bold">Grau de Instrução</label>
-                            <select name="grau_instrucao" class="form-select">
-                                <option value="" {% if not apoiador.grau_instrucao %}selected{% endif %}>Selecione...</option>
-                                <option value="Fundamental" {% if apoiador.grau_instrucao == 'Fundamental' %}selected{% endif %}>Fundamental</option>
-                                <option value="Médio" {% if apoiador.grau_instrucao == 'Médio' %}selected{% endif %}>Médio</option>
-                                <option value="Superior" {% if apoiador.grau_instrucao == 'Superior' %}selected{% endif %}>Superior</option>
-                                <option value="Pós/Mestrado/Doutorado" {% if apoiador.grau_instrucao == 'Pós/Mestrado/Doutorado' %}selected{% endif %}>Pós/Mestrado/Doutorado</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label small fw-bold">Origem / De onde veio?</label>
-                            <select name="origem_cadastro" class="form-select">
-                                <option value="" {% if not apoiador.origem_cadastro %}selected{% endif %}>Selecione...</option>
-                                <option value="Linkedin" {% if apoiador.origem_cadastro == 'Linkedin' %}selected{% endif %}>Linkedin</option>
-                                <option value="TikTok" {% if apoiador.origem_cadastro == 'TikTok' %}selected{% endif %}>TikTok</option>
-                                <option value="Instagram" {% if apoiador.origem_cadastro == 'Instagram' %}selected{% endif %}>Instagram</option>
-                                <option value="Site" {% if apoiador.origem_cadastro == 'Site' %}selected{% endif %}>Site</option>
-                                <option value="Indicação" {% if apoiador.origem_cadastro == 'Indicação' %}selected{% endif %}>Indicação</option>
-                            </select>
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label small fw-bold">Posicionamento Político</label>
-                            <select name="posicionamento_politico" class="form-select">
-                                <option value="" {% if not apoiador.posicionamento_politico %}selected{% endif %}>Selecione...</option>
-                                <option value="Esquerda" {% if apoiador.posicionamento_politico == 'Esquerda' %}selected{% endif %}>Esquerda</option>
-                                <option value="Centro-Esquerda" {% if apoiador.posicionamento_politico == 'Centro-Esquerda' %}selected{% endif %}>Centro-Esquerda</option>
-                                <option value="Centro" {% if apoiador.posicionamento_politico == 'Centro' %}selected{% endif %}>Centro</option>
-                                <option value="Centro-Direita" {% if apoiador.posicionamento_politico == 'Centro-Direita' %}selected{% endif %}>Centro-Direita</option>
-                                <option value="Direita" {% if apoiador.posicionamento_politico == 'Direita' %}selected{% endif %}>Direita</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="mt-4 pt-3 border-top d-flex justify-content-end gap-2">
-                        <button type="button" class="btn btn-light rounded-pill" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="submit" class="btn btn-indigo rounded-pill px-4 fw-bold">Atualizar Perfil Analítico</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" id="modalPendentes" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-        <div class="modal-content border-0 shadow rounded-4">
-            <div class="modal-header border-0 bg-light">
-                <h5 class="modal-title fw-bold text-indigo"><i class="fa-solid fa-list-check me-2"></i>Todas as Pendências</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body bg-light">
-                <div class="d-flex flex-column gap-3">
-                    {% for t in pendentes %}
-                    <div class="p-3 border rounded-3 bg-white shadow-sm d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="mb-0 fw-bold text-dark d-flex align-items-center gap-2">
-                                {{ t.tipo }} 
-                                <span class="badge bg-light text-secondary border small">{{ t.data_limite.split('-')|reverse|join('/') if '-' in t.data_limite else t.data_limite }}</span>
-                                <button type="button" class="btn btn-link text-muted p-0" data-bs-toggle="modal" data-bs-target="#editModal{{ t.id }}">
-                                    <i class="fa-solid fa-pencil" style="font-size: 0.75rem;"></i>
-                                </button>
-                            </h6>
-                            <span class="text-muted small">{{ t.descricao }}</span>
-                        </div>
-                        <form action="{{ url_for('crm.atualizar_status_tarefa', id=t.id) }}" method="POST" class="m-0">
-                            <input type="hidden" name="apoiador_id" value="{{ apoiador.id }}">
-                            <select name="status" class="form-select form-select-sm border-light bg-light fw-bold text-secondary" onchange="this.form.submit()" style="min-width: 120px;">
-                                <option value="pendente" selected>Pendente</option>
-                                <option value="concluida">Concluído</option>
-                                <option value="cancelada">Cancelado</option>
-                            </select>
-                        </form>
+                    {% else %}
+                    <div class="text-center py-5 text-muted opacity-50">
+                        <i class="fa-solid fa-comment-slash fa-3x mb-3"></i>
+                        <p>Nenhum histórico registrado para este apoiador.</p>
                     </div>
                     {% endfor %}
                 </div>
@@ -315,183 +181,96 @@
     </div>
 </div>
 
-{% for t in todas_tarefas %}
-<div class="modal fade" id="editModal{{ t.id }}" tabindex="-1">
+<div class="modal fade" id="modalNovaTarefa" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow rounded-4">
-            <div class="modal-header border-0 bg-light">
-                <h5 class="modal-title fw-bold text-indigo">Editar Ação</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        <div class="modal-content overflow-hidden">
+            <div class="modal-header bg-indigo text-white border-0 p-4">
+                <h5 class="fw-bold mb-0">Agendar Missão Operacional</h5>
+                <button type="button" class="btn-close btn-close-white shadow-none" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{{ url_for('crm.criar_tarefa_perfil', apoiador_id=apoiador.id) }}" method="POST">
+                <div class="modal-body p-4">
+                    <div class="mb-3"><label class="info-label">Tipo de Ação</label><select name="tipo" class="form-select form-control-premium" required><option value="Visita Técnica">Visita Técnica</option><option value="Entrega de Material">Entrega de Material</option><option value="Ligação / WhatsApp">Ligação / WhatsApp</option><option value="Reunião">Reunião</option></select></div>
+                    <div class="mb-3"><label class="info-label">Delegar para Assessor</label><select name="assessor_id" class="form-select form-control-premium" required><option value="" disabled selected>Escolha o responsável...</option>{% for u in assessores %}<option value="{{ u.id }}">{{ u.nome }}</option>{% endfor %}</select></div>
+                    <div class="mb-3"><label class="info-label">Data Limite</label><input type="date" name="data_limite" class="form-control form-control-premium" required></div>
+                    <div class="mb-3"><label class="info-label">Instruções</label><textarea name="descricao" class="form-control form-control-premium" rows="3" placeholder="O que deve ser feito?"></textarea></div>
+                    <button type="submit" class="btn btn-indigo w-100 rounded-pill py-3 fw-bold mt-2 shadow-lg">Lançar Missão na Equipe</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalHistoricoTarefas" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header border-0 p-4 pb-0">
+                <h4 class="fw-bold text-dark">Histórico de Missões</h4>
+                <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body p-4">
-                <form action="{{ url_for('crm.editar_tarefa', id=t.id) }}" method="POST">
-                    <input type="hidden" name="apoiador_id" value="{{ apoiador.id }}">
-                    
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold text-muted">Tipo de Ação</label>
-                        <select name="tipo" class="form-select border-light bg-light" required>
-                            <option value="Ligar" {% if t.tipo == 'Ligar' %}selected{% endif %}>Ligar</option>
-                            <option value="WhatsApp" {% if t.tipo == 'WhatsApp' %}selected{% endif %}>Enviar WhatsApp</option>
-                            <option value="Visitar" {% if t.tipo == 'Visitar' %}selected{% endif %}>Visita Presencial</option>
-                            <option value="Entregar" {% if t.tipo == 'Entregar' %}selected{% endif %}>Entregar Material</option>
-                        </select>
+                <div class="modal-scroll">
+                    {% for t in tarefas_vinculadas %}
+                    <div class="p-3 bg-light rounded-4 border mb-3 d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="badge {% if t.status == 'concluida' %}bg-success{% else %}bg-primary{% endif %} rounded-pill small mb-1">{{ t.status|upper }}</span>
+                            <h6 class="fw-bold mb-0 text-dark">{{ t.tipo }}</h6>
+                            <p class="small text-muted mb-0">Prazo: {{ t.data_limite.strftime('%d/%m/%Y') if t.data_limite else 'S/D' }}</p>
+                        </div>
+                        <a href="{{ url_for('crm.detalhe_tarefa', tarefa_id=t.id) }}" class="btn btn-sm btn-indigo rounded-pill px-4 fw-bold shadow-sm">Ver Operação</a>
                     </div>
-
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold text-muted">Data Limite</label>
-                        <input type="date" name="data_limite" class="form-control border-light bg-light" value="{{ t.data_limite }}" required>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold text-muted">Status</label>
-                        <select name="status" class="form-select border-light bg-light" required>
-                            <option value="pendente" {% if t.status == 'pendente' %}selected{% endif %}>Pendente</option>
-                            <option value="concluida" {% if t.status == 'concluida' %}selected{% endif %}>Concluída</option>
-                            <option value="cancelada" {% if t.status == 'cancelada' %}selected{% endif %}>Cancelada</option>
-                        </select>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold text-muted">Delegar para</label>
-                        <select name="assessor_id" class="form-select border-light bg-light">
-                            <option value="">Fazer eu mesmo</option>
-                            {% for assessor in assessores %}
-                                <option value="{{ assessor.id }}" {% if t.assessor_id|string == assessor.id|string %}selected{% endif %}>{{ assessor.nome }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-
-                    <div class="mb-4">
-                        <label class="form-label small fw-bold text-muted">Instruções/Descrição</label>
-                        <textarea name="descricao" class="form-control border-light bg-light" rows="2" required>{{ t.descricao }}</textarea>
-                    </div>
-
-                    <button type="submit" class="btn btn-indigo w-100 rounded-pill fw-bold shadow-sm" style="background-color: #4f46e5; color: white;">Salvar Alterações</button>
-                </form>
+                    {% else %}
+                    <div class="text-center py-4 text-muted small italic">Nenhuma missão vinculada a este perfil.</div>
+                    {% endfor %}
+                </div>
             </div>
         </div>
     </div>
 </div>
-{% endfor %}
 
-<style>
-    .extra-small { font-size: 0.75rem; }
-    .text-indigo { color: #4f46e5 !important; }
-    .btn-indigo { background-color: #4f46e5; color: white; border: none; }
-    .btn-indigo:hover { background-color: #3f36c5; color: white; }
-    /* Scrollbar minimalista para o Histórico */
-    .timeline-simple::-webkit-scrollbar { width: 6px; }
-    .timeline-simple::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
-    .timeline-simple::-webkit-scrollbar-thumb { background: #c7c7cc; border-radius: 4px; }
-    .timeline-simple::-webkit-scrollbar-thumb:hover { background: #a1a1aa; }
-</style>
-<div class="modal fade" id="modalEditarCadastro" tabindex="-1">
-    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-        <div class="modal-content border-0 shadow rounded-4">
-            <div class="modal-header border-0 bg-light">
-                <h5 class="modal-title fw-bold text-indigo"><i class="fa-solid fa-user-pen me-2"></i>Editar Cadastro e Endereço</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+<div class="modal fade" id="modalEditarPerfil" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content overflow-hidden">
+            <div class="modal-header bg-dark text-white p-4 border-0">
+                <h5 class="fw-bold mb-0"><i class="fa-solid fa-user-pen me-2 text-primary"></i>Edição Estratégica</h5>
+                <button type="button" class="btn-close btn-close-white shadow-none" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body p-4 bg-light">
-                <form action="{{ url_for('crm.editar_cadastro_geral', id=apoiador.id) }}" method="POST">
-                    
-                    <h6 class="fw-bold text-dark mb-3">1. Dados Pessoais e Estratégia</h6>
-                    <div class="row g-3 mb-4 bg-white p-3 rounded-4 shadow-sm">
-                        <div class="col-md-6">
-                            <label class="form-label small fw-bold text-muted">Nome</label>
-                            <input type="text" name="nome" class="form-control bg-light border-light" value="{{ apoiador.nome }}" required>
+            <form action="{{ url_for('crm.editar_apoiador', apoiador_id=apoiador.id) }}" method="POST">
+                <div class="modal-body p-4 pt-0">
+                    <div class="modal-scroll mt-4">
+                        <div class="modal-section-title">Identificação</div>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-7"><label class="info-label">Nome Completo</label><input type="text" name="nome" class="form-control form-control-premium" value="{{ apoiador.nome }}" required></div>
+                            <div class="col-md-5"><label class="info-label">WhatsApp</label><input type="text" name="telefone" class="form-control form-control-premium" value="{{ apoiador.telefone }}"></div>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label small fw-bold text-muted">Telefone</label>
-                            <input type="text" name="telefone" id="telefone_edit" class="form-control bg-light border-light" value="{{ apoiador.telefone }}" required>
+
+                        <div class="modal-section-title">Endereço</div>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-3"><label class="info-label">CEP</label><input type="text" name="cep" class="form-control form-control-premium" value="{{ apoiador.cep }}"></div>
+                            <div class="col-md-9"><label class="info-label">Rua</label><input type="text" name="logradouro" class="form-control form-control-premium" value="{{ apoiador.logradouro }}"></div>
+                            <div class="col-md-3"><label class="info-label">Nº</label><input type="text" name="numero" class="form-control form-control-premium" value="{{ apoiador.numero }}"></div>
+                            <div class="col-md-5"><label class="info-label">Bairro</label><input type="text" name="bairro" class="form-control form-control-premium" value="{{ apoiador.bairro }}"></div>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label small fw-bold text-muted">Grau de Apoio</label>
-                            <select name="grau_apoio" class="form-select bg-light border-light">
-                                <option value="forte" {% if apoiador.grau_apoio == 'forte' %}selected{% endif %}>Forte</option>
-                                <option value="medio" {% if apoiador.grau_apoio == 'medio' %}selected{% endif %}>Médio</option>
-                                <option value="fraco" {% if apoiador.grau_apoio == 'fraco' %}selected{% endif %}>Fraco</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label small fw-bold text-muted">Votos na Família</label>
-                            <input type="number" name="votos_familia" class="form-control bg-light border-light" value="{{ apoiador.votos_familia or 1 }}" min="1">
-                        </div>
-                        <div class="col-12 mt-3">
-                            <div class="d-flex flex-wrap gap-3">
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" name="oferece_muro" id="edit_muro" {% if apoiador.oferece_muro %}checked{% endif %}>
-                                    <label class="form-check-label small fw-bold" for="edit_muro">Oferece Muro</label>
-                                </div>
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" name="oferece_carro" id="edit_carro" {% if apoiador.oferece_carro %}checked{% endif %}>
-                                    <label class="form-check-label small fw-bold" for="edit_carro">Oferece Carro</label>
-                                </div>
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" name="lideranca" id="edit_lideranca" {% if apoiador.lideranca %}checked{% endif %}>
-                                    <label class="form-check-label small fw-bold text-indigo" for="edit_lideranca">Liderança</label>
-                                </div>
+
+                        <div class="modal-section-title">Fidelidade</div>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6"><label class="info-label">Votos na Casa</label><input type="number" name="votos_familia" class="form-control form-control-premium" value="{{ apoiador.votos_familia or 1 }}"></div>
+                            <div class="col-md-6"><label class="info-label">Grau de Apoio</label>
+                                <select name="grau_apoio" class="form-select form-control-premium">
+                                    <option value="forte" {% if apoiador.grau_apoio == 'forte' %}selected{% endif %}>🟢 Forte</option>
+                                    <option value="medio" {% if apoiador.grau_apoio == 'medio' %}selected{% endif %}>🟡 Médio</option>
+                                    <option value="fraco" {% if apoiador.grau_apoio == 'fraco' %}selected{% endif %}>🔴 Fraco</option>
+                                </select>
                             </div>
                         </div>
                     </div>
-
-                    <h6 class="fw-bold text-dark mb-3">2. Endereço (Atualiza o Mapa)</h6>
-                    <div class="row g-3 bg-white p-3 rounded-4 shadow-sm">
-                        <div class="col-md-4">
-                            <label class="form-label small fw-bold text-muted">CEP</label>
-                            <input type="text" name="cep" id="cep_edit" class="form-control bg-light border-light" value="{{ apoiador.cep }}">
-                        </div>
-                        <div class="col-md-8">
-                            <label class="form-label small fw-bold text-muted">Logradouro</label>
-                            <input type="text" name="logradouro" id="logradouro_edit" class="form-control bg-light border-light" value="{{ apoiador.logradouro or apoiador.rua }}">
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label small fw-bold text-muted">Número</label>
-                            <input type="text" name="numero" class="form-control bg-light border-light" value="{{ apoiador.numero }}">
-                        </div>
-                        <div class="col-md-9">
-                            <label class="form-label small fw-bold text-muted">Complemento</label>
-                            <input type="text" name="complemento" class="form-control bg-light border-light" value="{{ apoiador.complemento }}">
-                        </div>
-                        <div class="col-md-5">
-                            <label class="form-label small fw-bold text-muted">Bairro</label>
-                            <input type="text" name="bairro" id="bairro_edit" class="form-control bg-light border-light" value="{{ apoiador.bairro }}">
-                        </div>
-                        <div class="col-md-5">
-                            <label class="form-label small fw-bold text-muted">Cidade</label>
-                            <input type="text" name="cidade" id="cidade_edit" class="form-control bg-light border-light" value="{{ apoiador.cidade }}" readonly>
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label small fw-bold text-muted">UF</label>
-                            <input type="text" name="uf" id="uf_edit" class="form-control bg-light border-light" value="{{ apoiador.uf }}" readonly>
-                        </div>
-                    </div>
-
-                    <div class="mt-4 text-end">
-                        <button type="submit" class="btn btn-indigo rounded-pill px-5 fw-bold shadow-sm">Gravar Alterações</button>
-                    </div>
-                </form>
-            </div>
+                </div>
+                <div class="p-4 border-top">
+                    <button type="submit" class="btn btn-indigo w-100 rounded-pill py-3 fw-bold shadow-lg">Confirmar Atualização</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
 
-<script>
-    // ViaCEP para o Modal de Edição
-    document.getElementById('cep_edit').addEventListener('blur', function() {
-        let cep = this.value.replace(/\D/g, ''); 
-        if (cep.length === 8) {
-            fetch(`https://viacep.com.br/ws/${cep}/json/`)
-                .then(response => response.json())
-                .then(data => {
-                    if (!data.erro) {
-                        document.getElementById('logradouro_edit').value = data.logradouro;
-                        document.getElementById('bairro_edit').value = data.bairro;
-                        document.getElementById('cidade_edit').value = data.localidade;
-                        document.getElementById('uf_edit').value = data.uf;
-                    }
-                });
-        }
-    });
-</script>
 {% endblock %}

@@ -3,21 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SaaS Político | Login</title>
+    <title>VotaHub | Gestão Estratégica</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
         :root {
-            --primary-color: #4f46e5; /* Roxo SaaS (Indigo) */
+            --primary-color: #4f46e5; /* Indigo */
             --primary-hover: #4338ca;
             --text-dark: #111827;
             --text-muted: #6b7280;
             --bg-light: #f9fafb;
+            --border-radius-lg: 24px;
+            --border-radius-md: 12px;
         }
         
-        body { font-family: 'Inter', sans-serif; overflow-x: hidden; margin: 0; background-color: #f3f4f6; }
+        body { 
+            font-family: 'Inter', sans-serif; 
+            overflow-x: hidden; 
+            margin: 0; 
+            background-color: #f3f4f6; 
+        }
+        
         .login-container { min-height: 100vh; display: flex; }
         
         /* Painel Branco (Esquerda) */
@@ -35,31 +43,51 @@
         .brand-logo { font-weight: 700; font-size: 1.5rem; color: var(--text-dark); text-decoration: none; letter-spacing: -0.5px; }
         .brand-logo i { color: var(--primary-color); }
         
+        /* Inputs Premium */
         .form-control { 
             background-color: var(--bg-light); 
             border: 1px solid #e5e7eb; 
-            border-radius: 8px; 
-            padding: 12px 16px; 
+            border-radius: var(--border-radius-md); 
+            padding: 14px 16px; 
             transition: all 0.2s; 
             color: var(--text-dark);
+            font-size: 0.95rem;
         }
         .form-control:focus { 
             background-color: #ffffff; 
             border-color: var(--primary-color); 
-            box-shadow: 0 0 0 0.25rem rgba(79, 70, 229, 0.15); 
+            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1); 
+        }
+
+        .input-group-text.password-toggle {
+            background-color: var(--bg-light);
+            border: 1px solid #e5e7eb;
+            border-left: none;
+            border-radius: 0 var(--border-radius-md) var(--border-radius-md) 0;
+            cursor: pointer;
+            color: var(--text-muted);
+            transition: all 0.2s;
+        }
+        .form-control:focus + .password-toggle {
+            background-color: #ffffff;
+            border-color: var(--primary-color);
         }
         
+        /* Botões */
         .btn-primary { 
             background-color: var(--primary-color); 
             border-color: var(--primary-color); 
-            font-weight: 500; 
-            border-radius: 8px; 
-            padding: 12px; 
+            font-weight: 600; 
+            border-radius: var(--border-radius-md); 
+            padding: 14px; 
             transition: all 0.2s; 
+            letter-spacing: 0.3px;
         }
         .btn-primary:hover { 
             background-color: var(--primary-hover); 
             border-color: var(--primary-hover); 
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);
         }
         
         /* Painel Escuro (Direita) */
@@ -79,28 +107,56 @@
         .right-side::before { 
             content: ''; 
             position: absolute; top: 0; left: 0; right: 0; bottom: 0; 
-            background: linear-gradient(135deg, rgba(17, 24, 39, 0.9) 0%, rgba(31, 41, 55, 0.8) 100%); 
+            background: linear-gradient(135deg, rgba(17, 24, 39, 0.9) 0%, rgba(79, 70, 229, 0.8) 100%); 
             z-index: 1; 
         }
         .right-content { position: relative; z-index: 2; padding: 3rem; }
         
-        /* Modal Específico */
+        /* Modais Executive */
+        .modal-content {
+            border-radius: var(--border-radius-lg);
+            border: none;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        .modal-backdrop.show {
+            backdrop-filter: blur(5px);
+            background-color: rgba(17, 24, 39, 0.7);
+        }
+
+        /* Código OTP Numérico */
         .codigo-input { 
-            text-transform: uppercase; 
-            letter-spacing: 6px; 
+            letter-spacing: 16px; 
             text-align: center; 
-            font-size: 1.5rem; 
+            font-size: 2rem; 
             font-weight: 700; 
             color: var(--primary-color) !important;
-            border: 2px solid var(--primary-color) !important;
-            background-color: rgba(79, 70, 229, 0.05) !important;
+            border: 2px solid #e5e7eb !important;
+            background-color: #ffffff !important;
+            padding: 1rem;
+            border-radius: 16px;
         }
-        
+        .codigo-input:focus {
+            border-color: var(--primary-color) !important;
+            background-color: rgba(79, 70, 229, 0.02) !important;
+        }
+
+        /* Requisitos de Senha */
+        .password-reqs {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+        .password-reqs li { margin-bottom: 4px; transition: color 0.3s ease; }
+        .password-reqs li.valid { color: #10b981; } /* Verde Sucesso */
+        .password-reqs li i { width: 16px; }
+
         @media (max-width: 991.98px) {
             .login-container { flex-direction: column; }
             .left-side, .right-side { flex: 1 1 100%; width: 100%; }
             .left-side { padding: 3rem 2rem; }
-            .right-side { padding: 4rem 2rem; display: none; } /* Esconde a imagem no mobile para focar no login */
+            .right-side { padding: 4rem 2rem; display: none; }
         }
     </style>
 </head>
@@ -108,17 +164,19 @@
     <div class="login-container">
         <div class="left-side">
             <a href="#" class="brand-logo mb-5">
-                <i class="fa-solid fa-chart-pie me-2"></i>SaaS Político
+                <i class="fa-solid fa-layer-group me-2"></i>VotaHub
             </a>
             
-            <h1 class="fw-bold mb-2" style="font-size: 2rem; color: var(--text-dark);">Bem-vindo</h1>
+            <h1 class="fw-bold mb-2" style="font-size: 2rem; color: var(--text-dark);">Acesso Seguro</h1>
             <p class="small mb-4" style="color: var(--text-muted);">Insira suas credenciais corporativas para continuar.</p>
 
             {% with messages = get_flashed_messages(with_categories=true) %}
                 {% if messages %}
                     {% for category, message in messages %}
-                        <div class="alert alert-{{ category }} border-0 shadow-sm small py-2 rounded-3" role="alert">
-                            {{ message }}
+                        {% set alert_color = 'danger' if category == 'error' else category %}
+                        <div class="alert alert-{{ alert_color }} border-0 shadow-sm small py-3 rounded-3 d-flex align-items-center mb-4" role="alert">
+                            <i class="fa-solid fa-circle-exclamation me-2 fs-5"></i>
+                            <div>{{ message }}</div>
                         </div>
                     {% endfor %}
                 {% endif %}
@@ -126,30 +184,32 @@
 
             <form action="{{ url_for('auth.login') }}" method="POST">
                 <div class="mb-3">
-                    <label class="form-label small fw-semibold" style="color: var(--text-dark);">Usuário</label>
-                    <input type="email" name="email" class="form-control" placeholder="seu@email.com" required>
+                    <label class="form-label small fw-semibold" style="color: var(--text-dark);">E-mail corporativo</label>
+                    <input type="email" name="email" class="form-control" placeholder="nome@votahub.com" required>
                 </div>
                 <div class="mb-4">
                     <label class="form-label small fw-semibold" style="color: var(--text-dark);">Senha</label>
-                    <input type="password" name="password" class="form-control" placeholder="••••••••" required>
+                    <div class="input-group">
+                        <input type="password" name="password" id="login_password" class="form-control" style="border-right: none;" placeholder="••••••••" required>
+                        <span class="input-group-text password-toggle" onclick="togglePassword('login_password', this)">
+                            <i class="fa-regular fa-eye"></i>
+                        </span>
+                    </div>
                 </div>
-                <button type="submit" class="btn btn-primary w-100 mb-4 shadow-sm">Entrar no Sistema</button>
+                <button type="submit" class="btn btn-primary w-100 mb-4 shadow-sm">Entrar na Plataforma</button>
             </form>
             
             <div class="mt-auto pt-4 text-start">
-                <p class="small m-0" style="color: var(--text-muted); font-size: 0.75rem;">&copy; 2026 SaaS Político CRM. Protegido por criptografia ponta-a-ponta.</p>
+                <p class="small m-0" style="color: var(--text-muted); font-size: 0.75rem;">&copy; 2026 VotaHub Inc. Protegido por criptografia ponta-a-ponta.</p>
             </div>
         </div>
 
         <div class="right-side d-none d-lg-flex">
             <div class="right-content">
-                <h1 class="fw-bold mb-3 display-4">Potencialize sua<br>Estratégia</h1>
-                <p class="lead mb-4" style="font-size: 1.1rem; opacity: 0.9; max-width: 600px; margin: 0 auto;">
-                    O CRM inteligente que conecta inteligência, operação de rua e resultados em um único lugar.
+                <h1 class="fw-bold mb-3 display-4">Inteligência<br>Geopolítica</h1>
+                <p class="lead mb-4" style="font-size: 1.1rem; opacity: 0.9; max-width: 500px; margin: 0 auto;">
+                    O ecossistema definitivo para gestão de equipes de alta performance e mapeamento de dados eleitorais.
                 </p>
-                <a href="#" class="btn btn-outline-light rounded-pill px-4 py-2 mt-3 fw-semibold" style="border-width: 2px;">
-                    Acessar Site Institucional <i class="fa-solid fa-arrow-up-right-from-square ms-2"></i>
-                </a>
             </div>
         </div>
     </div>
@@ -157,35 +217,62 @@
     {% if show_reset_modal %}
     <div class="modal fade" id="resetPasswordModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
-                <div class="modal-header border-0 pb-0 pt-4 px-4 justify-content-center">
+            <div class="modal-content pb-2">
+                
+                <div class="modal-header border-0 pb-0 pt-5 px-4 justify-content-center position-relative">
+                    <a href="{{ url_for('auth.logout') }}" class="btn-close position-absolute top-0 end-0 m-4" style="font-size: 0.8rem;"></a>
                     <div class="text-center">
-                        <div class="d-inline-flex align-items-center justify-content-center bg-primary bg-opacity-10 text-primary rounded-circle mb-3" style="width: 60px; height: 60px;">
-                            <i class="fa-solid fa-shield-halved fa-2x"></i>
+                        <div class="d-inline-flex align-items-center justify-content-center bg-primary bg-opacity-10 text-primary rounded-circle mb-3" style="width: 64px; height: 64px;">
+                            <i class="fa-solid fa-shield-check fa-2x"></i>
                         </div>
-                        <h4 class="modal-title fw-bold" style="color: var(--text-dark);">Segurança da Conta</h4>
+                        <h4 class="modal-title fw-bold" style="color: var(--text-dark);">Configuração de Segurança</h4>
                     </div>
                 </div>
-                <div class="modal-body p-4 pt-2 text-center">
+                
+                <div class="modal-body px-5 pt-2 pb-5 text-center">
                     <p class="small mb-4" style="color: var(--text-muted);">
-                        Este é o seu primeiro acesso. Por favor, crie uma senha pessoal para proteger seus dados.<br>
-                        Enviamos um código de 6 dígitos para o seu e-mail.
+                        Este é o seu primeiro acesso. Enviamos um token seguro para <strong>{{ temp_email }}</strong>. <br>Por favor, valide o código e crie sua senha definitiva.
                     </p>
                     
-                    <form action="{{ url_for('auth.trocar_senha') }}" method="POST" class="text-start">
+                    <form action="{{ url_for('auth.trocar_senha') }}" method="POST" class="text-start" id="resetForm">
                         <input type="hidden" name="email" value="{{ temp_email }}">
                         
                         <div class="mb-4">
-                            <label class="form-label small fw-bold text-center w-100" style="color: var(--text-dark);">Código de Verificação</label>
-                            <input type="text" name="codigo" class="form-control codigo-input rounded-3 shadow-sm" placeholder="A1B2C3" maxlength="6" required autocomplete="off">
+                            <label class="form-label small fw-bold text-center w-100" style="color: var(--text-muted);">CÓDIGO DE 6 DÍGITOS</label>
+                            <input type="text" name="codigo" class="form-control codigo-input" placeholder="000000" inputmode="numeric" pattern="\d{6}" maxlength="6" required autocomplete="off">
                         </div>
                         
-                        <div class="mb-4">
-                            <label class="form-label small fw-bold" style="color: var(--text-dark);">Defina sua Nova Senha</label>
-                            <input type="password" name="nova_senha" class="form-control" placeholder="Mínimo de 6 caracteres" minlength="6" required>
+                        <div class="row g-3 mb-3">
+                            <div class="col-12">
+                                <label class="form-label small fw-semibold" style="color: var(--text-dark);">Nova Senha</label>
+                                <div class="input-group">
+                                    <input type="password" name="nova_senha" id="nova_senha" class="form-control" style="border-right: none;" placeholder="Crie uma senha forte" required>
+                                    <span class="input-group-text password-toggle" onclick="togglePassword('nova_senha', this)">
+                                        <i class="fa-regular fa-eye"></i>
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label small fw-semibold" style="color: var(--text-dark);">Confirme a Senha</label>
+                                <div class="input-group">
+                                    <input type="password" id="confirmar_senha" class="form-control" style="border-right: none;" placeholder="Repita a senha" required>
+                                    <span class="input-group-text password-toggle" onclick="togglePassword('confirmar_senha', this)">
+                                        <i class="fa-regular fa-eye"></i>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="p-3 mb-4 rounded-3" style="background-color: var(--bg-light); border: 1px solid #e5e7eb;">
+                            <ul class="password-reqs">
+                                <li id="req-length"><i class="fa-solid fa-circle-xmark me-2"></i>Mínimo de 8 caracteres</li>
+                                <li id="req-upper"><i class="fa-solid fa-circle-xmark me-2"></i>Pelo menos 1 letra maiúscula</li>
+                                <li id="req-symbol"><i class="fa-solid fa-circle-xmark me-2"></i>Pelo menos 1 símbolo (!@#$%^&*)</li>
+                                <li id="req-match"><i class="fa-solid fa-circle-xmark me-2"></i>As senhas devem coincidir</li>
+                            </ul>
                         </div>
                         
-                        <button type="submit" class="btn btn-primary w-100 fw-bold py-2 shadow-sm">Salvar Nova Senha e Entrar</button>
+                        <button type="submit" id="submitReset" class="btn btn-primary w-100 fw-bold py-3 shadow-sm" disabled>Criptografar e Entrar</button>
                     </form>
                 </div>
             </div>
@@ -195,21 +282,91 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
-    {% if show_reset_modal %}
     <script>
+        // Função para revelar/esconder senha
+        function togglePassword(inputId, iconSpan) {
+            const input = document.getElementById(inputId);
+            const icon = iconSpan.querySelector('i');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+
+        {% if show_reset_modal %}
         document.addEventListener("DOMContentLoaded", function() {
+            // Instancia e mostra o modal sem permitir fechar clicando fora
             var myModal = new bootstrap.Modal(document.getElementById('resetPasswordModal'));
             myModal.show();
             
-            // Força letra maiúscula ao digitar
+            // 1. Controle Rigoroso do Input OTP (Apenas Números)
             const inputCodigo = document.querySelector('.codigo-input');
-            inputCodigo.addEventListener('input', function() {
-                this.value = this.value.toUpperCase();
-                // Remove espaços em branco
-                this.value = this.value.replace(/\s/g, '');
+            inputCodigo.addEventListener('input', function(e) {
+                // Substitui qualquer coisa que não seja dígito de 0 a 9 por vazio
+                this.value = this.value.replace(/[^0-9]/g, '');
             });
+
+            // 2. Validador de Complexidade de Senha em Tempo Real
+            const pwd = document.getElementById('nova_senha');
+            const confirmPwd = document.getElementById('confirmar_senha');
+            const btnSubmit = document.getElementById('submitReset');
+
+            // Elementos de UI dos Requisitos
+            const reqLength = document.getElementById('req-length');
+            const reqUpper = document.getElementById('req-upper');
+            const reqSymbol = document.getElementById('req-symbol');
+            const reqMatch = document.getElementById('req-match');
+
+            function updateRequirement(el, isValid) {
+                const icon = el.querySelector('i');
+                if (isValid) {
+                    el.classList.add('valid');
+                    icon.classList.remove('fa-circle-xmark');
+                    icon.classList.add('fa-circle-check');
+                } else {
+                    el.classList.remove('valid');
+                    icon.classList.remove('fa-circle-check');
+                    icon.classList.add('fa-circle-xmark');
+                }
+            }
+
+            function validatePassword() {
+                const val = pwd.value;
+                const cVal = confirmPwd.value;
+
+                // Testes
+                const isLengthValid = val.length >= 8;
+                const isUpperValid = /[A-Z]/.test(val);
+                const isSymbolValid = /[!@#$%^&*(),.?":{}|<>]/.test(val);
+                const isMatchValid = val === cVal && val.length > 0;
+
+                // Atualiza UI
+                updateRequirement(reqLength, isLengthValid);
+                updateRequirement(reqUpper, isUpperValid);
+                updateRequirement(reqSymbol, isSymbolValid);
+                updateRequirement(reqMatch, isMatchValid);
+
+                // Libera o botão apenas se TUDO estiver verde e o OTP tiver 6 dígitos
+                const isOtpValid = inputCodigo.value.length === 6;
+                
+                if (isLengthValid && isUpperValid && isSymbolValid && isMatchValid && isOtpValid) {
+                    btnSubmit.removeAttribute('disabled');
+                } else {
+                    btnSubmit.setAttribute('disabled', 'true');
+                }
+            }
+
+            // Escutadores de eventos
+            pwd.addEventListener('input', validatePassword);
+            confirmPwd.addEventListener('input', validatePassword);
+            inputCodigo.addEventListener('input', validatePassword);
         });
+        {% endif %}
     </script>
-    {% endif %}
 </body>
 </html>
