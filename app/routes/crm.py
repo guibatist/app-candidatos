@@ -788,3 +788,74 @@ def api_busca_apoiadores():
     
     termo = request.args.get('q', '')
     return jsonify(CRMService.buscar_apoiadores_por_nome(ctx['cliente_id'], termo))
+
+# ==========================================
+# BLOCO 10: SUPORTE E CHAMADOS (OFFCANVAS)
+# ==========================================
+import os
+from app.routes.auth import disparar_email_assincrono 
+
+@crm_bp.context_processor
+def injetar_historico_chamados():
+    """Injeta os chamados do usuário logado na sessão para popular a aba deslizante lateral."""
+    if 'user_id' not in session or session.get('role') == 'superadmin':
+        return dict(meus_chamados=[])
+    
+    conn = get_db_connection()
+    chamados = []
+    if conn:
+        try:
+            with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+                cursor.execute("""
+                    SELECT * FROM chamados_suporte 
+                    WHERE usuario_id = %s ORDER BY criado_em DESC
+                """, (session['user_id'],))
+                chamados = cursor.fetchall()
+        finally:
+            conn.close()
+    return dict(meus_chamados=chamados)
+
+@crm_bp.route('/suporte/abrir', methods=['POST'])
+def abrir_chamado():
+    ctx = obter_contexto_acesso()
+    if not ctx: return redirect(url_for('auth.login'))
+    
+    tipo_chamado = request.form.get('tipo_chamado')
+    descricao = request.form.get('descricao')
+    
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                INSERT INTO chamados_suporte (cliente_id, usuario_id, tipo, descricao, status)
+                VALUES (%s, %s, %s, %s, 'Aberto') RETURNING id
+            """, (ctx['cliente_id'], ctx['user_id'], tipo_chamado, descricao))
+            chamado_id = cursor.fetchone()['id']
+        conn.commit()
+
+        # Usa dinamicamente o e-mail do seu .env
+        email_master = os.getenv('SMTP_USER') 
+        nome_usuario = session.get('nome', 'Usuário')
+        
+        corpo_email = f"""
+        <div style="font-family: Arial, sans-serif; color: #333;">
+            <h2 style="color: #ef4444;">🚨 Novo Chamado: #{chamado_id}</h2>
+            <p>O usuário <strong>{nome_usuario}</strong> abriu uma nova solicitação.</p>
+            <div style="background-color: #f3f4f6; padding: 15px; border-radius: 5px; margin: 10px 0;">
+                <p><strong>Tipo:</strong> {tipo_chamado}</p>
+                <p><strong>Descrição:</strong><br>{descricao}</p>
+            </div>
+            <p>Acesse a Central de Chamados no SuperAdmin para responder.</p>
+        </div>
+        """
+        if email_master:
+            disparar_email_assincrono(email_master, f"Suporte VotaHub: {tipo_chamado}", corpo_email)
+        
+        flash('Chamado enviado com sucesso! Acompanhe o status na sua aba de suporte.', 'success')
+    except Exception as e:
+        print(f"Erro ao abrir chamado: {e}")
+        flash('Erro interno ao processar o chamado. Tente novamente.', 'danger')
+    finally:
+        if conn: conn.close()
+        
+    return redirect(request.referrer or url_for('crm.dashboard_index'))

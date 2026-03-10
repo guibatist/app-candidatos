@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-headset text-info me-2"></i>Central de Chamados</h2>
+            <p class="text-muted small">Gerencie bugs, dúvidas e requisições dos Tenants.</p>
+        </div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show border-0 shadow-sm rounded-3" role="alert">
+                    <i class="fa-solid fa-circle-info me-2"></i>{{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="card border-0 shadow-sm" style="border-radius: 20px;">
+        <div class="table-responsive p-3">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light">
+                    <tr>
+                        <th class="small text-muted border-0 rounded-start">ID / DATA</th>
+                        <th class="small text-muted border-0">CLIENTE & USUÁRIO</th>
+                        <th class="small text-muted border-0">CHAMADO</th>
+                        <th class="small text-muted border-0 text-center">STATUS</th>
+                        <th class="small text-muted border-0 text-end rounded-end pe-4">AÇÃO</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in chamados %}
+                    <tr>
+                        <td class="border-bottom-0 py-3">
+                            <div class="fw-bold text-dark">#{{ c.id }}</div>
+                            <div class="small text-muted">{{ c.criado_em.strftime('%d/%m/%Y %H:%M') if c.criado_em else '' }}</div>
+                        </td>
+                        <td class="border-bottom-0 py-3">
+                            <div class="fw-semibold text-primary">{{ c.cliente_nome }}</div>
+                            <div class="small text-muted"><i class="fa-regular fa-user me-1"></i>{{ c.usuario_nome }}</div>
+                        </td>
+                        <td class="border-bottom-0 py-3" style="max-width: 300px;">
+                            <div class="fw-bold text-dark small text-uppercase">{{ c.tipo }}</div>
+                            <div class="small text-muted text-truncate">{{ c.descricao }}</div>
+                        </td>
+                        <td class="border-bottom-0 py-3 text-center">
+                            {% if c.status == 'Aberto' %}
+                                <span class="badge bg-danger bg-opacity-10 text-danger rounded-pill px-3">Aberto</span>
+                            {% elif c.status == 'Em Análise' %}
+                                <span class="badge bg-warning bg-opacity-10 text-warning rounded-pill px-3">Em Análise</span>
+                            {% else %}
+                                <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-3">Concluído</span>
+                            {% endif %}
+                        </td>
+                        <td class="border-bottom-0 py-3 text-end pe-4">
+                            <button class="btn btn-light border btn-sm shadow-sm text-primary fw-bold" data-bs-toggle="modal" data-bs-target="#modalResponder{{ c.id }}">
+                                Responder
+                            </button>
+                        </td>
+                    </tr>
+
+                    <div class="modal fade" id="modalResponder{{ c.id }}" tabindex="-1">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+                                <form action="{{ url_for('superadmin.atualizar_chamado', chamado_id=c.id) }}" method="POST">
+                                    <div class="modal-header border-0 px-4 pt-4">
+                                        <h5 class="fw-bold mb-0">Gerenciar Chamado #{{ c.id }}</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body px-4">
+                                        <div class="bg-light p-3 rounded-3 mb-4 border">
+                                            <p class="small text-muted text-uppercase mb-1 fw-bold">{{ c.tipo }}</p>
+                                            <p class="mb-0 text-dark">{{ c.descricao }}</p>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label class="form-label small fw-bold text-muted">Status do Chamado</label>
+                                            <select name="status" class="form-select bg-light border-0 rounded-3">
+                                                <option value="Aberto" {% if c.status == 'Aberto' %}selected{% endif %}>Aberto</option>
+                                                <option value="Em Análise" {% if c.status == 'Em Análise' %}selected{% endif %}>Em Análise (Acionando TI, etc)</option>
+                                                <option value="Concluído" {% if c.status == 'Concluído' %}selected{% endif %}>Concluído / Resolvido</option>
+                                            </select>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label small fw-bold text-muted">Sua Resposta / Observação (Visível para o cliente)</label>
+                                            <textarea name="resposta_admin" class="form-control bg-light border-0 rounded-3" rows="4" placeholder="Escreva a atualização para o cliente...">{{ c.resposta_admin or '' }}</textarea>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer border-0 px-4 pb-4">
+                                        <button type="submit" class="btn btn-primary w-100 py-2 fw-bold rounded-3">Atualizar Chamado</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <tr><td colspan="5" class="text-center py-5 text-muted">Nenhum chamado aberto no sistema.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -341,3 +341,57 @@ def excluir_usuario(usuario_id):
             conn.close()
     
     return redirect(request.referrer or url_for('superadmin.painel_geral'))
+
+# ==========================================
+# BLOCO 5: CENTRAL DE CHAMADOS (MASTER)
+# ==========================================
+@superadmin_bp.route('/chamados')
+def listar_chamados():
+    if not is_superadmin(): return redirect(url_for('auth.login'))
+    
+    conn = get_db_connection()
+    chamados = []
+    if conn:
+        try:
+            with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+                cursor.execute("""
+                    SELECT c.*, u.nome as usuario_nome, cl.nome_candidato as cliente_nome
+                    FROM chamados_suporte c
+                    JOIN usuarios u ON c.usuario_id = u.id
+                    JOIN clientes cl ON c.cliente_id = cl.id
+                    ORDER BY 
+                        CASE WHEN c.status = 'Aberto' THEN 1 WHEN c.status = 'Em Análise' THEN 2 ELSE 3 END,
+                        c.criado_em DESC
+                """)
+                chamados = cursor.fetchall()
+        except Exception as e:
+            print(f"[DB-ERROR] Erro ao carregar chamados: {e}")
+        finally:
+            conn.close()
+            
+    return render_template('superadmin/chamados.html', chamados=chamados)
+
+@superadmin_bp.route('/chamados/<chamado_id>/atualizar', methods=['POST'])
+def atualizar_chamado(chamado_id):
+    if not is_superadmin(): return redirect(url_for('auth.login'))
+    
+    status = request.form.get('status')
+    resposta = request.form.get('resposta_admin')
+    
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                UPDATE chamados_suporte 
+                SET status = %s, resposta_admin = %s, atualizado_em = CURRENT_TIMESTAMP
+                WHERE id = %s
+            """, (status, resposta, chamado_id))
+        conn.commit()
+        flash('Chamado atualizado e usuário poderá visualizar a resposta.', 'success')
+    except Exception as e:
+        conn.rollback()
+        flash('Erro ao atualizar chamado.', 'danger')
+    finally:
+        if conn: conn.close()
+        
+    return redirect(url_for('superadmin.listar_chamados'))
