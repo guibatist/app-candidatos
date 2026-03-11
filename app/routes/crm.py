@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 import math
-from flask import Blueprint, render_template, session, redirect, url_for, request, jsonify, flash
+from flask import Blueprint, render_template, session, redirect, url_for, request, jsonify, flash, g
 from psycopg2.extras import RealDictCursor
 from app.routes.auth import enviar_alerta_sistema
 # Nossos módulos
@@ -49,6 +49,72 @@ def _parse_date(date_val):
         return date_val.date()
     return date_val
 
+@crm_bp.before_app_request
+def carregar_notificacoes_globais():
+    if 'user_id' not in session:
+        g.total_notificacoes = 0
+        return
+
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            # CONTA APENAS O QUE NÃO FOI LIDO
+            cursor.execute("""
+                SELECT 
+                    (SELECT COUNT(id) FROM tarefas WHERE (assessor_id = %s OR cliente_id = %s) AND lida = FALSE) +
+                    (SELECT COUNT(id) FROM mensagens WHERE destinatario_id = %s AND lida = FALSE AND apagada = FALSE)
+                as total
+            """, (session['user_id'], session['user_id'], session['user_id']))
+            
+            # Forçamos o valor dentro do objeto global 'g' e na variável de template
+            res = cursor.fetchone()
+            g.total_notificacoes = res[0] if res else 0
+    except:
+        g.total_notificacoes = 0
+    finally:
+        if conn: conn.close()
+
+# Context Processor para garantir que o template veja o valor de 'g'
+@crm_bp.app_context_processor
+def inject_total_notificacoes():
+    return dict(total_notificacoes=getattr(g, 'total_notificacoes', 0))
+
+@crm_bp.app_context_processor
+def inject_sidebar_notificacoes():
+    # Pega o ID do usuário logado na sessão
+    user_id = session.get('user_id')
+    
+    # Se não houver usuário (ex: deslogado), zera o contador
+    if not user_id:
+        return dict(total_notificacoes=0)
+    
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            # 1. CONTA TAREFAS (FILTRANDO APENAS lida = FALSE)
+            # É aqui que corrigimos o erro para todos os assessores
+            cursor.execute("""
+                SELECT COUNT(id) FROM tarefas 
+                WHERE (assessor_id = %s OR cliente_id = %s) 
+                AND lida = FALSE
+            """, (user_id, user_id))
+            t_count = cursor.fetchone()[0] or 0
+            
+            # 2. CONTA MENSAGENS (FILTRANDO APENAS lida = FALSE)
+            cursor.execute("""
+                SELECT COUNT(id) FROM mensagens 
+                WHERE destinatario_id = %s 
+                AND lida = FALSE AND apagada = FALSE
+            """, (user_id,))
+            m_count = cursor.fetchone()[0] or 0
+            
+            # Retorna a soma exata para o 'base.html' (sidebar)
+            return dict(total_notificacoes = t_count + m_count)
+    except Exception as e:
+        print(f"Erro ao injetar notificações: {e}")
+        return dict(total_notificacoes=0)
+    finally:
+        if conn: conn.close()
 # ==========================================
 # BLOCO 2: DASHBOARD E GEOINTELIGÊNCIA
 # ==========================================
@@ -728,7 +794,7 @@ def notificacoes():
     
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-            # 1. Chat
+            # 1. Chat (Mantém igual, já filtra por lida=FALSE)
             cursor.execute("""
                 SELECT m.remetente_id, u.nome, COUNT(m.id) as qtd, MAX(m.data_envio) as ultima_msg
                 FROM mensagens m JOIN usuarios u ON m.remetente_id = u.id
@@ -737,8 +803,15 @@ def notificacoes():
             """, (ctx['user_id'],))
             alertas_chat = cursor.fetchall()
             
-            # 2. Tarefas
-            cursor.execute("SELECT id, tipo, descricao, data_limite FROM tarefas WHERE assessor_id = %s AND status = 'pendente' ORDER BY data_limite ASC", (ctx['user_id'],))
+            # 2. Tarefas - ADICIONADO FILTRO: AND lida = FALSE
+            # Note que removi o status='pendente' para que o usuário possa "dar lido" 
+            # mesmo em tarefas que ele ainda não concluiu, se você preferir assim.
+            cursor.execute("""
+                SELECT id, tipo, descricao, data_limite 
+                FROM tarefas 
+                WHERE assessor_id = %s AND lida = FALSE 
+                ORDER BY data_limite ASC
+            """, (ctx['user_id'],))
             tarefas_db = cursor.fetchall()
             
             hoje, amanha = datetime.now().date(), datetime.now().date() + timedelta(days=1)
@@ -752,29 +825,74 @@ def notificacoes():
                 else: cor, icone, msg = 'info', 'fa-calendar-check', f"Para dia {venc.strftime('%d/%m')}"
 
                 tarefas_notificacoes.append({
-                    'id': t['id'], 'titulo': t['tipo'] or 'Tarefa', 'descricao': t['descricao'] or '',
-                    'mensagem': msg, 'cor': cor, 'icone': icone
+                    'id': t['id'], 
+                    'titulo': t['tipo'] or 'Tarefa', 
+                    'descricao': t['descricao'] or '',
+                    'mensagem': msg, 
+                    'cor': cor, 
+                    'icone': icone
                 })
     finally:
         if conn: conn.close()
         
-    return render_template('crm/notificacoes.html', alertas_chat=alertas_chat, tarefas_notificacoes=tarefas_notificacoes, permissoes=ctx['permissoes'])
+    # Calculando total para o badge da interface
+    total_nao_lidas = len(alertas_chat) + len(tarefas_notificacoes)
+        
+    return render_template('crm/notificacoes.html', 
+                           alertas_chat=alertas_chat, 
+                           tarefas_notificacoes=tarefas_notificacoes, 
+                           total_notificacoes=total_nao_lidas, 
+                           permissoes=ctx['permissoes'])
 
 @crm_bp.route('/notificacoes/limpar', methods=['POST'])
 def limpar_notificacoes():
     ctx = obter_contexto_acesso()
-    if not ctx: return redirect(url_for('auth.login'))
+    if not ctx: return jsonify({'success': False}), 401
     
     conn = get_db_connection()
     try:
         with conn.cursor() as cursor:
-            cursor.execute("UPDATE mensagens SET lida = TRUE WHERE destinatario_id = %s AND lida = FALSE", (ctx['user_id'],))
+            # MARCAR TAREFAS COMO LIDAS
+            cursor.execute("UPDATE tarefas SET lida = TRUE WHERE assessor_id = %s", (ctx['user_id'],))
+            
+            # MARCAR MENSAGENS COMO LIDAS (Opcional, mas recomendado para zerar tudo)
+            cursor.execute("UPDATE mensagens SET lida = TRUE WHERE destinatario_id = %s", (ctx['user_id'],))
+            
+        conn.commit() # <--- OBRIGATÓRIO PARA GRAVAR NO POSTGRES
+        return jsonify({'success': True})
+    except Exception as e:
+        conn.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+    finally:
+        conn.close()
+
+@crm_bp.route('/tarefas/marcar-lida/<tarefa_id>', methods=['POST']) # Removi o 'int:' para aceitar UUID ou String
+def marcar_tarefa_lida(tarefa_id):
+    ctx = obter_contexto_acesso()
+    if not ctx: 
+        return jsonify({'success': False, 'error': 'Sessão expirada'}), 401
+    
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            # Fazemos o update garantindo que a tarefa pertence ao usuário logado
+            cursor.execute("""
+                UPDATE tarefas 
+                SET lida = TRUE 
+                WHERE id = %s AND assessor_id = %s
+            """, (str(tarefa_id), ctx['user_id']))
+            
+            # Verifica se alguma linha foi realmente afetada
+            if cursor.rowcount == 0:
+                return jsonify({'success': False, 'error': 'Tarefa não encontrada'}), 404
+                
         conn.commit()
-        flash('Todas as notificações foram marcadas como lidas.', 'success')
+        return jsonify({'success': True})
+    except Exception as e:
+        if conn: conn.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
     finally:
         if conn: conn.close()
-    return redirect(url_for('crm.notificacoes'))
-
 
 # ==========================================
 # BLOCO 9: APIs INTERNAS (SUPORTE AO FRONT)
@@ -924,3 +1042,6 @@ def meu_perfil():
 
     # Pode renderizar na pasta 'auth' ou 'crm', ajuste conforme sua estrutura
     return render_template('crm/perfil.html', usuario=usuario)
+
+from flask import jsonify
+

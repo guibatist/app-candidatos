@@ -12,10 +12,10 @@
         padding: 8px 20px;
         margin-right: 10px;
         transition: all 0.3s;
-        background-color: transparent; /* Impede herança de cor escura */
+        background-color: transparent; 
     }
     .nav-pills-custom .nav-link:hover { 
-        background-color: #f1f5f9 !important; /* Força um cinza ultra claro no hover */
+        background-color: #f1f5f9 !important; 
         color: #1e293b !important; 
     }
     .nav-pills-custom .nav-link.active { 
@@ -24,7 +24,6 @@
         box-shadow: 0 4px 10px rgba(79, 70, 229, 0.2); 
     }
     
-    /* BLINDAGEM CONTRA O VAZAMENTO DA SIDEBAR */
     .nav-pills-custom .nav-item {
         background-color: transparent !important;
         border-left: none !important;
@@ -33,7 +32,6 @@
         background-color: transparent !important;
     }
 
-    /* BLINDAGEM CONTRA O FUNDO PRETO NOS LINKS */
     a.notification-link {
         display: block;
         text-decoration: none;
@@ -49,6 +47,7 @@
         transition: all 0.3s ease;
         border-left: 4px solid transparent;
         background-color: #ffffff;
+        position: relative;
     }
     .notification-card:hover {
         transform: translateX(5px);
@@ -57,6 +56,12 @@
         background-color: #f8fafc;
     }
     
+    /* Destaque para não lidas */
+    .notification-card.unread {
+        background-color: #eff6ff;
+        border-left-color: #3b82f6;
+    }
+
     .avatar-wrapper { position: relative; }
     .status-dot {
         position: absolute;
@@ -69,11 +74,29 @@
         border-radius: 50%;
     }
 
-    /* Botão de Limpar */
     .btn-limpar { transition: all 0.3s; }
     .btn-limpar:hover {
         background-color: #f1f5f9 !important;
         color: #4f46e5 !important;
+    }
+    
+    /* Botão de marcar individual */
+    .btn-read-single {
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        transition: 0.2s;
+        z-index: 10;
+        position: relative;
+    }
+    .btn-read-single:hover {
+        background-color: #22c55e !important;
+        color: white !important;
+        border-color: #22c55e !important;
     }
 </style>
 
@@ -86,32 +109,31 @@
         
         <div class="d-flex align-items-center gap-3">
             {% if total_notificacoes > 0 %}
-                <form action="{{ url_for('crm.limpar_notificacoes') }}" method="POST" class="m-0">
-                    <button type="submit" class="btn btn-light border shadow-sm rounded-pill px-4 fw-bold text-muted btn-limpar">
-                        <i class="fa-solid fa-check-double me-2"></i>Marcar tudo como lido
-                    </button>
-                </form>
+                <button type="button" id="btn-read-all" class="btn btn-light border shadow-sm rounded-pill px-4 fw-bold text-muted btn-limpar">
+                    <i class="fa-solid fa-check-double me-2"></i>Marcar tudo como lido 
+                    (<span id="total-count-badge">{{ total_notificacoes }}</span>)
+                </button>
             {% endif %}
         </div>
     </div>
 
-    <div class="row">
+    <div class="row" id="notif-list">
         <div class="col-lg-8">
             
             <ul class="nav nav-pills nav-pills-custom mb-4 border-bottom pb-3" id="notificationTabs" role="tablist">
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link active d-flex align-items-center gap-2" id="msg-tab" data-bs-toggle="pill" data-bs-target="#msg-pane" type="button" role="tab">
+                    <button class="nav-link active d-flex align-items-center gap-2" id="msg-tab" data-bs-toggle="pill" data-bs-target="#msg-pane" type="button" role="tab" aria-controls="msg-pane" aria-selected="true">
                         <i class="fa-solid fa-comment-dots"></i> Mensagens
-                        {% if msgs_nao_lidas and msgs_nao_lidas > 0 %}
-                            <span class="badge bg-danger rounded-pill ms-1">{{ msgs_nao_lidas }}</span>
+                        {% if msgs_nao_lidas > 0 %}
+                            <span class="badge bg-danger rounded-pill ms-1" id="badge-count-msg">{{ msgs_nao_lidas }}</span>
                         {% endif %}
                     </button>
                 </li>
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link d-flex align-items-center gap-2" id="tarefas-tab" data-bs-toggle="pill" data-bs-target="#tarefas-pane" type="button" role="tab">
+                    <button class="nav-link d-flex align-items-center gap-2" id="tarefas-tab" data-bs-toggle="pill" data-bs-target="#tarefas-pane" type="button" role="tab" aria-controls="tarefas-pane" aria-selected="false">
                         <i class="fa-solid fa-list-check"></i> Tarefas & Sistema
-                        {% if tarefas_pendentes and tarefas_pendentes > 0 %}
-                            <span class="badge bg-warning text-dark rounded-pill ms-1">{{ tarefas_pendentes }}</span>
+                        {% if tarefas_notificacoes|length > 0 %}
+                            <span class="badge bg-warning text-dark rounded-pill ms-1" id="badge-count-tarefas">{{ tarefas_notificacoes|length }}</span>
                         {% endif %}
                     </button>
                 </li>
@@ -119,34 +141,32 @@
 
             <div class="tab-content" id="notificationTabsContent">
                 
-                <div class="tab-pane fade show active" id="msg-pane" role="tabpanel" tabindex="0">
+                <div class="tab-pane fade show active" id="msg-pane" role="tabpanel" aria-labelledby="msg-tab" tabindex="0">
                     {% if alertas_chat %}
                         <div class="d-flex flex-column gap-3">
                             {% for alerta in alertas_chat %}
-                            <a href="{{ url_for('crm.chat', destinatario_id=alerta.remetente_id) }}" class="notification-link text-dark">
-                                <div class="card border-0 rounded-4 shadow-sm notification-card p-3">
+                            <div class="card border-0 rounded-4 shadow-sm notification-card unread p-3 notification-item">
+                                <a href="{{ url_for('crm.chat', destinatario_id=alerta.remetente_id) }}" class="notification-link text-dark text-decoration-none flex-grow-1">
                                     <div class="d-flex justify-content-between align-items-center">
                                         <div class="d-flex align-items-center gap-3">
                                             <div class="avatar-wrapper">
-                                                <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width: 50px; height: 50px; font-size: 1.2rem;">
+                                                <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width: 50px; height: 50px;">
                                                     {{ alerta.nome[0] | upper }}
                                                 </div>
-                                                <div class="status-dot"></div>
                                             </div>
                                             <div>
                                                 <h6 class="mb-1 fw-bold">{{ alerta.nome }}</h6>
                                                 <p class="mb-0 text-muted small">
-                                                    Tem <span class="fw-bold text-dark">{{ alerta.qtd }} novas mensagens</span> à sua espera no chat seguro.
+                                                    Tem <span class="fw-bold text-dark">{{ alerta.qtd }} novas mensagens</span> à sua espera.
                                                 </p>
                                             </div>
                                         </div>
                                         <div class="text-end">
                                             <span class="badge bg-danger rounded-pill px-3 py-2 shadow-sm">{{ alerta.qtd }}</span>
-                                            <div class="text-muted small mt-2"><i class="fa-solid fa-clock me-1"></i>Pendente</div>
                                         </div>
                                     </div>
-                                </div>
-                            </a>
+                                </a>
+                            </div>
                             {% endfor %}
                         </div>
                     {% else %}
@@ -157,17 +177,16 @@
                                 </div>
                                 <h4 class="fw-bold text-dark">Zero Inbox Alcançado</h4>
                                 <p class="text-muted mb-0">Não tem mensagens pendentes da sua equipa.</p>
-                                <p class="text-muted small">Pode voltar ao painel principal ou consultar a geointeligência.</p>
                             </div>
                         </div>
                     {% endif %}
                 </div>
 
-                <div class="tab-pane fade" id="tarefas-pane" role="tabpanel" tabindex="0">
+                <div class="tab-pane fade" id="tarefas-pane" role="tabpanel" aria-labelledby="tarefas-tab" tabindex="0">
                     {% if tarefas_notificacoes %}
                         <div class="d-flex flex-column gap-3">
                             {% for tarefa in tarefas_notificacoes %}
-                            <div class="card border-0 rounded-4 shadow-sm p-3 border-start border-4 border-{{ tarefa.cor }}" style="background-color: #ffffff;">
+                            <div class="card border-0 rounded-4 shadow-sm p-3 border-start border-4 border-{{ tarefa.cor }} notification-item unread" data-id="{{ tarefa.id }}" style="background-color: #eff6ff;">
                                 <div class="d-flex justify-content-between align-items-center">
                                     <div class="d-flex align-items-center gap-3">
                                         <div class="avatar-wrapper">
@@ -185,7 +204,10 @@
                                             </p>
                                         </div>
                                     </div>
-                                    <div class="text-end">
+                                    <div class="text-end d-flex align-items-center gap-2" style="z-index: 10;">
+                                        <button type="button" class="btn btn-sm btn-outline-success btn-read-single" data-id="{{ tarefa.id }}" title="Marcar como lido">
+                                            <i class="fa-solid fa-check"></i>
+                                        </button>
                                         <a href="/crm/tarefas/{{ tarefa.id }}" class="btn btn-sm btn-outline-primary rounded-pill px-3 shadow-sm">
                                             <i class="fa-solid fa-arrow-up-right-from-square me-1"></i> Abrir
                                         </a>
@@ -201,30 +223,35 @@
                                     <i class="fa-solid fa-check-double fa-2x"></i>
                                 </div>
                                 <h4 class="fw-bold text-dark">Agenda Limpa</h4>
-                                <p class="text-muted mb-0">Você não tem tarefas pendentes ou em atraso para cumprir.</p>
+                                <p class="text-muted mb-0">Não tem tarefas pendentes ou em atraso para cumprir.</p>
                             </div>
                         </div>
                     {% endif %}
                 </div>
 
-            </div> </div>
+            </div>
+        </div>
         
         <div class="col-lg-4 d-none d-lg-block">
-            <div class="card border-0 rounded-4 shadow-sm bg-primary text-white overflow-hidden position-relative">
+            <div class="card border-0 rounded-4 shadow-sm bg-primary text-white overflow-hidden position-relative h-100">
                 <div class="position-absolute end-0 top-0 opacity-10 p-3" style="font-size: 8rem; margin-top: -30px; margin-right: -20px;">
                     <i class="fa-solid fa-bolt"></i>
                 </div>
                 
                 <div class="card-body p-4 position-relative z-index-1">
-                    <h5 class="fw-bold mb-3">Resumo da Campanha</h5>
-                    <ul class="list-unstyled mb-0" style="font-size: 0.9rem;">
-                        <li class="mb-3 d-flex align-items-center">
-                            <div class="bg-white bg-opacity-25 rounded p-2 me-3"><i class="fa-solid fa-users fa-fw"></i></div>
-                            <div>A sua equipa está <strong>ativa</strong></div>
+                    <h5 class="fw-bold mb-4">Central de Comando</h5>
+                    <ul class="list-unstyled mb-0" style="font-size: 0.95rem;">
+                        <li class="mb-4 d-flex align-items-center">
+                            <div class="bg-white bg-opacity-25 rounded p-3 me-3"><i class="fa-solid fa-users fa-fw"></i></div>
+                            <div>A sua equipa está <strong>ativa no terreno</strong> e a sincronizar dados.</div>
+                        </li>
+                        <li class="mb-4 d-flex align-items-center">
+                            <div class="bg-white bg-opacity-25 rounded p-3 me-3"><i class="fa-solid fa-shield-halved fa-fw"></i></div>
+                            <div>As comunicações estão <strong>encriptadas</strong> ponta a ponta.</div>
                         </li>
                         <li class="mb-3 d-flex align-items-center">
-                            <div class="bg-white bg-opacity-25 rounded p-2 me-3"><i class="fa-solid fa-shield-halved fa-fw"></i></div>
-                            <div>Comunicações <strong>criptografadas</strong></div>
+                            <div class="bg-white bg-opacity-25 rounded p-3 me-3"><i class="fa-solid fa-brain fa-fw"></i></div>
+                            <div>A Inteligência Artificial está a <strong>analisar</strong> o território.</div>
                         </li>
                     </ul>
                 </div>
@@ -234,4 +261,73 @@
     </div>
 </div>
 
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    
+    // Função para limpar os números da sidebar IMEDIATAMENTE
+    function limparBadgesSidebar() {
+        const floating = document.getElementById('sidebar-badge-floating');
+        const pill = document.getElementById('sidebar-badge-pill');
+        if (floating) floating.remove();
+        if (pill) pill.remove();
+    }
+
+    // 1. MARCAR INDIVIDUAL
+    document.body.addEventListener('click', function(e) {
+        const btn = e.target.closest('.btn-read-single');
+        if (btn) {
+            e.preventDefault();
+            const notifId = btn.getAttribute('data-id');
+            const card = btn.closest('.notification-item');
+
+            fetch("/crm/tarefas/marcar-lida/" + notifId, { 
+                method: "POST",
+                headers: { "Content-Type": "application/json" }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    // Efeito visual sumindo
+                    card.style.transition = "all 0.3s ease";
+                    card.style.opacity = "0";
+                    card.style.transform = "translateX(20px)";
+                    
+                    setTimeout(() => {
+                        card.remove();
+                        // Se era a última notificação visual, limpa a sidebar e recarrega
+                        if (document.querySelectorAll('.notification-item').length === 0) {
+                            limparBadgesSidebar();
+                            location.reload();
+                        } else {
+                            // Se ainda tem itens, recarrega para atualizar os contadores globais
+                            location.reload();
+                        }
+                    }, 300);
+                } else {
+                    console.error("Erro no banco:", data.error);
+                }
+            })
+            .catch(err => console.error("Erro de rede"));
+        }
+    });
+
+    // 2. MARCAR TUDO COMO LIDO
+    const btnAll = document.getElementById('btn-read-all');
+    if (btnAll) {
+        btnAll.addEventListener('click', function(e) {
+            e.preventDefault();
+            fetch("{{ url_for('crm.limpar_notificacoes') }}", { 
+                method: "POST",
+                headers: { "Content-Type": "application/json" }
+            })
+            .then(res => {
+                if (res.ok) {
+                    limparBadgesSidebar();
+                    location.reload();
+                }
+            });
+        });
+    }
+});
+</script>
 {% endblock %}

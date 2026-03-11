@@ -41,37 +41,87 @@
 
     #sidebar.collapsed .nav-category { display: none; }
 
+    /* --- ITEM DE NAVEGAÇÃO (O SEGREDO DO ALINHAMENTO) --- */
     .nav-item {
         display: flex;
         align-items: center;
-        padding: 12px 24px;
+        padding: 0 24px; /* Padding lateral fixo */
+        height: 50px;    /* Altura fixa para todos os itens */
         color: var(--sidebar-text);
         text-decoration: none;
         transition: all 0.2s;
         border-left: 4px solid transparent;
         margin-bottom: 2px;
         cursor: pointer;
+        position: relative;
+        overflow: hidden;
     }
 
     .nav-item:hover { background-color: var(--sidebar-hover); color: var(--sidebar-active-text); }
     .nav-item.active { background-color: var(--sidebar-active-bg); color: var(--sidebar-active-text); border-left-color: var(--sidebar-active-border); }
 
+    /* --- WRAPPER DO ÍCONE: ESPAÇO RESERVADO --- */
     .nav-icon-wrapper {
-        position: relative; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; margin-right: 15px; transition: margin 0.3s;
+        position: relative;
+        width: 24px;
+        min-width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 15px; /* Espaço exato entre ícone e texto */
+        flex-shrink: 0;
+        transition: margin 0.3s;
     }
-    .nav-icon { font-size: 1.1rem; }
 
-    .badge-pill-nav { margin-left: auto; font-size: 0.65rem; padding: 3px 8px; border-radius: 20px; font-weight: 800; }
+    .nav-icon { font-size: 1.1rem; flex-shrink: 0; }
+
+    /* --- BADGE DE TEXTO (SIDEBAR ABERTA) --- */
+    .badge-pill-nav {
+        margin-left: auto; /* Empurra para o fim da linha */
+        font-size: 0.65rem;
+        padding: 2px 8px;
+        border-radius: 20px;
+        font-weight: 800;
+        flex-shrink: 0; /* Não deixa o badge achatar */
+        background-color: #ef4444;
+        color: white;
+    }
+
+    /* --- BADGE FLUTUANTE (SOBRE O ÍCONE) --- */
     .badge-floating {
-        position: absolute; top: -6px; right: -8px; background-color: #ef4444; color: white; font-size: 0.6rem; min-width: 16px; height: 16px; border-radius: 50%; display: none; align-items: center; justify-content: center; border: 2px solid var(--sidebar-bg); font-weight: 900;
+        position: absolute;
+        top: -5px;
+        right: -7px;
+        background-color: #ef4444;
+        color: white;
+        font-size: 0.6rem;
+        width: 17px;
+        height: 17px;
+        border-radius: 50%;
+        display: none; /* Controlado pelo estado collapsed */
+        align-items: center;
+        justify-content: center;
+        border: 2px solid var(--sidebar-bg);
+        font-weight: 900;
+        z-index: 5;
     }
 
+    /* --- COMPORTAMENTO COLLAPSED (FECHADA) --- */
     #sidebar.collapsed .nav-icon-wrapper { margin-right: 0; }
-    #sidebar.collapsed .nav-text, #sidebar.collapsed .badge-pill-nav { display: none !important; }
+    #sidebar.collapsed .nav-text, 
+    #sidebar.collapsed .badge-pill-nav { display: none !important; }
+    
+    /* Mostra a bolinha apenas quando fechada para não poluir a aberta */
     #sidebar.collapsed .badge-floating { display: flex; } 
 
-    #sidebar.collapsed .nav-item { justify-content: center; padding: 15px 0; }
+    #sidebar.collapsed .nav-item { justify-content: center; padding: 0; }
+    
     .nav-item.locked { opacity: 0.4; cursor: not-allowed; filter: grayscale(1); }
+
+    /* Scrollbar estilizada para o menu lateral */
+    .sidebar-nav::-webkit-scrollbar { width: 4px; }
+    .sidebar-nav::-webkit-scrollbar-thumb { background: #1f2937; border-radius: 10px; }
 </style>
 
 <nav id="sidebar">
@@ -115,13 +165,13 @@
             <a href="{{ url_for('crm.notificacoes') }}" class="nav-item {% if request.endpoint == 'crm.notificacoes' %}active{% endif %}">
                 <div class="nav-icon-wrapper">
                     <i class="fa-solid fa-bell nav-icon"></i>
-                    {% if total_notificacoes and total_notificacoes > 0 %}
-                        <span class="badge-floating">{{ total_notificacoes }}</span>
+                    {% if g.total_notificacoes > 0 %}
+                        <span class="badge-floating">{{ g.total_notificacoes }}</span>
                     {% endif %}
                 </div>
                 <span class="nav-text">Notificações</span>
-                {% if total_notificacoes and total_notificacoes > 0 %}
-                    <span class="badge bg-danger badge-pill-nav">{{ total_notificacoes }}</span>
+                {% if g.total_notificacoes > 0 %}
+                    <span class="badge badge-pill-nav">{{ g.total_notificacoes }}</span>
                 {% endif %}
             </a>
 
@@ -159,6 +209,15 @@
         </a>
     </div>
 </nav>
+<script>
+    // Se o utilizador limpou as notificações nesta sessão, esconde os badges na sidebar
+    if (sessionStorage.getItem('notificacoes_limpas') === 'true') {
+        const b1 = document.getElementById('sidebar-badge-floating');
+        const b2 = document.getElementById('sidebar-badge-pill');
+        if (b1) b1.style.display = 'none';
+        if (b2) b2.style.display = 'none';
+    }
+</script>
 
 {% if session.role != 'superadmin' %}
 <div class="offcanvas offcanvas-end border-0 shadow-lg" tabindex="-1" id="offcanvasChamados" style="width: 400px; border-radius: 24px 0 0 24px;">
@@ -237,4 +296,6 @@
         </div>
     </div>
 </div>
+
+
 {% endif %}
