@@ -479,11 +479,12 @@ def detalhe_tarefa(tarefa_id):
     conn = get_db_connection()
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            # 1. BUSCA DADOS DA TAREFA
             cursor.execute("""
-                SELECT t.*, u_assessor.nome as delegado_nome, u_criador.nome as criador_nome, a.nome as apoiador_nome
+                SELECT t.*, u_ass.nome as delegado_nome, u_cri.nome as criador_nome, a.nome as apoiador_nome
                 FROM tarefas t
-                LEFT JOIN usuarios u_assessor ON t.assessor_id = u_assessor.id
-                LEFT JOIN usuarios u_criador ON t.criador_id = u_criador.id
+                LEFT JOIN usuarios u_ass ON t.assessor_id = u_ass.id
+                LEFT JOIN usuarios u_cri ON t.criador_id = u_cri.id
                 LEFT JOIN apoiadores a ON t.apoiador_id = a.id
                 WHERE t.id = %s AND t.cliente_id = %s
             """, (str(tarefa_id), ctx['cliente_id']))
@@ -493,59 +494,57 @@ def detalhe_tarefa(tarefa_id):
                 flash('Tarefa não encontrada.', 'danger')
                 return redirect(url_for('crm.listar_todas_tarefas'))
 
-            # ==========================================================
-            # 🚀 MÁGICA DO REDIRECIONAMENTO DE NOTIFICAÇÃO
-            # Se for um aviso do sistema, lê a Ref, marca lido e pula pra tarefa original!
-            # ==========================================================
-            if tarefa['tipo'] == 'Aviso de Sistema' and tarefa.get('descricao') and '[Ref:' in tarefa['descricao']:
+            # 2. REDIRECIONADOR DE NOTIFICAÇÃO ([Ref:id])
+            if tarefa['tipo'] == 'Aviso de Sistema' and '[Ref:' in (tarefa['descricao'] or ''):
                 match = re.search(r'\[Ref:(.+?)\]', tarefa['descricao'])
                 if match:
-                    target_id = match.group(1).strip()
-                    # Marca a notificação como lida para sumir da sidebar
+                    real_id = match.group(1).strip()
                     cursor.execute("UPDATE tarefas SET lida = TRUE WHERE id = %s", (str(tarefa_id),))
                     conn.commit()
-                    # Redireciona na velocidade da luz para a tarefa real
-                    return redirect(url_for('crm.detalhe_tarefa', tarefa_id=target_id))
-            # ==========================================================
+                    return redirect(url_for('crm.detalhe_tarefa', tarefa_id=real_id))
 
-            # Dependências
+            # 3. BUSCA DEPENDÊNCIAS
             cursor.execute("SELECT m.*, u.nome FROM tarefa_membros m JOIN usuarios u ON m.usuario_id = u.id WHERE m.tarefa_id = %s", (str(tarefa_id),))
             membros = cursor.fetchall()
-
+            
             cursor.execute("SELECT c.*, u.nome FROM tarefa_chat c JOIN usuarios u ON c.usuario_id = u.id WHERE c.tarefa_id = %s ORDER BY data_envio ASC", (str(tarefa_id),))
-            mensagens_chat = cursor.fetchall()
+            mensagens = cursor.fetchall()
             
             cursor.execute("SELECT p.*, u.nome FROM tarefa_pedidos_acesso p JOIN usuarios u ON p.usuario_id = u.id WHERE p.tarefa_id = %s AND p.status = 'pendente'", (str(tarefa_id),))
             pedidos = cursor.fetchall()
 
-            cursor.execute("SELECT id, nome FROM usuarios WHERE cliente_id = %s", (ctx['cliente_id'],))
+            cursor.execute("SELECT id, nome FROM usuarios WHERE cliente_id = %s ORDER BY nome", (ctx['cliente_id'],))
             usuarios_equipa = cursor.fetchall()
 
-            # --- NOVA REGRA UNIFICADA ---
-            is_owner = (tarefa['assessor_id'] == ctx['user_id'] or tarefa.get('criador_id') == ctx['user_id'])
-            is_membro = any(m['usuario_id'] == ctx['user_id'] for m in membros)
-
-            # Se é dono ou está na equipe, pode fazer TUDO
-            pode_editar = is_owner or is_membro
-            # --------------------------------------
+            # 4. REGRAS DE ACESSO (Cálculo no Python para não dar erro no HTML)
+            user_id_str = str(ctx['user_id'])
+            assessor_id_str = str(tarefa['assessor_id']) if tarefa['assessor_id'] else ""
+            criador_id_str = str(tarefa['criador_id']) if tarefa['criador_id'] else ""
+            
+            # Líder = Quem manda (Pode excluir membros)
+            eh_lider = (user_id_str == assessor_id_str or user_id_str == criador_id_str)
+            
+            # Membro = Quem está na lista de membros
+            na_equipe = any(str(m['usuario_id']) == user_id_str for m in membros)
+            
+            # Pode Editar/Chat = Líder ou Membro
+            pode_editar = eh_lider or na_equipe
 
     except Exception as e:
         print(f"Erro detalhe tarefa: {e}")
-        flash('Erro ao carregar dados.', 'danger')
+        flash('Erro ao carregar missão.', 'danger')
         return redirect(url_for('crm.listar_todas_tarefas'))
     finally:
         if conn: conn.close()
         
-    # PASSAMOS A VARIÁVEL TEM_ACESSO PARA O HTML
     return render_template('crm/tarefa_view.html', 
-                            tarefa=tarefa, 
-                            membros=membros, 
-                            mensagens=mensagens_chat, 
-                            pode_editar=pode_editar, 
-                            pedidos=pedidos, 
-                            usuarios_equipa=usuarios_equipa, 
-                            user_id=ctx['user_id'], 
-                            permissoes=ctx['permissoes'])
+                           tarefa=tarefa, 
+                           membros=membros, 
+                           mensagens=mensagens, 
+                           pode_editar=pode_editar, 
+                           eh_lider=eh_lider,  # <--- Nova variável
+                           pedidos=pedidos, 
+                           usuarios_equipa=usuarios_equipa)
 
 import uuid
 from flask import request, flash, redirect, url_for, session
@@ -625,43 +624,22 @@ def concluir_tarefa(tarefa_id):
 @crm_bp.route('/tarefas/<tarefa_id>/solicitar-acesso', methods=['POST'])
 def solicitar_acesso_tarefa(tarefa_id):
     ctx = obter_contexto_acesso()
-    if not ctx: return redirect(url_for('auth.login'))
-    
     conn = get_db_connection()
     try:
-        with conn.cursor() as cursor:
-            # Pega informações da tarefa para saber quem é o dono
+        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            # 1. Registra o Pedido
+            cursor.execute("INSERT INTO tarefa_pedidos_acesso (tarefa_id, usuario_id, status) VALUES (%s, %s, 'pendente') ON CONFLICT DO NOTHING", (str(tarefa_id), ctx['user_id']))
+            # 2. Notifica o Responsável
             cursor.execute("SELECT assessor_id, tipo FROM tarefas WHERE id = %s", (str(tarefa_id),))
-            tarefa = cursor.fetchone()
-            
-            if not tarefa:
-                flash('Tarefa não encontrada.', 'danger')
-                return redirect(url_for('crm.listar_todas_tarefas'))
-
-            # Insere o pedido
-            cursor.execute("""
-                INSERT INTO tarefa_pedidos_acesso (tarefa_id, usuario_id, status) 
-                VALUES (%s, %s, 'pendente') ON CONFLICT DO NOTHING
-            """, (str(tarefa_id), ctx['user_id']))
-            
-            # CRIA A NOTIFICAÇÃO PARA O DONO DA TAREFA COM UUID
-            id_notif = str(uuid.uuid4())
-            msg_notificacao = f"Você foi adicionado à equipe da missão: '{nome_tarefa}'. [Ref:{tarefa_id}]"
-            
-            cursor.execute("""
-                INSERT INTO tarefas (id, cliente_id, assessor_id, tipo, descricao, status, lida) 
-                VALUES (%s, %s, %s, 'Aviso de Sistema', %s, 'pendente', FALSE)
-            """, (id_notif, ctx['cliente_id'], tarefa[0], msg_notificacao))
-            
-        conn.commit()
-        flash('Solicitação enviada! Aguardando aprovação do coordenador.', 'warning')
-    except Exception as e:
-        if conn: conn.rollback()
-        print(f"Erro ao solicitar acesso: {e}")
-        flash('Erro ao processar solicitação.', 'danger')
+            t = cursor.fetchone()
+            if t:
+                id_notif = str(uuid.uuid4())
+                msg = f"{session.get('nome')} solicitou acesso à tarefa '{t['tipo']}'. [Ref:{tarefa_id}]"
+                cursor.execute("INSERT INTO tarefas (id, cliente_id, assessor_id, tipo, descricao, status, lida) VALUES (%s, %s, %s, 'Aviso de Sistema', %s, 'pendente', FALSE)", (id_notif, ctx['cliente_id'], t['assessor_id'], msg))
+            conn.commit()
+            flash('Solicitação enviada!', 'success')
     finally:
         if conn: conn.close()
-        
     return redirect(url_for('crm.detalhe_tarefa', tarefa_id=tarefa_id))
 
 
@@ -672,58 +650,39 @@ def adicionar_membro_tarefa(tarefa_id):
     if not ctx: return redirect(url_for('auth.login'))
     
     novo_membro_id = request.form.get('usuario_id')
-    papel = request.form.get('papel', 'membro')
     
     conn = get_db_connection()
     try:
-        with conn.cursor() as cursor:
-            # TRAVA DE SEGURANÇA
-            cursor.execute("""
-                SELECT t.assessor_id, t.criador_id, m.papel, t.tipo 
-                FROM tarefas t
-                LEFT JOIN tarefa_membros m ON t.id = m.tarefa_id AND m.usuario_id = %s
-                WHERE t.id = %s AND t.cliente_id = %s
-            """, (ctx['user_id'], str(tarefa_id), ctx['cliente_id']))
-            
-            row = cursor.fetchone()
-            if not row:
-                flash('Tarefa não encontrada.', 'danger')
-                return redirect(url_for('crm.listar_todas_tarefas'))
-                
-            is_owner = (row[0] == ctx['user_id'] or row[1] == ctx['user_id'])
-            is_admin = (row[2] == 'admin')
-            nome_tarefa = row[3]
-            
-            if not (is_owner or is_admin):
-                flash('Você não tem permissão para adicionar membros.', 'danger')
+        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            # 1. Verifica se a tarefa não está concluída
+            cursor.execute("SELECT status, tipo FROM tarefas WHERE id = %s", (str(tarefa_id),))
+            tarefa_meta = cursor.fetchone()
+            if tarefa_meta['status'] == 'concluida':
+                flash('Não é possível adicionar membros a uma tarefa concluída.', 'warning')
                 return redirect(url_for('crm.detalhe_tarefa', tarefa_id=tarefa_id))
 
-            # ADICIONA O MEMBRO NA EQUIPE
+            # 2. Adiciona na tabela de membros
             cursor.execute("""
                 INSERT INTO tarefa_membros (tarefa_id, usuario_id, papel) 
-                VALUES (%s, %s, %s) ON CONFLICT DO NOTHING
-            """, (str(tarefa_id), novo_membro_id, papel))
+                VALUES (%s, %s, 'membro') ON CONFLICT DO NOTHING
+            """, (str(tarefa_id), str(novo_membro_id)))
             
-            # ATUALIZA PEDIDO PENDENTE (se houver)
-            cursor.execute("""
-                UPDATE tarefa_pedidos_acesso SET status = 'aprovado' 
-                WHERE tarefa_id = %s AND usuario_id = %s
-            """, (str(tarefa_id), novo_membro_id))
-
-            # DISPARA A NOTIFICAÇÃO PARA O NOVO MEMBRO COM UUID
+            # 3. GERA A NOTIFICAÇÃO COM O LINK (REF) PARA O CONVIDADO
             id_notif = str(uuid.uuid4())
-            msg_notificacao = f"Você foi adicionado à equipe da missão: '{nome_tarefa}'."
+            # AQUI ESTÁ O LINK: [Ref:tarefa_id]
+            msg = f"Você foi adicionado à equipe da missão: '{tarefa_meta['tipo']}'. [Ref:{tarefa_id}]"
+            
             cursor.execute("""
                 INSERT INTO tarefas (id, cliente_id, assessor_id, tipo, descricao, status, lida) 
                 VALUES (%s, %s, %s, 'Aviso de Sistema', %s, 'pendente', FALSE)
-            """, (id_notif, ctx['cliente_id'], novo_membro_id, msg_notificacao))
+            """, (id_notif, ctx['cliente_id'], str(novo_membro_id), msg))
             
         conn.commit()
-        flash('Membro adicionado e notificado com sucesso!', 'success')
+        flash('Membro adicionado e notificado!', 'success')
     except Exception as e:
         if conn: conn.rollback()
-        print(f"Erro adicionar membro: {e}")
-        flash('Erro ao adicionar membro.', 'danger')
+        print(f"Erro ao convidar: {e}")
+        flash('Erro ao convidar membro.', 'danger')
     finally:
         if conn: conn.close()
         
@@ -734,15 +693,33 @@ def remover_membro_tarefa(tarefa_id):
     ctx = obter_contexto_acesso()
     if not ctx: return redirect(url_for('auth.login'))
     
+    usuario_a_remover = request.form.get('usuario_id')
+    
     conn = get_db_connection()
     try:
-        with conn.cursor() as cursor:
-            # TRAVA: Somente quem for o dono pode remover
-            # (Adicione verificação avançada de segurança aqui, se desejar)
+        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            # BUSCA QUEM É O DONO E O COORDENADOR
+            cursor.execute("SELECT assessor_id, criador_id FROM tarefas WHERE id = %s", (str(tarefa_id),))
+            tarefa = cursor.fetchone()
+            
+            if not tarefa:
+                return redirect(url_for('crm.listar_todas_tarefas'))
+
+            # TRAVA DE SEGURANÇA: Só o Criador ou o Coordenador podem remover membros
+            # O Membro comum não pode se remover nem remover os outros
+            pode_gerenciar_equipe = (str(ctx['user_id']) == str(tarefa['assessor_id']) or 
+                                     str(ctx['user_id']) == str(tarefa['criador_id']))
+            
+            if not pode_gerenciar_equipe:
+                flash('Acesso negado. Apenas o coordenador ou criador podem remover membros.', 'danger')
+                return redirect(url_for('crm.detalhe_tarefa', tarefa_id=tarefa_id))
+
+            # EXECUTA A REMOÇÃO
             cursor.execute("DELETE FROM tarefa_membros WHERE tarefa_id = %s AND usuario_id = %s", 
-                           (str(tarefa_id), request.form.get('usuario_id')))
-        conn.commit()
-        flash('Membro removido do grupo.', 'success')
+                           (str(tarefa_id), str(usuario_a_remover)))
+            conn.commit()
+            flash('Membro removido da equipe.', 'info')
+            
     finally:
         if conn: conn.close()
     return redirect(url_for('crm.detalhe_tarefa', tarefa_id=tarefa_id))
@@ -799,15 +776,33 @@ def enviar_mensagem_tarefa(tarefa_id):
     if not ctx: return redirect(url_for('auth.login'))
     
     conteudo = request.form.get('conteudo')
-    if not conteudo: return redirect(url_for('crm.detalhe_tarefa', tarefa_id=tarefa_id))
-    
+    if not conteudo:
+        return redirect(url_for('crm.detalhe_tarefa', tarefa_id=tarefa_id))
+
     conn = get_db_connection()
     try:
         with conn.cursor() as cursor:
-            cursor.execute("INSERT INTO tarefa_chat (tarefa_id, usuario_id, mensagem) VALUES (%s, %s, %s)", (tarefa_id, ctx['user_id'], conteudo))
+            # Trava de segurança
+            if not verificar_permissao_tarefa(cursor, tarefa_id, ctx['user_id'], ctx['cliente_id']):
+                flash('Sem permissão.', 'danger')
+                return redirect(url_for('crm.detalhe_tarefa', tarefa_id=tarefa_id))
+
+            # --- CORREÇÃO AQUI: UUID PURO ---
+            id_msg = str(uuid.uuid4()) # Removido o prefixo 'msg_'
+            
+            cursor.execute("""
+                INSERT INTO tarefa_chat (id, tarefa_id, usuario_id, mensagem, data_envio)
+                VALUES (%s, %s, %s, %s, %s)
+            """, (id_msg, str(tarefa_id), ctx['user_id'], conteudo, datetime.now()))
+            
         conn.commit()
+    except Exception as e:
+        if conn: conn.rollback()
+        print(f"Erro ao enviar mensagem: {e}")
+        flash('Erro ao enviar mensagem.', 'danger')
     finally:
         if conn: conn.close()
+        
     return redirect(url_for('crm.detalhe_tarefa', tarefa_id=tarefa_id))
 
 

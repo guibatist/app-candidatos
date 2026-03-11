@@ -305,81 +305,55 @@ class CRMService:
     @staticmethod
     def adicionar_tarefa(cliente_id, apoiador_id, dados, criador_id=None):
         """
-        Cria uma nova tarefa e adiciona automaticamente o criador como membro 
-        da equipe para garantir transparência no sistema.
+        Cria a tarefa e gera o alerta inicial para o executor com o link de redirecionamento.
         """
-        # Importação tardia para evitar erro de circular import
         from app.routes.auth import enviar_alerta_sistema 
         from datetime import datetime
         import uuid
-        
+
         conn = get_db_connection()
-        if not conn:
-            return
-            
+        if not conn: return
         try:
             with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-                # Gerar ID único para a tarefa
-                novo_id = f"tar_{uuid.uuid4().hex[:12]}"
-                
-                # Tratar o assessor (coordenador)
+                # 1. Gera o ID da Tarefa
+                nova_tarefa_id = f"tar_{uuid.uuid4().hex[:12]}"
                 assessor_id = dados.get('assessor_id')
-                if not assessor_id or assessor_id.strip() == '' or assessor_id == 'None':
-                    assessor_id = None
+                assessor_id = None if not assessor_id or assessor_id.strip() in ['', 'None'] else assessor_id
                 
-                # --- Lógica de Notificação por E-mail (Pré-busca) ---
-                assessor_dados = None
-                if assessor_id:
-                    cursor.execute("SELECT nome, email FROM usuarios WHERE id = %s", (str(assessor_id),))
-                    assessor_dados = cursor.fetchone()
-
-                # 1. INSERT DA TAREFA PRINCIPAL
+                # 2. Insere a Tarefa no Banco
                 cursor.execute("""
-                    INSERT INTO tarefas (id, cliente_id, apoiador_id, assessor_id, tipo, descricao, data_limite, status, data_criacao)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, 'pendente', %s)
-                """, (
-                    novo_id, 
-                    str(cliente_id), 
-                    str(apoiador_id), 
-                    assessor_id, 
-                    dados.get('tipo'), 
-                    dados.get('descricao'), 
-                    dados.get('data_limite') if dados.get('data_limite') else None,
-                    datetime.now()
-                ))
-                
-                # 2. INCLUSÃO AUTOMÁTICA DO CRIADOR NA EQUIPE (O SEGREDO DO NOME APARECER)
-                # Só adicionamos na tabela membros se o criador for DIFERENTE do assessor principal
-                # Se forem iguais, ele já aparece no topo como coordenador.
-                if criador_id:
-                    # Garantimos a comparação entre strings para não haver erro de tipo
-                    if str(criador_id) != str(assessor_id):
-                        cursor.execute("""
-                            INSERT INTO tarefa_membros (tarefa_id, usuario_id, papel) 
-                            VALUES (%s, %s, 'membro')
-                            ON CONFLICT DO NOTHING
-                        """, (novo_id, str(criador_id)))
+                    INSERT INTO tarefas (id, cliente_id, apoiador_id, assessor_id, criador_id, tipo, descricao, data_limite, status, data_criacao)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 'pendente', %s)
+                """, (nova_tarefa_id, str(cliente_id), str(apoiador_id), assessor_id, criador_id, 
+                      dados.get('tipo'), dados.get('descricao'), dados.get('data_limite') or None, datetime.now()))
+
+                # 3. Adiciona o Criador como Membro (Transparência)
+                if criador_id and assessor_id and str(criador_id) != str(assessor_id):
+                    cursor.execute("""
+                        INSERT INTO tarefa_membros (tarefa_id, usuario_id, papel) 
+                        VALUES (%s, %s, 'membro') ON CONFLICT DO NOTHING
+                    """, (nova_tarefa_id, str(criador_id)))
+
+                # 4. GERA A NOTIFICAÇÃO COM O LINK (REF) PARA O EXECUTOR
+                if assessor_id:
+                    id_aviso = str(uuid.uuid4())
+                    # AQUI ESTÁ O LINK: [Ref:nova_tarefa_id]
+                    msg_aviso = f"Você recebeu uma nova missão: '{dados.get('tipo')}'. [Ref:{nova_tarefa_id}]"
+                    
+                    cursor.execute("""
+                        INSERT INTO tarefas (id, cliente_id, assessor_id, tipo, descricao, status, lida)
+                        VALUES (%s, %s, %s, 'Aviso de Sistema', %s, 'pendente', FALSE)
+                    """, (id_aviso, str(cliente_id), assessor_id, msg_aviso))
 
                 conn.commit()
-                print(f"[CRM] Tarefa {novo_id} criada. Criador {criador_id} inserido na equipe.")
-
-                # 3. DISPARO DE E-MAIL (Pós-Commit para segurança)
-                if assessor_dados and assessor_dados.get('email'):
-                    enviar_alerta_sistema(
-                        destinatario=assessor_dados['email'],
-                        nome_usuario=assessor_dados['nome'],
-                        tipo_alerta="📅 Nova Tarefa no CRM",
-                        descricao=f"Uma nova tarefa foi atribuída a você.<br><b>Tipo:</b> {dados.get('tipo')}<br><b>Descrição:</b> {dados.get('descricao')}"
-                    )
+                print(f"[CRM] Tarefa {nova_tarefa_id} criada com sucesso.")
 
         except Exception as e:
-            if conn:
-                conn.rollback()
-            print(f"[DB-ERROR] Erro crítico ao adicionar tarefa: {e}")
-            raise e # Lança o erro para o Flask não exibir "Sucesso" falsamente
+            if conn: conn.rollback()
+            print(f"[DB-ERROR] Erro ao criar tarefa: {e}")
+            raise e
         finally:
-            if conn:
-                conn.close()
+            if conn: conn.close()
 
     @staticmethod
     def alterar_status_tarefa(cliente_id, tarefa_id, novo_status):
