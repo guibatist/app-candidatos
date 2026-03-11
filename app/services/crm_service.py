@@ -303,34 +303,67 @@ class CRMService:
     # SUB-BLOCO 2.4: GESTÃO DE TAREFAS
     # ==========================================
     @staticmethod
-    def adicionar_tarefa(cliente_id, apoiador_id, dados):
+    def adicionar_tarefa(cliente_id, apoiador_id, dados, criador_id=None):
+        """
+        Cria uma nova tarefa e adiciona automaticamente o criador como membro 
+        da equipe para garantir transparência no sistema.
+        """
         # Importação tardia para evitar erro de circular import
         from app.routes.auth import enviar_alerta_sistema 
+        from datetime import datetime
+        import uuid
         
         conn = get_db_connection()
-        if not conn: return
+        if not conn:
+            return
+            
         try:
             with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+                # Gerar ID único para a tarefa
                 novo_id = f"tar_{uuid.uuid4().hex[:12]}"
-                assessor_id = dados.get('assessor_id')
-                assessor_id = None if not assessor_id or assessor_id.strip() == '' else assessor_id
                 
-                # --- NOVO: Lógica de Notificação ---
+                # Tratar o assessor (coordenador)
+                assessor_id = dados.get('assessor_id')
+                if not assessor_id or assessor_id.strip() == '' or assessor_id == 'None':
+                    assessor_id = None
+                
+                # --- Lógica de Notificação por E-mail (Pré-busca) ---
                 assessor_dados = None
                 if assessor_id:
-                    cursor.execute("SELECT nome, email FROM usuarios WHERE id = %s", (assessor_id,))
+                    cursor.execute("SELECT nome, email FROM usuarios WHERE id = %s", (str(assessor_id),))
                     assessor_dados = cursor.fetchone()
-                # -----------------------------------
 
+                # 1. INSERT DA TAREFA PRINCIPAL
                 cursor.execute("""
                     INSERT INTO tarefas (id, cliente_id, apoiador_id, assessor_id, tipo, descricao, data_limite, status, data_criacao)
                     VALUES (%s, %s, %s, %s, %s, %s, %s, 'pendente', %s)
-                """, (novo_id, str(cliente_id), str(apoiador_id), assessor_id, 
-                      dados.get('tipo'), dados.get('descricao'), dados.get('data_limite'), datetime.now()))
+                """, (
+                    novo_id, 
+                    str(cliente_id), 
+                    str(apoiador_id), 
+                    assessor_id, 
+                    dados.get('tipo'), 
+                    dados.get('descricao'), 
+                    dados.get('data_limite') if dados.get('data_limite') else None,
+                    datetime.now()
+                ))
                 
-                conn.commit()
+                # 2. INCLUSÃO AUTOMÁTICA DO CRIADOR NA EQUIPE (O SEGREDO DO NOME APARECER)
+                # Só adicionamos na tabela membros se o criador for DIFERENTE do assessor principal
+                # Se forem iguais, ele já aparece no topo como coordenador.
+                if criador_id:
+                    # Garantimos a comparação entre strings para não haver erro de tipo
+                    if str(criador_id) != str(assessor_id):
+                        cursor.execute("""
+                            INSERT INTO tarefa_membros (tarefa_id, usuario_id, papel) 
+                            VALUES (%s, %s, 'membro')
+                            ON CONFLICT DO NOTHING
+                        """, (novo_id, str(criador_id)))
 
-                # Dispara o e-mail após o commit (garante que a tarefa foi salva antes de avisar)
+                conn.commit()
+                print(f"[CRM] Tarefa {novo_id} criada. Criador {criador_id} inserido na equipe.")
+
+                # 3. DISPARO DE E-MAIL (Pós-Commit para segurança)
                 if assessor_dados and assessor_dados.get('email'):
                     enviar_alerta_sistema(
                         destinatario=assessor_dados['email'],
@@ -340,10 +373,13 @@ class CRMService:
                     )
 
         except Exception as e:
-            if conn: conn.rollback()
-            print(f"[DB-ERROR] Erro ao adicionar tarefa e notificar: {e}")
+            if conn:
+                conn.rollback()
+            print(f"[DB-ERROR] Erro crítico ao adicionar tarefa: {e}")
+            raise e # Lança o erro para o Flask não exibir "Sucesso" falsamente
         finally:
-            if conn: conn.close()
+            if conn:
+                conn.close()
 
     @staticmethod
     def alterar_status_tarefa(cliente_id, tarefa_id, novo_status):

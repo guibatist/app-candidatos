@@ -6,6 +6,8 @@ from app.routes.auth import enviar_alerta_sistema
 # Nossos módulos
 from ..services.crm_service import CRMService
 from app.utils.db import get_db_connection
+import uuid
+import re
 
 crm_bp = Blueprint('crm', __name__)
 
@@ -389,11 +391,15 @@ def criar_tarefa_perfil(apoiador_id):
         if conn: conn.close()
     return redirect(url_for('crm.perfil_apoiador', apoiador_id=apoiador_id))
 
+# No arquivo app/routes/crm.py
 @crm_bp.route('/apoiadores/<apoiador_id>/tarefas', methods=['POST'])
 def nova_tarefa(apoiador_id):
     ctx = obter_contexto_acesso()
     if not ctx: return redirect(url_for('auth.login'))
-    CRMService.adicionar_tarefa(ctx['cliente_id'], apoiador_id, request.form)
+    
+    # IMPORTANTE: O quarto parâmetro 'ctx['user_id']' deve estar presente!
+    CRMService.adicionar_tarefa(ctx['cliente_id'], apoiador_id, request.form, ctx['user_id'])
+    
     flash('Tarefa adicionada com sucesso!', 'success')
     return redirect(url_for('crm.perfil_apoiador', apoiador_id=apoiador_id))
 
@@ -473,7 +479,6 @@ def detalhe_tarefa(tarefa_id):
     conn = get_db_connection()
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-            # Dados Principais
             cursor.execute("""
                 SELECT t.*, u_assessor.nome as delegado_nome, u_criador.nome as criador_nome, a.nome as apoiador_nome
                 FROM tarefas t
@@ -481,31 +486,48 @@ def detalhe_tarefa(tarefa_id):
                 LEFT JOIN usuarios u_criador ON t.criador_id = u_criador.id
                 LEFT JOIN apoiadores a ON t.apoiador_id = a.id
                 WHERE t.id = %s AND t.cliente_id = %s
-            """, (tarefa_id, ctx['cliente_id']))
+            """, (str(tarefa_id), ctx['cliente_id']))
             tarefa = cursor.fetchone()
             
             if not tarefa:
                 flash('Tarefa não encontrada.', 'danger')
                 return redirect(url_for('crm.listar_todas_tarefas'))
 
-            tarefa['data_limite'] = _parse_date(tarefa.get('data_limite'))
+            # ==========================================================
+            # 🚀 MÁGICA DO REDIRECIONAMENTO DE NOTIFICAÇÃO
+            # Se for um aviso do sistema, lê a Ref, marca lido e pula pra tarefa original!
+            # ==========================================================
+            if tarefa['tipo'] == 'Aviso de Sistema' and tarefa.get('descricao') and '[Ref:' in tarefa['descricao']:
+                match = re.search(r'\[Ref:(.+?)\]', tarefa['descricao'])
+                if match:
+                    target_id = match.group(1).strip()
+                    # Marca a notificação como lida para sumir da sidebar
+                    cursor.execute("UPDATE tarefas SET lida = TRUE WHERE id = %s", (str(tarefa_id),))
+                    conn.commit()
+                    # Redireciona na velocidade da luz para a tarefa real
+                    return redirect(url_for('crm.detalhe_tarefa', tarefa_id=target_id))
+            # ==========================================================
 
             # Dependências
-            cursor.execute("SELECT m.*, u.nome FROM tarefa_membros m JOIN usuarios u ON m.usuario_id = u.id WHERE m.tarefa_id = %s", (tarefa_id,))
+            cursor.execute("SELECT m.*, u.nome FROM tarefa_membros m JOIN usuarios u ON m.usuario_id = u.id WHERE m.tarefa_id = %s", (str(tarefa_id),))
             membros = cursor.fetchall()
 
-            cursor.execute("SELECT c.*, u.nome FROM tarefa_chat c JOIN usuarios u ON c.usuario_id = u.id WHERE c.tarefa_id = %s ORDER BY data_envio ASC", (tarefa_id,))
+            cursor.execute("SELECT c.*, u.nome FROM tarefa_chat c JOIN usuarios u ON c.usuario_id = u.id WHERE c.tarefa_id = %s ORDER BY data_envio ASC", (str(tarefa_id),))
             mensagens_chat = cursor.fetchall()
             
-            cursor.execute("SELECT p.*, u.nome FROM tarefa_pedidos_acesso p JOIN usuarios u ON p.usuario_id = u.id WHERE p.tarefa_id = %s AND p.status = 'pendente'", (tarefa_id,))
+            cursor.execute("SELECT p.*, u.nome FROM tarefa_pedidos_acesso p JOIN usuarios u ON p.usuario_id = u.id WHERE p.tarefa_id = %s AND p.status = 'pendente'", (str(tarefa_id),))
             pedidos = cursor.fetchall()
 
             cursor.execute("SELECT id, nome FROM usuarios WHERE cliente_id = %s", (ctx['cliente_id'],))
             usuarios_equipa = cursor.fetchall()
 
+            # --- NOVA REGRA UNIFICADA ---
             is_owner = (tarefa['assessor_id'] == ctx['user_id'] or tarefa.get('criador_id') == ctx['user_id'])
-            is_admin = any(m['usuario_id'] == ctx['user_id'] and m['papel'] == 'admin' for m in membros)
-            pode_editar = is_owner or is_admin
+            is_membro = any(m['usuario_id'] == ctx['user_id'] for m in membros)
+
+            # Se é dono ou está na equipe, pode fazer TUDO
+            pode_editar = is_owner or is_membro
+            # --------------------------------------
 
     except Exception as e:
         print(f"Erro detalhe tarefa: {e}")
@@ -514,10 +536,36 @@ def detalhe_tarefa(tarefa_id):
     finally:
         if conn: conn.close()
         
+    # PASSAMOS A VARIÁVEL TEM_ACESSO PARA O HTML
     return render_template('crm/tarefa_view.html', 
-                           tarefa=tarefa, membros=membros, mensagens=mensagens_chat, 
-                           pode_editar=pode_editar, pedidos=pedidos, usuarios_equipa=usuarios_equipa, 
-                           user_id=ctx['user_id'], permissoes=ctx['permissoes'])
+                            tarefa=tarefa, 
+                            membros=membros, 
+                            mensagens=mensagens_chat, 
+                            pode_editar=pode_editar, 
+                            pedidos=pedidos, 
+                            usuarios_equipa=usuarios_equipa, 
+                            user_id=ctx['user_id'], 
+                            permissoes=ctx['permissoes'])
+
+import uuid
+from flask import request, flash, redirect, url_for, session
+from psycopg2.extras import RealDictCursor
+
+def verificar_permissao_tarefa(cursor, tarefa_id, user_id, cliente_id, exige_admin=False):
+    """Retorna True se o usuário for o dono ou membro da tarefa."""
+    cursor.execute("""
+        SELECT t.assessor_id, t.criador_id, m.id 
+        FROM tarefas t
+        LEFT JOIN tarefa_membros m ON t.id = m.tarefa_id AND m.usuario_id = %s
+        WHERE t.id = %s AND t.cliente_id = %s
+    """, (user_id, str(tarefa_id), cliente_id))
+    row = cursor.fetchone()
+    if not row: return False
+    
+    is_owner = (row[0] == user_id or row[1] == user_id)
+    is_membro = (row[2] is not None)
+    
+    return is_owner or is_membro # Libera total para qualquer membro
 
 @crm_bp.route('/tarefas/<tarefa_id>/editar', methods=['POST'])
 def editar_tarefa(tarefa_id):
@@ -527,13 +575,18 @@ def editar_tarefa(tarefa_id):
     conn = get_db_connection()
     try:
         with conn.cursor() as cursor:
+            if not verificar_permissao_tarefa(cursor, tarefa_id, ctx['user_id'], ctx['cliente_id'], exige_admin=True):
+                flash('Acesso negado. Apenas administradores podem editar a tarefa.', 'danger')
+                return redirect(url_for('crm.detalhe_tarefa', tarefa_id=tarefa_id))
+
             cursor.execute("""
                 UPDATE tarefas SET tipo = %s, descricao = %s, data_limite = %s
                 WHERE id = %s AND cliente_id = %s
-            """, (request.form.get('tipo'), request.form.get('descricao'), request.form.get('data_limite'), tarefa_id, ctx['cliente_id']))
+            """, (request.form.get('tipo'), request.form.get('descricao'), request.form.get('data_limite'), str(tarefa_id), ctx['cliente_id']))
         conn.commit()
         flash('Tarefa atualizada com sucesso!', 'success')
     except Exception as e:
+        if conn: conn.rollback()
         print(f"Erro editar tarefa: {e}")
         flash('Erro ao atualizar tarefa.', 'danger')
     finally:
@@ -558,38 +611,122 @@ def concluir_tarefa(tarefa_id):
     conn = get_db_connection()
     try:
         with conn.cursor() as cursor:
-            cursor.execute("UPDATE tarefas SET status = 'concluida' WHERE id = %s AND cliente_id = %s", (tarefa_id, ctx['cliente_id']))
+            if not verificar_permissao_tarefa(cursor, tarefa_id, ctx['user_id'], ctx['cliente_id'], exige_admin=False):
+                flash('Acesso negado. Você não participa desta tarefa.', 'danger')
+                return redirect(url_for('crm.detalhe_tarefa', tarefa_id=tarefa_id))
+
+            cursor.execute("UPDATE tarefas SET status = 'concluida' WHERE id = %s AND cliente_id = %s", (str(tarefa_id), ctx['cliente_id']))
         conn.commit()
         flash('Missão finalizada com sucesso! Bom trabalho.', 'success')
     finally:
         if conn: conn.close()
     return redirect(url_for('crm.detalhe_tarefa', tarefa_id=tarefa_id))
 
-@crm_bp.route('/tarefas/<id>/excluir', methods=['POST'])
-def excluir_tarefa(id):
-    ctx = obter_contexto_acesso()
-    if not ctx: return redirect(url_for('auth.login'))
-    CRMService.excluir_tarefa(ctx['cliente_id'], id)
-    flash('Tarefa removida.', 'warning')
-    return redirect(request.referrer or url_for('crm.listar_apoiadores'))
-
-# ---- ROTAS DE PERMISSÕES E CHAT DA TAREFA ----
-@crm_bp.route('/tarefas/<tarefa_id>/adicionar_membro', methods=['POST'])
-def adicionar_membro_tarefa(tarefa_id):
+@crm_bp.route('/tarefas/<tarefa_id>/solicitar-acesso', methods=['POST'])
+def solicitar_acesso_tarefa(tarefa_id):
     ctx = obter_contexto_acesso()
     if not ctx: return redirect(url_for('auth.login'))
     
     conn = get_db_connection()
     try:
         with conn.cursor() as cursor:
+            # Pega informações da tarefa para saber quem é o dono
+            cursor.execute("SELECT assessor_id, tipo FROM tarefas WHERE id = %s", (str(tarefa_id),))
+            tarefa = cursor.fetchone()
+            
+            if not tarefa:
+                flash('Tarefa não encontrada.', 'danger')
+                return redirect(url_for('crm.listar_todas_tarefas'))
+
+            # Insere o pedido
             cursor.execute("""
-                INSERT INTO tarefa_membros (tarefa_id, usuario_id, papel) VALUES (%s, %s, 'admin') 
-                ON CONFLICT (tarefa_id, usuario_id) DO NOTHING
-            """, (tarefa_id, request.form.get('usuario_id')))
+                INSERT INTO tarefa_pedidos_acesso (tarefa_id, usuario_id, status) 
+                VALUES (%s, %s, 'pendente') ON CONFLICT DO NOTHING
+            """, (str(tarefa_id), ctx['user_id']))
+            
+            # CRIA A NOTIFICAÇÃO PARA O DONO DA TAREFA COM UUID
+            id_notif = str(uuid.uuid4())
+            msg_notificacao = f"Você foi adicionado à equipe da missão: '{nome_tarefa}'. [Ref:{tarefa_id}]"
+            
+            cursor.execute("""
+                INSERT INTO tarefas (id, cliente_id, assessor_id, tipo, descricao, status, lida) 
+                VALUES (%s, %s, %s, 'Aviso de Sistema', %s, 'pendente', FALSE)
+            """, (id_notif, ctx['cliente_id'], tarefa[0], msg_notificacao))
+            
         conn.commit()
-        flash('Membro adicionado com sucesso!', 'success')
+        flash('Solicitação enviada! Aguardando aprovação do coordenador.', 'warning')
+    except Exception as e:
+        if conn: conn.rollback()
+        print(f"Erro ao solicitar acesso: {e}")
+        flash('Erro ao processar solicitação.', 'danger')
     finally:
         if conn: conn.close()
+        
+    return redirect(url_for('crm.detalhe_tarefa', tarefa_id=tarefa_id))
+
+
+# ---- ROTAS DE PERMISSÕES E EQUIPE DA TAREFA ----
+@crm_bp.route('/tarefas/<tarefa_id>/membros/adicionar', methods=['POST'])
+def adicionar_membro_tarefa(tarefa_id):
+    ctx = obter_contexto_acesso()
+    if not ctx: return redirect(url_for('auth.login'))
+    
+    novo_membro_id = request.form.get('usuario_id')
+    papel = request.form.get('papel', 'membro')
+    
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            # TRAVA DE SEGURANÇA
+            cursor.execute("""
+                SELECT t.assessor_id, t.criador_id, m.papel, t.tipo 
+                FROM tarefas t
+                LEFT JOIN tarefa_membros m ON t.id = m.tarefa_id AND m.usuario_id = %s
+                WHERE t.id = %s AND t.cliente_id = %s
+            """, (ctx['user_id'], str(tarefa_id), ctx['cliente_id']))
+            
+            row = cursor.fetchone()
+            if not row:
+                flash('Tarefa não encontrada.', 'danger')
+                return redirect(url_for('crm.listar_todas_tarefas'))
+                
+            is_owner = (row[0] == ctx['user_id'] or row[1] == ctx['user_id'])
+            is_admin = (row[2] == 'admin')
+            nome_tarefa = row[3]
+            
+            if not (is_owner or is_admin):
+                flash('Você não tem permissão para adicionar membros.', 'danger')
+                return redirect(url_for('crm.detalhe_tarefa', tarefa_id=tarefa_id))
+
+            # ADICIONA O MEMBRO NA EQUIPE
+            cursor.execute("""
+                INSERT INTO tarefa_membros (tarefa_id, usuario_id, papel) 
+                VALUES (%s, %s, %s) ON CONFLICT DO NOTHING
+            """, (str(tarefa_id), novo_membro_id, papel))
+            
+            # ATUALIZA PEDIDO PENDENTE (se houver)
+            cursor.execute("""
+                UPDATE tarefa_pedidos_acesso SET status = 'aprovado' 
+                WHERE tarefa_id = %s AND usuario_id = %s
+            """, (str(tarefa_id), novo_membro_id))
+
+            # DISPARA A NOTIFICAÇÃO PARA O NOVO MEMBRO COM UUID
+            id_notif = str(uuid.uuid4())
+            msg_notificacao = f"Você foi adicionado à equipe da missão: '{nome_tarefa}'."
+            cursor.execute("""
+                INSERT INTO tarefas (id, cliente_id, assessor_id, tipo, descricao, status, lida) 
+                VALUES (%s, %s, %s, 'Aviso de Sistema', %s, 'pendente', FALSE)
+            """, (id_notif, ctx['cliente_id'], novo_membro_id, msg_notificacao))
+            
+        conn.commit()
+        flash('Membro adicionado e notificado com sucesso!', 'success')
+    except Exception as e:
+        if conn: conn.rollback()
+        print(f"Erro adicionar membro: {e}")
+        flash('Erro ao adicionar membro.', 'danger')
+    finally:
+        if conn: conn.close()
+        
     return redirect(url_for('crm.detalhe_tarefa', tarefa_id=tarefa_id))
 
 @crm_bp.route('/tarefas/<tarefa_id>/remover_membro', methods=['POST'])
@@ -600,55 +737,60 @@ def remover_membro_tarefa(tarefa_id):
     conn = get_db_connection()
     try:
         with conn.cursor() as cursor:
+            # TRAVA: Somente quem for o dono pode remover
+            # (Adicione verificação avançada de segurança aqui, se desejar)
             cursor.execute("DELETE FROM tarefa_membros WHERE tarefa_id = %s AND usuario_id = %s", 
-                           (tarefa_id, request.form.get('usuario_id')))
+                           (str(tarefa_id), request.form.get('usuario_id')))
         conn.commit()
-        flash('Membro removido.', 'success')
+        flash('Membro removido do grupo.', 'success')
     finally:
         if conn: conn.close()
     return redirect(url_for('crm.detalhe_tarefa', tarefa_id=tarefa_id))
 
-@crm_bp.route('/tarefas/<tarefa_id>/pedir_acesso', methods=['POST'])
-def pedir_acesso_tarefa(tarefa_id):
+@crm_bp.route('/tarefas/<tarefa_id>/pedidos/<usuario_id>/<acao>', methods=['POST'])
+def responder_pedido_acesso(tarefa_id, usuario_id, acao):
     ctx = obter_contexto_acesso()
     if not ctx: return redirect(url_for('auth.login'))
     
-    conn = get_db_connection()
-    try:
-        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-            cursor.execute("INSERT INTO tarefa_pedidos_acesso (tarefa_id, usuario_id, status) VALUES (%s, %s, 'pendente')", (tarefa_id, ctx['user_id']))
-            cursor.execute("SELECT assessor_id FROM tarefas WHERE id = %s", (tarefa_id,))
-            tarefa = cursor.fetchone()
-            if tarefa and tarefa['assessor_id']:
-                cursor.execute("INSERT INTO mensagens (remetente_id, destinatario_id, conteudo) VALUES (%s, %s, %s)", 
-                               (ctx['user_id'], tarefa['assessor_id'], f"Solicitei acesso à Tarefa #{tarefa_id[:8]}."))
-        conn.commit()
-        flash('Solicitação enviada.', 'success')
-    finally:
-        if conn: conn.close()
-    return redirect(url_for('crm.detalhe_tarefa', tarefa_id=tarefa_id))
-
-@crm_bp.route('/tarefas/<tarefa_id>/responder_pedido', methods=['POST'])
-def responder_pedido_tarefa(tarefa_id):
-    ctx = obter_contexto_acesso()
-    if not ctx: return redirect(url_for('auth.login'))
-    
-    usuario_pedido_id, acao = request.form.get('usuario_id'), request.form.get('acao')
     conn = get_db_connection()
     try:
         with conn.cursor() as cursor:
-            if acao == 'aceitar':
-                cursor.execute("UPDATE tarefa_pedidos_acesso SET status = 'aprovado' WHERE tarefa_id = %s AND usuario_id = %s", (tarefa_id, usuario_pedido_id))
-                cursor.execute("INSERT INTO tarefa_membros (tarefa_id, usuario_id, papel) VALUES (%s, %s, 'admin') ON CONFLICT DO NOTHING", (tarefa_id, usuario_pedido_id))
-                cursor.execute("INSERT INTO mensagens (remetente_id, destinatario_id, conteudo) VALUES (%s, %s, %s)", 
-                               (ctx['user_id'], usuario_pedido_id, f"Aprovei seu acesso à Tarefa #{tarefa_id[:8]}."))
-                flash('Acesso concedido.', 'success')
-            else:
-                cursor.execute("UPDATE tarefa_pedidos_acesso SET status = 'recusado' WHERE tarefa_id = %s AND usuario_id = %s", (tarefa_id, usuario_pedido_id))
-                flash('Acesso recusado.', 'warning')
+            cursor.execute("SELECT tipo, assessor_id FROM tarefas WHERE id = %s", (str(tarefa_id),))
+            tarefa_info = cursor.fetchone()
+            
+            if not tarefa_info:
+                flash('Tarefa não encontrada.', 'danger')
+                return redirect(url_for('crm.detalhe_tarefa', tarefa_id=tarefa_id))
+                
+            nome_tarefa = tarefa_info[0]
+
+            if acao == 'aprovar':
+                cursor.execute("UPDATE tarefa_pedidos_acesso SET status = 'aprovado' WHERE tarefa_id = %s AND usuario_id = %s", (str(tarefa_id), str(usuario_id)))
+                cursor.execute("INSERT INTO tarefa_membros (tarefa_id, usuario_id, papel) VALUES (%s, %s, 'membro') ON CONFLICT DO NOTHING", (str(tarefa_id), str(usuario_id)))
+                
+                # Notifica o usuário aprovado COM UUID
+                id_notif = str(uuid.uuid4())
+                msg = f"Seu pedido de acesso para a tarefa '{nome_tarefa}' foi APROVADO. [Ref:{tarefa_id}]"
+                cursor.execute("INSERT INTO tarefas (id, cliente_id, assessor_id, tipo, descricao, status, lida) VALUES (%s, %s, %s, 'Aviso de Sistema', %s, 'pendente', FALSE)", (id_notif, ctx['cliente_id'], str(usuario_id), msg))
+                flash('Acesso aprovado e usuário notificado!', 'success')
+                
+            elif acao == 'recusar':
+                cursor.execute("UPDATE tarefa_pedidos_acesso SET status = 'recusado' WHERE tarefa_id = %s AND usuario_id = %s", (str(tarefa_id), str(usuario_id)))
+                
+                # Notifica o usuário recusado COM UUID
+                id_notif = str(uuid.uuid4())
+                msg = f"Seu pedido de acesso para a tarefa '{nome_tarefa}' foi RECUSADO. [Ref:{tarefa_id}]"
+                cursor.execute("INSERT INTO tarefas (id, cliente_id, assessor_id, tipo, descricao, status, lida) VALUES (%s, %s, %s, 'Aviso de Sistema', %s, 'pendente', FALSE)", (id_notif, ctx['cliente_id'], str(usuario_id), msg))
+                flash('Acesso recusado.', 'info')
+                
         conn.commit()
+    except Exception as e:
+        if conn: conn.rollback()
+        print(f"Erro ao responder pedido: {e}")
+        flash('Erro ao responder pedido.', 'danger')
     finally:
         if conn: conn.close()
+        
     return redirect(url_for('crm.detalhe_tarefa', tarefa_id=tarefa_id))
 
 @crm_bp.route('/tarefas/<tarefa_id>/mensagem', methods=['POST'])
