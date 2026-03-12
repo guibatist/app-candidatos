@@ -8,6 +8,10 @@ from ..services.crm_service import CRMService
 from app.utils.db import get_db_connection
 import uuid
 import re
+import pandas as pd
+from io import BytesIO
+from flask import send_file
+from datetime import datetime
 
 crm_bp = Blueprint('crm', __name__)
 
@@ -130,17 +134,29 @@ def dashboard_index():
     return render_template('crm/dashboard.html', resumo=resumo, permissoes=ctx['permissoes'])
 
 @crm_bp.route('/mapa')
-def mapa_bairros():
+def mapa_calor():
     ctx = obter_contexto_acesso()
     if not ctx: return redirect(url_for('auth.login'))
     
-    if not ctx['permissoes']['permite_mapa']:
-        flash('Seu perfil não tem acesso ao mapa.', 'warning')
-        return redirect(url_for('crm.dashboard_index'))
-
-    dados_mapa = CRMService.get_dados_mapa(ctx['cliente_id'])
+    conn = get_db_connection()
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            # O SEGREDO ESTÁ AQUI: 'lon as lng'
+            cursor.execute("""
+                SELECT 
+                    id, nome, lat, lon as lng, grau_apoio, votos_familia, 
+                    logradouro, numero, bairro, cidade, uf,
+                    sexo, faixa_etaria 
+                FROM apoiadores 
+                WHERE cliente_id = %s AND lat IS NOT NULL AND lon IS NOT NULL
+            """, (ctx['cliente_id'],))
+            
+            dados_mapa = cursor.fetchall()
+            
+    finally:
+        if conn: conn.close()
+        
     return render_template('crm/mapa.html', dados_mapa=dados_mapa, permissoes=ctx['permissoes'])
-
 
 # ==========================================
 # BLOCO 3: GESTÃO DE EQUIPE (HIERARQUIA)
@@ -1230,5 +1246,195 @@ def api_contagem_notificacoes():
             resp = make_response(jsonify({'count': total}))
             resp.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
             return resp
+    finally:
+        if conn: conn.close()
+
+    
+# ==========================================
+# BLOCO DE INTELIGÊNCIA E RELATÓRIOS
+# ==========================================
+
+@crm_bp.route('/relatorios')
+def painel_relatorios():
+    ctx = obter_contexto_acesso()
+    if not ctx: return redirect(url_for('auth.login'))
+    
+    conn = get_db_connection()
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            # Puxa a equipe para o filtro de tarefas
+            cursor.execute("SELECT id, nome FROM usuarios WHERE cliente_id = %s ORDER BY nome", (ctx['cliente_id'],))
+            assessores = cursor.fetchall()
+            
+            # Puxa os bairros dinamicamente da base para o filtro
+            cursor.execute("SELECT DISTINCT bairro FROM apoiadores WHERE cliente_id = %s AND bairro IS NOT NULL AND bairro != '' ORDER BY bairro", (ctx['cliente_id'],))
+            bairros = [r['bairro'] for r in cursor.fetchall()]
+    finally:
+        if conn: conn.close()
+        
+    return render_template('crm/relatorios.html', assessores=assessores, bairros=bairros, permissoes=ctx['permissoes'])
+
+@crm_bp.route('/relatorios/exportar', methods=['POST'])
+def exportar_relatorio():
+    ctx = obter_contexto_acesso()
+    if not ctx: return redirect(url_for('auth.login'))
+    
+    tipo_relatorio = request.form.get('tipo_relatorio')
+    conn = get_db_connection()
+    df = pd.DataFrame() # Cria uma tabela vazia inicial
+    
+    nome_arquivo = f"VotaHub_Relatorio_{datetime.now().strftime('%d%m%Y_%H%M')}.xlsx"
+    
+    try:
+        # ---------------------------------------------------------
+        # OPÇÃO A: RELATÓRIO DE APOIADORES (BASE)
+        # ---------------------------------------------------------
+        if tipo_relatorio == 'apoiadores':
+            query = """
+                SELECT nome as "Nome Completo", telefone as "WhatsApp", sexo as "Sexo", 
+                       faixa_etaria as "Idade", grau_apoio as "Engajamento", 
+                       votos_familia as "Potencial Votos", bairro as "Bairro", 
+                       logradouro as "Rua", numero as "Número"
+                FROM apoiadores 
+                WHERE cliente_id = %(cliente_id)s
+            """
+            params = {'cliente_id': ctx['cliente_id']}
+            
+            # Aplica os filtros apenas se o usuário selecionou algo
+            if request.form.get('grau_apoio'):
+                query += " AND grau_apoio = %(grau_apoio)s"
+                params['grau_apoio'] = request.form.get('grau_apoio')
+            if request.form.get('sexo'):
+                query += " AND sexo = %(sexo)s"
+                params['sexo'] = request.form.get('sexo')
+            if request.form.get('faixa_etaria'):
+                query += " AND faixa_etaria = %(faixa_etaria)s"
+                params['faixa_etaria'] = request.form.get('faixa_etaria')
+            if request.form.get('bairro'):
+                query += " AND bairro = %(bairro)s"
+                params['bairro'] = request.form.get('bairro')
+            
+            query += " ORDER BY nome"
+            df = pd.read_sql_query(query, conn, params=params)
+
+        # ---------------------------------------------------------
+        # OPÇÃO B: RELATÓRIO DE MISSÕES (TAREFAS DA EQUIPE)
+        # ---------------------------------------------------------
+        elif tipo_relatorio == 'tarefas':
+            query = """
+                SELECT t.tipo as "Missão", t.descricao as "Instruções",
+                       a.nome as "Alvo (Apoiador)", a.telefone as "WhatsApp Alvo", a.bairro as "Bairro Alvo",
+                       u.nome as "Assessor Responsável", t.status as "Status", t.data_limite as "Prazo"
+                FROM tarefas t
+                LEFT JOIN apoiadores a ON t.apoiador_id = a.id
+                LEFT JOIN usuarios u ON t.assessor_id = u.id
+                WHERE t.cliente_id = %(cliente_id)s
+            """
+            params = {'cliente_id': ctx['cliente_id']}
+            
+            if request.form.get('status_tarefa'):
+                query += " AND t.status = %(status)s"
+                params['status'] = request.form.get('status_tarefa')
+            if request.form.get('assessor_id'):
+                query += " AND t.assessor_id = %(assessor_id)s"
+                params['assessor_id'] = request.form.get('assessor_id')
+
+            query += " ORDER BY t.data_limite ASC NULLS LAST"
+            df = pd.read_sql_query(query, conn, params=params)
+
+    finally:
+        conn.close()
+
+    # Se a tabela estiver vazia (ninguém atendeu aos filtros)
+    if df.empty:
+        flash('Nenhum registro encontrado para essa combinação de filtros.', 'warning')
+        return redirect(url_for('crm.painel_relatorios'))
+
+    # Se tiver dados, a mágica do Pandas cria o Excel lindão na memória
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='Tatico')
+        
+        # Ajustar a largura das colunas automaticamente
+        worksheet = writer.sheets['Tatico']
+        for col in worksheet.columns:
+            max_length = max((len(str(cell.value)) for cell in col if cell.value is not None), default=0)
+            adjusted_width = min(max_length + 2, 50) # Trava o tamanho máximo em 50 para textos longos
+            worksheet.column_dimensions[col[0].column_letter].width = adjusted_width
+
+    output.seek(0)
+    
+    # Cospe o arquivo direto pro navegador do usuário
+    return send_file(
+        output,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        as_attachment=True,
+        download_name=nome_arquivo
+    )
+
+@crm_bp.route('/relatorios/preview', methods=['POST'])
+def preview_relatorio():
+    ctx = obter_contexto_acesso()
+    if not ctx: return jsonify({'error': 'Não autorizado'}), 401
+    
+    tipo_relatorio = request.form.get('tipo_relatorio')
+    conn = get_db_connection()
+    
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            if tipo_relatorio == 'apoiadores':
+                base_query = "FROM apoiadores WHERE cliente_id = %(cliente_id)s"
+                params = {'cliente_id': ctx['cliente_id']}
+                
+                # Montando os filtros
+                if request.form.get('grau_apoio'):
+                    base_query += " AND grau_apoio = %(grau_apoio)s"; params['grau_apoio'] = request.form.get('grau_apoio')
+                if request.form.get('sexo'):
+                    base_query += " AND sexo = %(sexo)s"; params['sexo'] = request.form.get('sexo')
+                if request.form.get('faixa_etaria'):
+                    base_query += " AND faixa_etaria = %(faixa_etaria)s"; params['faixa_etaria'] = request.form.get('faixa_etaria')
+                if request.form.get('bairro'):
+                    base_query += " AND bairro = %(bairro)s"; params['bairro'] = request.form.get('bairro')
+                    
+                # 1. Conta o total exato
+                cursor.execute(f"SELECT COUNT(*) as total {base_query}", params)
+                total = cursor.fetchone()['total']
+                
+                # 2. Pega só os 15 primeiros para mostrar na tela (rápido!)
+                cursor.execute(f"SELECT nome, telefone, bairro, grau_apoio {base_query} ORDER BY nome LIMIT 15", params)
+                rows = cursor.fetchall()
+                colunas = ["Nome Completo", "WhatsApp", "Bairro", "Grau de Apoio"]
+                
+            elif tipo_relatorio == 'tarefas':
+                base_query = """
+                    FROM tarefas t
+                    LEFT JOIN apoiadores a ON t.apoiador_id = a.id
+                    LEFT JOIN usuarios u ON t.assessor_id = u.id
+                    WHERE t.cliente_id = %(cliente_id)s
+                """
+                params = {'cliente_id': ctx['cliente_id']}
+                
+                if request.form.get('status_tarefa'):
+                    base_query += " AND t.status = %(status)s"; params['status'] = request.form.get('status_tarefa')
+                if request.form.get('assessor_id'):
+                    base_query += " AND t.assessor_id = %(assessor_id)s"; params['assessor_id'] = request.form.get('assessor_id')
+                    
+                cursor.execute(f"SELECT COUNT(*) as total {base_query}", params)
+                total = cursor.fetchone()['total']
+                
+                cursor.execute(f"SELECT t.tipo, u.nome as assessor, a.nome as apoiador, t.status {base_query} ORDER BY t.data_limite DESC NULLS LAST LIMIT 15", params)
+                rows = cursor.fetchall()
+                colunas = ["Missão", "Assessor Responsável", "Alvo (Apoiador)", "Status"]
+            
+            # Formata os dados para o Javascript ler
+            linhas = [[r[list(r.keys())[0]], r[list(r.keys())[1]], r[list(r.keys())[2]], r[list(r.keys())[3]]] for r in rows] if rows else []
+            
+            return jsonify({
+                'total': total,
+                'colunas': colunas,
+                'linhas': linhas
+            })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
     finally:
         if conn: conn.close()

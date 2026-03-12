@@ -41,12 +41,12 @@
 
     #sidebar.collapsed .nav-category { display: none; }
 
-    /* --- ITEM DE NAVEGAÇÃO (O SEGREDO DO ALINHAMENTO) --- */
-    .nav-item {
+    /* --- ITEM DE NAVEGAÇÃO --- */
+    .nav-item, .nav-link-custom {
         display: flex;
         align-items: center;
-        padding: 0 24px; /* Padding lateral fixo */
-        height: 50px;    /* Altura fixa para todos os itens */
+        padding: 0 24px; 
+        height: 50px;    
         color: var(--sidebar-text);
         text-decoration: none;
         transition: all 0.2s;
@@ -57,76 +57,49 @@
         overflow: hidden;
     }
 
-    .nav-item:hover { background-color: var(--sidebar-hover); color: var(--sidebar-active-text); }
+    .nav-item:hover, .nav-link-custom:hover { background-color: var(--sidebar-hover); color: var(--sidebar-active-text); }
     .nav-item.active { background-color: var(--sidebar-active-bg); color: var(--sidebar-active-text); border-left-color: var(--sidebar-active-border); }
 
-    /* --- WRAPPER DO ÍCONE: ESPAÇO RESERVADO --- */
+    /* --- ÍCONES PADRÃO (SÓBRIOS) --- */
     .nav-icon-wrapper {
-        position: relative;
-        width: 24px;
-        min-width: 24px;
-        height: 24px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-right: 15px; /* Espaço exato entre ícone e texto */
-        flex-shrink: 0;
-        transition: margin 0.3s;
+        position: relative; width: 24px; min-width: 24px; height: 24px;
+        display: flex; align-items: center; justify-content: center;
+        margin-right: 15px; flex-shrink: 0; transition: margin 0.3s;
     }
 
-    .nav-icon { font-size: 1.1rem; flex-shrink: 0; }
+    .nav-icon { font-size: 1.1rem; flex-shrink: 0; color: var(--sidebar-text); transition: color 0.2s; }
+    .nav-item:hover .nav-icon, .nav-item.active .nav-icon, .nav-link-custom:hover .nav-icon { color: var(--sidebar-active-text); }
 
-    /* --- BADGE DE TEXTO (SIDEBAR ABERTA) --- */
+    /* --- ÍCONES DA IA (O DESTAQUE DA SIDEBAR) --- */
+    .ai-icon-geo { color: #f59e0b !important; filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.4)); }
+    .ai-icon-strat { color: #0ea5e9 !important; filter: drop-shadow(0 0 6px rgba(14, 165, 233, 0.4)); }
+    .ai-icon-creative { color: #a855f7 !important; filter: drop-shadow(0 0 6px rgba(168, 85, 247, 0.4)); }
+    .nav-category-ai { color: #a855f7; } /* Título da categoria IA um pouco mais forte */
+
+    /* --- BADGES E ESTADOS --- */
     .badge-pill-nav {
-        margin-left: auto; /* Empurra para o fim da linha */
-        font-size: 0.65rem;
-        padding: 2px 8px;
-        border-radius: 20px;
-        font-weight: 800;
-        flex-shrink: 0; /* Não deixa o badge achatar */
-        background-color: #ef4444;
-        color: white;
+        margin-left: auto; font-size: 0.65rem; padding: 2px 8px; border-radius: 20px;
+        font-weight: 800; flex-shrink: 0; background-color: #ef4444; color: white;
     }
 
-    /* --- BADGE FLUTUANTE (SOBRE O ÍCONE) --- */
     .badge-floating {
-        position: absolute;
-        top: -5px;
-        right: -7px;
-        background-color: #ef4444;
-        color: white;
-        font-size: 0.6rem;
-        width: 17px;
-        height: 17px;
-        border-radius: 50%;
-        display: none; /* Controlado pelo estado collapsed */
-        align-items: center;
-        justify-content: center;
-        border: 2px solid var(--sidebar-bg);
-        font-weight: 900;
-        z-index: 5;
+        position: absolute; top: -5px; right: -7px; background-color: #ef4444; color: white;
+        font-size: 0.6rem; width: 17px; height: 17px; border-radius: 50%; display: none; 
+        align-items: center; justify-content: center; border: 2px solid var(--sidebar-bg); font-weight: 900; z-index: 5;
     }
 
-    /* --- COMPORTAMENTO COLLAPSED (FECHADA) --- */
+    /* COMPORTAMENTO COLLAPSED */
     #sidebar.collapsed .nav-icon-wrapper { margin-right: 0; }
-    #sidebar.collapsed .nav-text, 
-    #sidebar.collapsed .badge-pill-nav { display: none !important; }
-    
-    /* Mostra a bolinha apenas quando fechada para não poluir a aberta */
+    #sidebar.collapsed .nav-text, #sidebar.collapsed .badge-pill-nav { display: none !important; }
     #sidebar.collapsed .badge-floating { display: flex; } 
-    #sidebar:not(.collapsed) #sidebar-badge-floating {
-    display: none !important;
-    }
-
-    /* REGRA DE FERRO: Esconde o número lateral (Pill) quando a sidebar estiver FECHADA */
-    #sidebar.collapsed #sidebar-badge-pill {
-        display: none !important;
-    }
-    #sidebar.collapsed .nav-item { justify-content: center; padding: 0; }
+    #sidebar:not(.collapsed) #sidebar-badge-floating { display: none !important; }
+    #sidebar.collapsed #sidebar-badge-pill { display: none !important; }
+    #sidebar.collapsed .nav-item, #sidebar.collapsed .nav-link-custom { justify-content: center; padding: 0; }
     
-    .nav-item.locked { opacity: 0.4; cursor: not-allowed; filter: grayscale(1); }
+    .nav-item.locked { opacity: 0.5; cursor: not-allowed; }
+    .nav-item.locked:hover { background-color: transparent; }
 
-    /* Scrollbar estilizada para o menu lateral */
+    /* Scrollbar estilizada */
     .sidebar-nav::-webkit-scrollbar { width: 4px; }
     .sidebar-nav::-webkit-scrollbar-thumb { background: #1f2937; border-radius: 10px; }
 </style>
@@ -136,11 +109,11 @@
         {% if session.role == 'superadmin' %}
             <div class="nav-category">Administração Master</div>
             <a href="/master/dashboard" class="nav-item {% if 'master' in request.path %}active{% endif %}">
-                <div class="nav-icon-wrapper"><i class="fa-solid fa-rocket nav-icon text-warning"></i></div>
+                <div class="nav-icon-wrapper"><i class="fa-solid fa-rocket nav-icon"></i></div>
                 <span class="nav-text">Campanhas</span>
             </a>
             <a href="{{ url_for('superadmin.listar_chamados') }}" class="nav-item {% if request.endpoint == 'superadmin.listar_chamados' %}active{% endif %}">
-                <div class="nav-icon-wrapper"><i class="fa-solid fa-headset nav-icon text-info"></i></div>
+                <div class="nav-icon-wrapper"><i class="fa-solid fa-headset nav-icon"></i></div>
                 <span class="nav-text">Central de Chamados</span>
             </a>
             <a href="#" class="nav-item">
@@ -169,6 +142,10 @@
                 <div class="nav-icon-wrapper"><i class="fa-solid fa-list-check nav-icon"></i></div>
                 <span class="nav-text">Tarefas Ativas</span>
             </a>
+            <a href="{{ url_for('crm.painel_relatorios') }}" class="nav-item {% if 'relatorio' in request.path %}active{% endif %}">
+                <div class="nav-icon-wrapper"><i class="fa-solid fa-file-excel nav-icon"></i></div>
+                <span class="nav-text">Exportação XLSX</span>
+            </a>
             <a href="{{ url_for('crm.notificacoes') }}" class="nav-item {% if request.endpoint == 'crm.notificacoes' %}active{% endif %}">
                 <div class="nav-icon-wrapper">
                     <i class="fa-solid fa-bell nav-icon"></i>
@@ -181,19 +158,19 @@
                     {{ g.total_notificacoes }}
                 </span>
             </a>
-
-            <div class="nav-category mt-4">Estratégia IA</div>
+            
+            <div class="nav-category nav-category-ai mt-4"><i class="fa-solid fa-microchip me-1"></i> Hub de Inteligência</div>
             <a href="/crm/mapa" class="nav-item {% if 'mapa' in request.path %}active{% endif %}">
-                <div class="nav-icon-wrapper"><i class="fa-solid fa-map-location-dot nav-icon text-warning"></i></div>
-                <span class="nav-text">Geointeligência</span>
+                <div class="nav-icon-wrapper"><i class="fa-solid fa-map-location-dot nav-icon ai-icon-geo"></i></div>
+                <span class="nav-text text-white">Geointeligência</span>
             </a>
             <a href="#" class="nav-item locked">
-                <div class="nav-icon-wrapper"><i class="fa-solid fa-chess-knight nav-icon text-info"></i></div>
-                <span class="nav-text">Strategic IA</span>
+                <div class="nav-icon-wrapper"><i class="fa-solid fa-chess-knight nav-icon ai-icon-strat"></i></div>
+                <span class="nav-text text-white">Strategic IA</span>
             </a>
             <a href="#" class="nav-item locked">
-                <div class="nav-icon-wrapper"><i class="fa-solid fa-wand-magic-sparkles nav-icon text-primary"></i></div>
-                <span class="nav-text">Criativo IA</span>
+                <div class="nav-icon-wrapper"><i class="fa-solid fa-wand-magic-sparkles nav-icon ai-icon-creative"></i></div>
+                <span class="nav-text text-white">Criativo IA</span>
             </a>
         {% endif %}
     </div>
@@ -205,61 +182,50 @@
         </a>
         {% if session.role != 'superadmin' %}
         <a class="nav-item" data-bs-toggle="offcanvas" data-bs-target="#offcanvasChamados">
-            <div class="nav-icon-wrapper"><i class="fa-solid fa-headset nav-icon text-info"></i></div>
+            <div class="nav-icon-wrapper"><i class="fa-solid fa-headset nav-icon"></i></div>
             <span class="nav-text">Suporte Técnico</span>
         </a>
         {% endif %}
 
-        <a href="/auth/logout" class="nav-item text-danger">
+        <a href="/auth/logout" class="nav-item">
             <div class="nav-icon-wrapper"><i class="fa-solid fa-right-from-bracket nav-icon"></i></div>
             <span class="nav-text">Sair do Hub</span>
         </a>
     </div>
 </nav>
+
 <style>
-    /* Animação de Pulo para Notificação Nova */
     @keyframes pop-notification {
         0% { transform: scale(1); }
         50% { transform: scale(1.4); background-color: #ef4444; }
         100% { transform: scale(1); }
     }
-    .badge-pop {
-        animation: pop-notification 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    }
+    .badge-pop { animation: pop-notification 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
 </style>
 
 <script>
     function radarNotificacoes() {
-        // 1. Se o utilizador limpou as notificações nesta sessão, o radar descansa
         if (sessionStorage.getItem('notificacoes_limpas') === 'true') return;
 
-        // 2. O truque Anti-Cache: adicionamos o tempo exato em milissegundos na URL
-        // Isso obriga o navegador a perguntar pro servidor de novo, em vez de usar memória velha.
         const urlSemCache = '/crm/api/notificacoes/contagem?t=' + new Date().getTime();
 
         fetch(urlSemCache)
             .then(res => res.json())
             .then(data => {
-                // 3. Encontra as "bolinhas" no HTML da sidebar
                 const bFloating = document.getElementById('sidebar-badge-floating');
                 const bPill = document.getElementById('sidebar-badge-pill');
-                
                 const valorNovo = data.count;
 
-                // 4. Lógica para atualizar a tela
                 const aplicarMudanca = (el, displayType) => {
                     if (!el) return;
-                    
                     const valorAntigo = parseInt(el.innerText) || 0;
 
                     if (valorNovo > 0) {
                         el.innerText = valorNovo;
                         el.style.setProperty('display', displayType, 'important');
-                        
-                        // O número subiu? Faz a bolinha pular!
                         if (valorNovo > valorAntigo) {
                             el.classList.remove('badge-pop');
-                            void el.offsetWidth; // Truque Jedi para reiniciar a animação CSS
+                            void el.offsetWidth; 
                             el.classList.add('badge-pop');
                         }
                     } else {
@@ -267,16 +233,13 @@
                     }
                 };
 
-                // 5. Atualiza os dois formatos (Sidebar aberta e fechada)
                 aplicarMudanca(bFloating, 'flex');
                 aplicarMudanca(bPill, 'inline-block');
             })
             .catch(e => console.warn("Radar silencioso ignorou erro de rede."));
     }
 
-    // 6. Gatilho inicial
     document.addEventListener('DOMContentLoaded', () => {
-        // Para testes rápidos, você pode mudar o 30000 (30 seg) para 5000 (5 seg) temporariamente.
         setInterval(radarNotificacoes, 30000); 
     });
 </script>
@@ -358,6 +321,4 @@
         </div>
     </div>
 </div>
-
-
 {% endif %}

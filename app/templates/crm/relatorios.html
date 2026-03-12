@@ -1,0 +1,335 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+    /* === VotaHub Ultra Premium UI === */
+    :root { 
+        --purple-hub: #7c3aed; 
+        --purple-dark: #5b21b6;
+        --purple-glow: rgba(124, 58, 237, 0.2);
+        --bg-excel: #f8fafc; 
+    }
+    
+    /* Custom Scrollbar Premium */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+    /* Cards de Seleção Animados */
+    .report-card-input { display: none; }
+    .report-card-label {
+        display: block; padding: 20px 15px; background: #fff; border: 2px solid #f1f5f9;
+        border-radius: 16px; cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); height: 100%;
+        position: relative; overflow: hidden;
+    }
+    .report-card-label:hover { border-color: #e2e8f0; transform: translateY(-3px); box-shadow: 0 10px 25px rgba(0,0,0,0.04); }
+    .report-card-input:checked + .report-card-label {
+        border-color: var(--purple-hub); background-color: #fcfaff;
+        box-shadow: 0 10px 30px var(--purple-glow);
+    }
+    .report-card-input:checked + .report-card-label::after {
+        content: '\f058'; font-family: 'Font Awesome 6 Free'; font-weight: 900;
+        position: absolute; top: 10px; right: 12px; color: var(--purple-hub); font-size: 1.2rem;
+    }
+
+    /* Selects Premium */
+    .form-select-premium {
+        background-color: #f8fafc; border: 2px solid transparent; border-radius: 12px;
+        padding: 12px 15px; font-weight: 500; color: #334155; transition: all 0.2s; cursor: pointer;
+    }
+    .form-select-premium:hover { background-color: #f1f5f9; }
+    .form-select-premium:focus {
+        border-color: var(--purple-hub); background-color: #fff;
+        box-shadow: 0 0 0 4px var(--purple-glow); outline: none;
+    }
+    
+    /* Spreadsheet Preview Container */
+    .spreadsheet-container {
+        background-color: white; border: 1px solid #e2e8f0; border-radius: 20px;
+        overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.03);
+        height: 600px; display: flex; flex-direction: column;
+    }
+    .spreadsheet-header {
+        background-color: #fff; border-bottom: 1px solid #e2e8f0; padding: 20px 25px;
+        display: flex; justify-content: space-between; align-items: center; z-index: 10;
+    }
+    .spreadsheet-body { flex: 1; overflow-y: auto; background-color: var(--bg-excel); padding: 0; position: relative; }
+    
+    /* Tabela com Glassmorphism no Header */
+    .table-excel { margin: 0; width: 100%; font-size: 0.85rem; border-collapse: separate; border-spacing: 0; }
+    .table-excel th { 
+        position: sticky; top: 0; z-index: 5;
+        background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); /* Efeito Vidro */
+        border-bottom: 1px solid #e2e8f0; color: #64748b; font-weight: 800; text-transform: uppercase; 
+        letter-spacing: 0.8px; padding: 15px 25px; font-size: 0.75rem;
+    }
+    .table-excel td { padding: 12px 25px; border-bottom: 1px solid #f1f5f9; color: #1e293b; font-weight: 500; background-color: #fff; transition: background 0.2s;}
+    .table-excel tr:hover td { background-color: #f8fafc; cursor: default; }
+
+    /* Skeleton Loader (Efeito Facebook/Youtube) */
+    .skeleton-box {
+        padding: 20px 25px; background: #fff; border-bottom: 1px solid #f1f5f9;
+        display: flex; gap: 20px;
+    }
+    .skeleton-line {
+        height: 16px; border-radius: 8px;
+        background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+        background-size: 200% 100%; animation: loading 1.5s infinite ease-in-out;
+    }
+    @keyframes loading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+    /* Botão Exportar Mágico */
+    .btn-export {
+        background: linear-gradient(135deg, var(--purple-hub), var(--purple-dark));
+        color: white; border: none; padding: 10px 24px; border-radius: 50px;
+        font-weight: 700; transition: all 0.3s; box-shadow: 0 8px 20px var(--purple-glow);
+    }
+    .btn-export:hover:not(.disabled) { transform: translateY(-2px); box-shadow: 0 12px 25px var(--purple-glow); color: white;}
+    .btn-export.disabled { background: #e2e8f0; color: #94a3b8; box-shadow: none; transform: none; cursor: not-allowed; }
+
+    .filter-section { display: none; animation: slideDown 0.3s ease-out; }
+    @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+
+<div class="container-fluid py-4">
+    
+    <div class="mb-5">
+        <h2 class="fw-bold text-dark mb-0 d-flex align-items-center gap-3">
+            <div class="bg-white p-3 rounded-4 shadow-sm border"><i class="fa-solid fa-wand-magic-sparkles text-purple" style="color: var(--purple-hub);"></i></div>
+            Motor de Inteligência e Exportação
+        </h2>
+        <p class="text-muted mt-2 ms-1">Crie cruzamentos táticos em tempo real e exporte planilhas formatadas para a equipe de rua.</p>
+    </div>
+
+    <div class="row g-4">
+        
+        <div class="col-lg-4">
+            <form id="formFiltros" action="{{ url_for('crm.exportar_relatorio') }}" method="POST">
+                
+                <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white">
+                    <h6 class="fw-bold text-dark mb-4 text-uppercase small" style="letter-spacing: 1px;">1. Selecione a Base de Dados</h6>
+                    <div class="row g-3 mb-2">
+                        <div class="col-6">
+                            <input type="radio" name="tipo_relatorio" id="rep_apoiadores" value="apoiadores" class="report-card-input" checked>
+                            <label for="rep_apoiadores" class="report-card-label text-center">
+                                <i class="fa-solid fa-users fs-3 mb-3 d-block" style="color: #64748b;"></i>
+                                <span class="fw-bold text-dark">Apoiadores</span>
+                            </label>
+                        </div>
+                        <div class="col-6">
+                            <input type="radio" name="tipo_relatorio" id="rep_tarefas" value="tarefas" class="report-card-input">
+                            <label for="rep_tarefas" class="report-card-label text-center">
+                                <i class="fa-solid fa-rocket fs-3 mb-3 d-block" style="color: #64748b;"></i>
+                                <span class="fw-bold text-dark">Missões</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+                    <h6 class="fw-bold text-dark mb-4 text-uppercase small" style="letter-spacing: 1px;">2. Refinar Parâmetros</h6>
+                    
+                    <div id="filtros_apoiadores" class="filter-section" style="display: block;">
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted ms-1">Grau de Apoio</label>
+                            <select name="grau_apoio" class="form-select form-select-premium trigger-preview">
+                                <option value="">Todos os níveis</option>
+                                <option value="Liderança">Lideranças (Forte)</option>
+                                <option value="Apoiador">Apoiadores</option>
+                                <option value="Simpatizante">Simpatizantes</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted ms-1">Bairro Alvo</label>
+                            <select name="bairro" class="form-select form-select-premium trigger-preview">
+                                <option value="">Todos os Bairros</option>
+                                {% for b in bairros %}<option value="{{ b }}">{{ b }}</option>{% endfor %}
+                            </select>
+                        </div>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <label class="form-label small fw-bold text-muted ms-1">Sexo</label>
+                                <select name="sexo" class="form-select form-select-premium trigger-preview">
+                                    <option value="">Ambos</option>
+                                    <option value="Masculino">Masculino</option>
+                                    <option value="Feminino">Feminino</option>
+                                </select>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small fw-bold text-muted ms-1">Idade</label>
+                                <select name="faixa_etaria" class="form-select form-select-premium trigger-preview">
+                                    <option value="">Todas</option>
+                                    <option value="16-24">16-24 anos</option>
+                                    <option value="25-34">25-34 anos</option>
+                                    <option value="35-44">35-44 anos</option>
+                                    <option value="45-59">45-59 anos</option>
+                                    <option value="60+">60+ anos</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="filtros_tarefas" class="filter-section">
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted ms-1">Status da Missão</label>
+                            <select name="status_tarefa" class="form-select form-select-premium trigger-preview">
+                                <option value="">Qualquer Status</option>
+                                <option value="pendente">Pendentes na rua</option>
+                                <option value="concluida">Concluídas</option>
+                                <option value="atrasada">Atrasadas</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted ms-1">Auditar Assessor</label>
+                            <select name="assessor_id" class="form-select form-select-premium trigger-preview">
+                                <option value="">Equipe Completa</option>
+                                {% for a in assessores %}<option value="{{ a.id }}">{{ a.nome }}</option>{% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <div class="col-lg-8">
+            <div class="spreadsheet-container">
+                <div class="spreadsheet-header">
+                    <div>
+                        <h5 class="fw-bold text-dark mb-1">Preview em Tempo Real</h5>
+                        <div class="small text-muted fw-medium" id="preview-count">Aguardando processamento...</div>
+                    </div>
+                    <button type="submit" form="formFiltros" id="btn-download" class="btn-export disabled">
+                        <i class="fa-solid fa-download me-2"></i> Baixar XLSX
+                    </button>
+                </div>
+                
+                <div class="spreadsheet-body" id="preview-body">
+                    </div>
+            </div>
+            <div class="d-flex justify-content-between align-items-center mt-3 px-2">
+                <span class="text-muted small fw-bold"><i class="fa-solid fa-shield-halved text-success me-1"></i> Criptografia e LGPD ativas</span>
+                <span class="text-muted small"><i class="fa-solid fa-eye me-1"></i> Exibindo amostragem máxima de 15 linhas</span>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        
+        const form = document.getElementById('formFiltros');
+        const radiosTipo = document.querySelectorAll('input[name="tipo_relatorio"]');
+        const selectTriggers = document.querySelectorAll('.trigger-preview');
+        const btnDownload = document.getElementById('btn-download');
+        const previewBody = document.getElementById('preview-body');
+        
+        // Troca os painéis de filtro com animação suave
+        radiosTipo.forEach(radio => {
+            radio.addEventListener('change', function() {
+                if (this.value === 'apoiadores') {
+                    document.getElementById('filtros_apoiadores').style.display = 'block';
+                    document.getElementById('filtros_tarefas').style.display = 'none';
+                    document.querySelectorAll('#filtros_tarefas select').forEach(s => s.value = '');
+                } else {
+                    document.getElementById('filtros_apoiadores').style.display = 'none';
+                    document.getElementById('filtros_tarefas').style.display = 'block';
+                    document.querySelectorAll('#filtros_apoiadores select').forEach(s => s.value = '');
+                }
+                atualizarPreview();
+            });
+        });
+
+        // Trigger nos selects
+        selectTriggers.forEach(select => {
+            select.addEventListener('change', atualizarPreview);
+        });
+
+        // Gerador do Skeleton Loader HTML
+        function getSkeletonHTML() {
+            let html = '';
+            for(let i=0; i<6; i++) {
+                html += `
+                <div class="skeleton-box">
+                    <div class="skeleton-line" style="width: 25%;"></div>
+                    <div class="skeleton-line" style="width: 20%;"></div>
+                    <div class="skeleton-line" style="width: 30%;"></div>
+                    <div class="skeleton-line" style="width: 15%;"></div>
+                </div>`;
+            }
+            return html;
+        }
+
+        // Função Principal de Fetch
+        function atualizarPreview() {
+            const previewCount = document.getElementById('preview-count');
+            
+            // Ativa o Skeleton Loader e desativa o botão
+            previewBody.innerHTML = getSkeletonHTML();
+            btnDownload.classList.add('disabled');
+            previewCount.innerHTML = `<span class="spinner-border spinner-border-sm me-2 text-purple" style="color: var(--purple-hub);"></span> Analisando base de dados...`;
+
+            const formData = new FormData(form);
+
+            fetch("{{ url_for('crm.preview_relatorio') }}", {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    previewBody.innerHTML = `<div class="d-flex flex-column justify-content-center align-items-center h-100 text-danger"><i class="fa-solid fa-triangle-exclamation fs-1 mb-3"></i> <h5>Erro ao buscar dados.</h5></div>`;
+                    previewCount.innerText = "Falha no processamento";
+                    return;
+                }
+
+                // Estado Vazio (Zero Registros)
+                if (data.total === 0) {
+                    previewBody.innerHTML = `
+                        <div class="d-flex flex-column justify-content-center align-items-center h-100" style="color: #94a3b8;">
+                            <i class="fa-solid fa-box-open fs-1 mb-3 opacity-50"></i>
+                            <h5 class="fw-bold text-dark mb-1">Resultado Vazio</h5>
+                            <p class="small text-muted">A combinação atual de filtros não retornou ninguém.</p>
+                        </div>`;
+                    previewCount.innerHTML = `<span class="text-danger fw-bold">0 registros</span> encontrados`;
+                    btnDownload.classList.add('disabled');
+                    return;
+                }
+
+                // Renderização da Tabela Real
+                btnDownload.classList.remove('disabled');
+                previewCount.innerHTML = `<span class="text-success fw-bold"><i class="fa-solid fa-check-circle me-1"></i> ${data.total} registros</span> validados para exportação`;
+
+                let tableHTML = `<table class="table-excel"><thead><tr>`;
+                data.colunas.forEach(col => { tableHTML += `<th>${col}</th>`; });
+                tableHTML += `</tr></thead><tbody>`;
+                
+                data.linhas.forEach(linha => {
+                    tableHTML += `<tr>`;
+                    linha.forEach(celula => { 
+                        // Formatação visual para crachás dentro da tabela (se for Liderança, etc)
+                        let text = celula || '-';
+                        if(text === 'Liderança') text = `<span class="badge bg-purple bg-opacity-10 text-purple border rounded-pill px-2">Liderança</span>`;
+                        else if(text === 'pendente') text = `<span class="badge bg-warning text-dark rounded-pill px-2">Pendente</span>`;
+                        else if(text === 'concluida') text = `<span class="badge bg-success rounded-pill px-2">Concluída</span>`;
+                        tableHTML += `<td>${text}</td>`; 
+                    });
+                    tableHTML += `</tr>`;
+                });
+                
+                tableHTML += `</tbody></table>`;
+                
+                // Pequeno delay fake de 300ms só para o usuário ver o Skeleton e sentir que o sistema "trabalhou"
+                setTimeout(() => {
+                    previewBody.innerHTML = tableHTML;
+                }, 300);
+            })
+            .catch(error => console.error("Erro no preview:", error));
+        }
+
+        atualizarPreview();
+    });
+</script>
+
+{% endblock %}

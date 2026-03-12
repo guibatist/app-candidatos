@@ -1,18 +1,25 @@
 {% extends 'base.html' %}
 
 {% block content %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+
 <style>
     /* === DESIGN SYSTEM GEO-HUB === */
     :root { 
         --purple-hub: #7c3aed; 
-        --purple-light: #f3e8ff;
         --blue-hub: #0ea5e9;
-        --map-height: calc(100vh - 120px); 
+        --gray-hub: #94a3b8;
     }
 
     .geo-container {
         position: relative;
-        height: var(--map-height);
+        height: 60vh; /* Altura do mapa para caber o BI embaixo */
+        min-height: 450px;
         border-radius: 24px;
         overflow: hidden;
         box-shadow: 0 10px 30px rgba(124, 58, 237, 0.08);
@@ -26,181 +33,309 @@
         z-index: 1;
     }
 
-    /* === PAINEL FLUTUANTE (LEGENDA E STATUS) === */
+    /* LEGENDA FLUTUANTE */
     .geo-panel {
         position: absolute;
         top: 20px;
         left: 20px;
-        width: 320px;
+        width: 280px;
         background: rgba(255, 255, 255, 0.95);
         backdrop-filter: blur(10px);
         border: 1px solid rgba(255, 255, 255, 0.6);
         border-radius: 20px;
-        padding: 24px;
+        padding: 20px;
         z-index: 1000; 
         box-shadow: 0 15px 35px rgba(0,0,0,0.1);
     }
 
-    .geo-panel-header {
-        display: flex;
-        align-items: center;
-        margin-bottom: 20px;
-        padding-bottom: 15px;
-        border-bottom: 1px solid #f1f5f9;
+    /* PONTOS DO MAPA (UX VIVO) */
+    .pin-tatico {
+        border-radius: 50%;
+        border: 3px solid #ffffff;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        transition: transform 0.2s;
+    }
+    .pin-tatico:hover { transform: scale(1.2); z-index: 1000 !important; }
+
+    .pin-lideranca { background-color: var(--purple-hub); }
+    .pin-apoiador { background-color: var(--blue-hub); }
+    .pin-simpatizante { background-color: var(--gray-hub); }
+
+    /* CUSTOMIZANDO OS AGLOMERADOS (CLUSTER) PARA ROXO */
+    .marker-cluster-small, .marker-cluster-medium, .marker-cluster-large {
+        background-color: rgba(124, 58, 237, 0.3) !important;
+    }
+    .marker-cluster-small div, .marker-cluster-medium div, .marker-cluster-large div {
+        background-color: var(--purple-hub) !important;
+        color: white !important;
+        font-weight: bold;
+        border: 2px solid white;
     }
 
-    .info-label {
-        font-size: 0.7rem;
-        font-weight: 800;
-        color: #64748b;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        margin-bottom: 8px;
-        display: block;
-    }
-
-    /* Oculta os créditos feios do Leaflet */
     .leaflet-control-attribution { display: none !important; }
-    
-    /* Customização do Popup do Leaflet */
-    .leaflet-popup-content-wrapper {
-        border-radius: 16px;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-        border: 1px solid #e2e8f0;
-    }
-    .leaflet-popup-content { margin: 16px; }
+    .leaflet-popup-content-wrapper { border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 10px 30px rgba(0,0,0,0.15); }
+    .leaflet-popup-content { margin: 0; }
 </style>
 
-<div class="container-fluid py-3">
-    <div class="d-flex justify-content-between align-items-end mb-3 px-1">
+<div class="container-fluid py-4">
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h2 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
-                <i class="fa-solid fa-map-location-dot text-purple" style="color: var(--purple-hub);"></i> Mapa de Calor Eleitoral
+                <i class="fa-solid fa-satellite-dish text-purple" style="color: var(--purple-hub);"></i> Mapa de Calor Eleitoral
             </h2>
-            <p class="text-muted small mb-0 mt-1">Localização tática rua a rua.</p>
+            <p class="text-muted small mb-0 mt-1">Visão de raio-x do território e densidade eleitoral.</p>
         </div>
+        <button class="btn btn-purple rounded-pill px-4 shadow-sm fw-bold d-flex align-items-center gap-2" data-bs-toggle="offcanvas" data-bs-target="#offcanvasFiltroMapa" style="background-color: var(--purple-hub); color: white;">
+            <i class="fa-solid fa-filter"></i> Filtrar Radar
+        </button>
     </div>
 
-    <div class="geo-container">
-        
+    <div class="geo-container mb-4">
         <div id="map"></div>
 
         <div class="geo-panel">
-            <div class="geo-panel-header">
-                <div class="bg-purple-light rounded-circle d-flex justify-content-center align-items-center me-3" style="width: 45px; height: 45px;">
-                    <i class="fa-solid fa-satellite-dish fs-5" style="color: var(--purple-hub);"></i>
-                </div>
-                <div>
-                    <h6 class="fw-bold text-dark mb-0">Radar Ativo</h6>
-                    <span class="badge bg-purple-light border-0 px-2 py-1 mt-1" style="color: var(--purple-hub);">
-                        {{ dados_mapa|length }} Mapeados
-                    </span>
-                </div>
-            </div>
-
-            <label class="info-label mb-3">Legenda de Influência</label>
+            <h6 class="fw-bold text-dark mb-3 small text-uppercase">Níveis de Apoio</h6>
             
-            <div class="d-flex align-items-center mb-3 p-2 rounded-3" style="background: #f8fafc; border: 1px solid #e2e8f0;">
-                <span class="shadow-sm me-3" style="background: var(--purple-hub); width: 20px; height: 20px; border-radius: 50%; border: 2px solid #fff; display: inline-block;"></span> 
-                <div>
-                    <span class="small fw-bold text-dark d-block">Alto / Liderança</span>
-                    <span class="small text-muted" style="font-size: 0.65rem;">Multiplicadores de voto</span>
-                </div>
+            <div class="d-flex align-items-center mb-2">
+                <div class="pin-tatico pin-lideranca me-3" style="width: 18px; height: 18px;"></div> 
+                <span class="small fw-bold text-dark">Liderança <span class="text-muted fw-normal">(5+ Votos)</span></span>
             </div>
-            
-            <div class="d-flex align-items-center p-2 rounded-3" style="background: #f8fafc; border: 1px solid #e2e8f0;">
-                <span class="shadow-sm me-3" style="background: var(--blue-hub); width: 20px; height: 20px; border-radius: 50%; border: 2px solid #fff; display: inline-block;"></span> 
-                <div>
-                    <span class="small fw-bold text-dark d-block">Médio / Geral</span>
-                    <span class="small text-muted" style="font-size: 0.65rem;">Apoiadores padrão</span>
-                </div>
+            <div class="d-flex align-items-center mb-2">
+                <div class="pin-tatico pin-apoiador me-3" style="width: 18px; height: 18px;"></div> 
+                <span class="small fw-bold text-dark">Apoiador <span class="text-muted fw-normal">(2 a 4 Votos)</span></span>
+            </div>
+            <div class="d-flex align-items-center">
+                <div class="pin-tatico pin-simpatizante me-3" style="width: 18px; height: 18px;"></div> 
+                <span class="small fw-bold text-muted">Simpatizante <span class="text-muted fw-normal">(1 Voto)</span></span>
             </div>
         </div>
     </div>
+
+    <div class="row g-3">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm rounded-4 bg-white p-3 border-start border-4" style="border-left-color: #64748b !important;">
+                <p class="text-muted small fw-bold mb-1 text-uppercase">No Mapa (Filtrados)</p>
+                <h3 class="fw-bold text-dark mb-0" id="bi-mapa-total">0</h3>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm rounded-4 bg-white p-3 border-start border-4" style="border-left-color: var(--purple-hub) !important;">
+                <p class="text-muted small fw-bold mb-1 text-uppercase">Lideranças Base</p>
+                <h3 class="fw-bold text-dark mb-0" id="bi-mapa-liderancas" style="color: var(--purple-hub) !important;">0</h3>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm rounded-4 bg-white p-3 border-start border-info border-4">
+                <p class="text-muted small fw-bold mb-1 text-uppercase">Apoiadores</p>
+                <h3 class="fw-bold text-dark mb-0" id="bi-mapa-apoiadores">0</h3>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm rounded-4 bg-white p-3 border-start border-success border-4">
+                <p class="text-muted small fw-bold mb-1 text-uppercase">Potencial (Votos na Casa)</p>
+                <h3 class="fw-bold text-success mb-0" id="bi-mapa-votos">0</h3>
+            </div>
+        </div>
+    </div>
+
 </div>
 
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<div class="offcanvas offcanvas-end border-0 shadow" tabindex="-1" id="offcanvasFiltroMapa" style="width: 350px;">
+    <div class="offcanvas-header bg-light border-bottom p-4">
+        <h5 class="fw-bold text-dark mb-0"><i class="fa-solid fa-filter text-purple me-2"></i> Filtros do Mapa</h5>
+        <button type="button" class="btn-close shadow-none" data-bs-dismiss="offcanvas"></button>
+    </div>
+    <div class="offcanvas-body p-4 bg-white">
+        
+        <div class="mb-3">
+            <label class="form-label small fw-bold text-muted">Nível de Apoio</label>
+            <select id="map-f-apoio" class="form-select bg-light border-0">
+                <option value="">Todos os Níveis</option>
+                <option value="Liderança">Lideranças</option>
+                <option value="Apoiador">Apoiadores</option>
+                <option value="Simpatizante">Simpatizantes</option>
+            </select>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label small fw-bold text-muted">Cidade</label>
+            <select id="map-f-cidade" class="form-select bg-light border-0">
+                <option value="">Todas as Cidades</option>
+            </select>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label small fw-bold text-muted">Sexo</label>
+            <select id="map-f-sexo" class="form-select bg-light border-0">
+                <option value="">Todos</option>
+            </select>
+        </div>
+
+        <div class="mb-4">
+            <label class="form-label small fw-bold text-muted">Faixa Etária</label>
+            <select id="map-f-idade" class="form-select bg-light border-0">
+                <option value="">Todas</option>
+            </select>
+        </div>
+
+        <button class="btn w-100 rounded-pill fw-bold text-white shadow-sm py-2" style="background-color: var(--purple-hub);" onclick="aplicarFiltrosMapa()" data-bs-dismiss="offcanvas">
+            Atualizar Mapa
+        </button>
+        <button class="btn btn-light w-100 rounded-pill fw-bold mt-2" onclick="limparFiltrosMapa()">
+            Limpar Filtros
+        </button>
+    </div>
+</div>
 
 <script>
+    // 1. DADOS VINDOS DO PYTHON (Jinja)
+    const dadosGerais = {{ dados_mapa | tojson | safe }};
+    let map, clusterGroup;
+
     document.addEventListener("DOMContentLoaded", function () {
-        // 1. Inicializa o mapa com zoom escondido para reposicioná-lo
-        var map = L.map('map', { zoomControl: false }).setView([-15.78, -47.93], 4);
         
-        // Coloca o controle de zoom no topo-direito para não brigar com a legenda
+        // 2. INICIALIZAÇÃO DO MAPA
+        map = L.map('map', { zoomControl: false }).setView([-15.78, -47.93], 4);
         L.control.zoom({ position: 'topright' }).addTo(map);
 
-        // 2. O Segredo do Visual: Fundo Cinza CartoDB para as cores saltarem
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-            maxZoom: 19
-        }).addTo(map);
+        // Fundo Tático (Cinza) para ressaltar as cores
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { maxZoom: 19 }).addTo(map);
 
-        var layerGroup = L.featureGroup().addTo(map);
-        
-        // 3. Puxando seus dados exatamente como você já fazia
-        var dados = {{ dados_mapa | tojson | safe }};
+        // 3. GRUPO DE CLUSTER (A mágica que resolve pontos no mesmo endereço)
+        clusterGroup = L.markerClusterGroup({
+            maxClusterRadius: 40, // Quão perto os pontos precisam estar para agrupar
+            spiderfyOnMaxZoom: true, // Quando dar zoom máximo, "explode" os pontos que estão na mesma exata casa
+            showCoverageOnHover: false
+        });
 
-        if (dados && dados.length > 0) {
-            dados.forEach(function(ponto) {
-                if (ponto.lat && ponto.lng) {
-                    
-                    // As novas cores do VotaHub!
-                    var isAlto = (ponto.grau_apoio === 'alto' || ponto.lideranca);
-                    var corPonto;
-                    if (ponto.grau_apoio === 'Liderança') {
-                        corPonto = '#7c3aed'; // Roxo (Peso Pesado)
-                    } else if (ponto.grau_apoio === 'Apoiador') {
-                        corPonto = '#0ea5e9'; // Azul (Tropa)
-                    } else {
-                        corPonto = '#94a3b8'; // Cinza (Simpatizante - Radar Frio)
-                    }
-                    
-                    // Desenhando os círculos com borda branca para dar efeito de "LED"
-                    var circle = L.circle([ponto.lat, ponto.lng], {
-                        color: '#ffffff', // Borda branca
-                        weight: 2,        // Espessura da borda
-                        fillColor: corPonto,
-                        fillOpacity: 0.9,
-                        radius: 20 // Levemente maior para destaque
-                    }).addTo(layerGroup);
+        map.addLayer(clusterGroup);
 
-                    var nome = ponto.nome || "Apoiador sem nome";
-                    var endereco = `${ponto.logradouro || ''} ${ponto.numero || ''}`.trim() || "Rua não informada";
-                    var cidade_bairro = `${ponto.bairro || ''} ${ponto.cidade ? '- ' + ponto.cidade : ''}`.trim() || "";
-                    
-                    var badgeNivel = isAlto ? 
-                        `<span class="badge mb-2" style="background-color: #f3e8ff; color: #7c3aed; font-size: 0.65rem;">LIDERANÇA</span>` : 
-                        `<span class="badge mb-2" style="background-color: #e0f2fe; color: #0ea5e9; font-size: 0.65rem;">APOIADOR</span>`;
+        // 4. POPULAR OS SELECTS DE FILTROS DINAMICAMENTE
+        const cidades = new Set(), sexos = new Set(), idades = new Set();
+        dadosGerais.forEach(d => {
+            if(d.cidade) cidades.add(d.cidade);
+            if(d.sexo) sexos.add(d.sexo);
+            if(d.faixa_etaria) idades.add(d.faixa_etaria);
+        });
 
-                    // Popup redesenhado com o UX Premium
-                    var popupContent = `
-                        <div style="min-width: 180px;">
-                            <h6 class="fw-bold mb-1 text-dark" style="font-size: 0.95rem;">${nome}</h6>
-                            ${badgeNivel}
-                            <div class="mt-2 text-muted" style="font-size: 0.8rem; line-height: 1.4;">
-                                <i class="fa-solid fa-location-dot me-1" style="color: ${corPonto};"></i> ${endereco}<br>
-                                <span class="ms-3">${cidade_bairro}</span>
-                            </div>
-                        </div>
-                    `;
-                    circle.bindPopup(popupContent);
-                }
-            });
-
-            // 4. Centraliza a câmera nos pontos (Seu código original perfeito)
-            var bounds = layerGroup.getBounds();
-            if (bounds.isValid()) {
-                map.fitBounds(bounds, { 
-                    padding: [50, 50],
-                    maxZoom: 15 
-                });
-            }
+        function preencherSelect(id, set) {
+            const select = document.getElementById(id);
+            Array.from(set).sort().forEach(item => select.add(new Option(item, item)));
         }
+        preencherSelect('map-f-cidade', cidades);
+        preencherSelect('map-f-sexo', sexos);
+        preencherSelect('map-f-idade', idades);
 
-        // Garante que o mapa preencha o container corretamente
-        setTimeout(function(){ 
-            map.invalidateSize(); 
-        }, 400);
+        // Renderiza o mapa pela primeira vez com todos os dados
+        renderizarMapa(dadosGerais);
     });
+
+    // 5. FUNÇÃO QUE DESENHA OS PONTOS E CALCULA O B.I.
+    function renderizarMapa(dadosFiltrados) {
+        clusterGroup.clearLayers(); // Limpa o mapa atual
+
+        let biTotal = 0, biLider = 0, biApoiador = 0, biVotos = 0;
+
+        dadosFiltrados.forEach(ponto => {
+            if (ponto.lat && ponto.lng) {
+                // Cálculo para o B.I.
+                biTotal++;
+                let votos = parseInt(ponto.votos_familia) || 1;
+                biVotos += votos;
+
+                // Definindo as Cores
+                let classeCor = 'pin-simpatizante'; // Default
+                let corHex = '#94a3b8';
+                
+                if (ponto.grau_apoio === 'Liderança') {
+                    classeCor = 'pin-lideranca';
+                    corHex = '#7c3aed';
+                    biLider++;
+                } else if (ponto.grau_apoio === 'Apoiador') {
+                    classeCor = 'pin-apoiador';
+                    corHex = '#0ea5e9';
+                    biApoiador++;
+                }
+
+                // Cria o Ícone HTML redondinho e visível
+                let customIcon = L.divIcon({
+                    className: 'custom-div-icon',
+                    html: `<div class="pin-tatico ${classeCor}" style="width: 22px; height: 22px;"></div>`,
+                    iconSize: [22, 22],
+                    iconAnchor: [11, 11]
+                });
+
+                // Criando o Marcador
+                let marker = L.marker([ponto.lat, ponto.lng], { icon: customIcon });
+
+                // Popup com visual incrível e Botão para o Perfil
+                let nome = ponto.nome || "Apoiador";
+                let endereco = `${ponto.logradouro || ''} ${ponto.numero || ''}`.trim();
+                let badgeApoio = ponto.grau_apoio === 'Liderança' ? 
+                    `<span class="badge w-100 mb-2 py-1" style="background-color: #f3e8ff; color: #7c3aed; font-size: 0.7rem;"><i class="fa-solid fa-crown me-1"></i> LIDERANÇA (${votos} Votos)</span>` : 
+                    `<span class="badge w-100 mb-2 py-1 bg-light text-dark border font-size: 0.7rem;">${ponto.grau_apoio} (${votos} Votos)</span>`;
+
+                let popupContent = `
+                    <div style="min-width: 200px; padding: 15px;">
+                        <h6 class="fw-bold mb-1 text-dark">${nome}</h6>
+                        ${badgeApoio}
+                        <p class="small text-muted mb-3" style="line-height: 1.3;">
+                            <i class="fa-solid fa-location-dot me-1" style="color: ${corHex};"></i> ${endereco}<br>
+                            <span class="ms-3">${ponto.bairro || ''}</span>
+                        </p>
+                        <a href="/crm/apoiadores/${ponto.id}" class="btn btn-sm w-100 text-white fw-bold rounded-pill shadow-sm" style="background-color: ${corHex};">
+                            Abrir Perfil Completo
+                        </a>
+                    </div>
+                `;
+                
+                marker.bindPopup(popupContent);
+                clusterGroup.addLayer(marker);
+            }
+        });
+
+        // Atualiza os números do B.I. animadamente
+        document.getElementById('bi-mapa-total').innerText = biTotal;
+        document.getElementById('bi-mapa-liderancas').innerText = biLider;
+        document.getElementById('bi-mapa-apoiadores').innerText = biApoiador;
+        document.getElementById('bi-mapa-votos').innerText = biVotos;
+
+        // Centraliza a câmera para pegar os pontos filtrados
+        let bounds = clusterGroup.getBounds();
+        if (bounds.isValid()) {
+            map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
+        }
+    }
+
+    // 6. MOTOR DE FILTRAGEM
+    function aplicarFiltrosMapa() {
+        const fApoio = document.getElementById('map-f-apoio').value;
+        const fCidade = document.getElementById('map-f-cidade').value;
+        const fSexo = document.getElementById('map-f-sexo').value;
+        const fIdade = document.getElementById('map-f-idade').value;
+
+        const dadosFiltrados = dadosGerais.filter(d => {
+            if (fApoio && d.grau_apoio !== fApoio) return false;
+            if (fCidade && d.cidade !== fCidade) return false;
+            if (fSexo && d.sexo !== fSexo) return false;
+            if (fIdade && d.faixa_etaria !== fIdade) return false;
+            return true;
+        });
+
+        renderizarMapa(dadosFiltrados);
+    }
+
+    function limparFiltrosMapa() {
+        document.getElementById('map-f-apoio').value = '';
+        document.getElementById('map-f-cidade').value = '';
+        document.getElementById('map-f-sexo').value = '';
+        document.getElementById('map-f-idade').value = '';
+        renderizarMapa(dadosGerais); // Restaura tudo
+    }
+
+    // Corrige problema de redimensionamento do mapa
+    setTimeout(() => { map.invalidateSize(); }, 500);
 </script>
+
 {% endblock %}
