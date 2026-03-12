@@ -154,17 +154,10 @@
                 <h5 class="fw-bold text-dark mb-4"><i class="fa-solid fa-fire text-warning me-2"></i>Estratégia</h5>
                 
                 <div class="row g-2 mb-4">
-                    <div class="col-md-8">
-                        <label class="form-label text-muted small fw-bold text-uppercase">Grau de Apoio</label>
-                        <select name="grau_apoio" class="form-select bg-light border-0 py-2" required>
-                            <option value="forte">🟢 Forte (Multiplicador)</option>
-                            <option value="medio">🟡 Médio (Simpatizante)</option>
-                            <option value="fraco">🔴 Indeciso / Fraco</option>
-                        </select>
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label text-muted small fw-bold text-uppercase" title="Quantos votos essa pessoa influencia na própria casa?">Votos na Casa</label>
-                        <input type="number" name="votos_familia" class="form-control bg-light border-0 py-2 text-center fw-bold text-info" min="1" value="1" required>
+                    <div class="col-12">
+                        <label class="form-label text-muted small fw-bold text-uppercase mb-1" title="Quantos votos essa pessoa influencia na própria casa?">Potencial de Votos (Casa/Influência)</label>
+                        <p class="text-muted" style="font-size: 0.75rem; margin-bottom: 8px;">Quantos votos ele(a) consegue influenciar?</p>
+                        <input type="number" name="votos_familia" class="form-control bg-primary bg-opacity-10 border-primary border-opacity-25 py-3 text-center fw-bold text-primary fs-5 rounded-3" min="1" value="1" required>
                     </div>
                 </div>
 
@@ -200,13 +193,8 @@
                     <input class="form-check-input fs-5" type="checkbox" name="oferece_carro" id="carro">
                     <label class="form-check-label ms-2 mt-1 text-dark" for="carro"><i class="fa-solid fa-car text-muted me-1"></i> Carro para Adesivo</label>
                 </div>
-                
-                <div class="form-check form-switch mb-4">
-                    <input class="form-check-input fs-5" type="checkbox" name="lideranca" id="lideranca">
-                    <label class="form-check-label ms-2 mt-1 text-dark" for="lideranca"><i class="fa-solid fa-users text-muted me-1"></i> É Líder Comunitário/Religioso</label>
-                </div>
 
-                <label class="form-label text-muted small fw-bold text-uppercase">Observações / Demandas</label>
+                <label class="form-label text-muted small fw-bold text-uppercase mt-4">Observações / Demandas</label>
                 <textarea name="observacoes" class="form-control bg-light border-0 mb-4" rows="3" placeholder="Reclamações do bairro, pedidos, etc..."></textarea>
             </div>
 

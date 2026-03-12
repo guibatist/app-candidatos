@@ -1,34 +1,118 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="container-fluid">
-    <div class="d-flex justify-content-between align-items-center mb-4">
+<style>
+    /* === DESIGN SYSTEM GEO-HUB === */
+    :root { 
+        --purple-hub: #7c3aed; 
+        --purple-light: #f3e8ff;
+        --blue-hub: #0ea5e9;
+        --map-height: calc(100vh - 120px); 
+    }
+
+    .geo-container {
+        position: relative;
+        height: var(--map-height);
+        border-radius: 24px;
+        overflow: hidden;
+        box-shadow: 0 10px 30px rgba(124, 58, 237, 0.08);
+        border: 1px solid #e2e8f0;
+    }
+
+    #map {
+        width: 100%;
+        height: 100%;
+        background-color: #f8fafc;
+        z-index: 1;
+    }
+
+    /* === PAINEL FLUTUANTE (LEGENDA E STATUS) === */
+    .geo-panel {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        width: 320px;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.6);
+        border-radius: 20px;
+        padding: 24px;
+        z-index: 1000; 
+        box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+    }
+
+    .geo-panel-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid #f1f5f9;
+    }
+
+    .info-label {
+        font-size: 0.7rem;
+        font-weight: 800;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 8px;
+        display: block;
+    }
+
+    /* Oculta os créditos feios do Leaflet */
+    .leaflet-control-attribution { display: none !important; }
+    
+    /* Customização do Popup do Leaflet */
+    .leaflet-popup-content-wrapper {
+        border-radius: 16px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        border: 1px solid #e2e8f0;
+    }
+    .leaflet-popup-content { margin: 16px; }
+</style>
+
+<div class="container-fluid py-3">
+    <div class="d-flex justify-content-between align-items-end mb-3 px-1">
         <div>
-            <h2 class="fw-bold mb-1 text-primary">Mapa de Calor Eleitoral</h2>
-            <p class="text-muted small">Localização precisa dos apoiadores rua a rua.</p>
-        </div>
-        <div class="badge bg-primary px-3 py-2 rounded-pill">
-            <i class="fa-solid fa-location-dot me-2"></i>Apoiadores no Mapa: {{ dados_mapa|length }}
+            <h2 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                <i class="fa-solid fa-map-location-dot text-purple" style="color: var(--purple-hub);"></i> Mapa de Calor Eleitoral
+            </h2>
+            <p class="text-muted small mb-0 mt-1">Localização tática rua a rua.</p>
         </div>
     </div>
 
-    <div class="row">
-        <div class="col-md-9">
-            <div id="map" class="shadow-sm rounded-4" style="height: 650px; width: 100%; border: 1px solid #e5e7eb; background-color: #f8f9fa;"></div>
-        </div>
+    <div class="geo-container">
         
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm rounded-4 mb-3">
-                <div class="card-header bg-white fw-bold border-0 pt-3 text-dark">Legenda de Apoio</div>
-                <div class="card-body">
-                    <div class="d-flex align-items-center mb-3">
-                        <span class="badge me-2" style="background: #ef4444; width: 18px; height: 18px; border-radius: 50%; display: inline-block;">&nbsp;</span> 
-                        <span class="small fw-medium">Apoio Alto / Liderança</span>
-                    </div>
-                    <div class="d-flex align-items-center mb-3">
-                        <span class="badge me-2" style="background: #3b82f6; width: 18px; height: 18px; border-radius: 50%; display: inline-block;">&nbsp;</span> 
-                        <span class="small fw-medium">Apoio Médio / Geral</span>
-                    </div>
+        <div id="map"></div>
+
+        <div class="geo-panel">
+            <div class="geo-panel-header">
+                <div class="bg-purple-light rounded-circle d-flex justify-content-center align-items-center me-3" style="width: 45px; height: 45px;">
+                    <i class="fa-solid fa-satellite-dish fs-5" style="color: var(--purple-hub);"></i>
+                </div>
+                <div>
+                    <h6 class="fw-bold text-dark mb-0">Radar Ativo</h6>
+                    <span class="badge bg-purple-light border-0 px-2 py-1 mt-1" style="color: var(--purple-hub);">
+                        {{ dados_mapa|length }} Mapeados
+                    </span>
+                </div>
+            </div>
+
+            <label class="info-label mb-3">Legenda de Influência</label>
+            
+            <div class="d-flex align-items-center mb-3 p-2 rounded-3" style="background: #f8fafc; border: 1px solid #e2e8f0;">
+                <span class="shadow-sm me-3" style="background: var(--purple-hub); width: 20px; height: 20px; border-radius: 50%; border: 2px solid #fff; display: inline-block;"></span> 
+                <div>
+                    <span class="small fw-bold text-dark d-block">Alto / Liderança</span>
+                    <span class="small text-muted" style="font-size: 0.65rem;">Multiplicadores de voto</span>
+                </div>
+            </div>
+            
+            <div class="d-flex align-items-center p-2 rounded-3" style="background: #f8fafc; border: 1px solid #e2e8f0;">
+                <span class="shadow-sm me-3" style="background: var(--blue-hub); width: 20px; height: 20px; border-radius: 50%; border: 2px solid #fff; display: inline-block;"></span> 
+                <div>
+                    <span class="small fw-bold text-dark d-block">Médio / Geral</span>
+                    <span class="small text-muted" style="font-size: 0.65rem;">Apoiadores padrão</span>
                 </div>
             </div>
         </div>
@@ -39,49 +123,73 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
-    var map = L.map('map').setView([-15.78, -47.93], 4);
+    document.addEventListener("DOMContentLoaded", function () {
+        // 1. Inicializa o mapa com zoom escondido para reposicioná-lo
+        var map = L.map('map', { zoomControl: false }).setView([-15.78, -47.93], 4);
+        
+        // Coloca o controle de zoom no topo-direito para não brigar com a legenda
+        L.control.zoom({ position: 'topright' }).addTo(map);
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap contributors',
-        maxZoom: 19
-    }).addTo(map);
+        // 2. O Segredo do Visual: Fundo Cinza CartoDB para as cores saltarem
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+            maxZoom: 19
+        }).addTo(map);
 
-    var layerGroup = L.featureGroup().addTo(map);
-    var dados = {{ dados_mapa | tojson | safe }};
+        var layerGroup = L.featureGroup().addTo(map);
+        
+        // 3. Puxando seus dados exatamente como você já fazia
+        var dados = {{ dados_mapa | tojson | safe }};
 
-    if (dados && dados.length > 0) {
-        dados.forEach(function(ponto) {
-            if (ponto.lat && ponto.lng) {
-                var corPonto = (ponto.grau_apoio === 'alto' || ponto.lideranca) ? '#ef4444' : '#3b82f6';
-                
-                var circle = L.circle([ponto.lat, ponto.lng], {
-                    color: corPonto,
-                    fillColor: corPonto,
-                    fillOpacity: 0.8,
-                    radius: 15 // Tamanho pequeno para acertar a casa
-                }).addTo(layerGroup);
+        if (dados && dados.length > 0) {
+            dados.forEach(function(ponto) {
+                if (ponto.lat && ponto.lng) {
+                    
+                    // As novas cores do VotaHub!
+                    var isAlto = (ponto.grau_apoio === 'alto' || ponto.lideranca);
+                    var corPonto;
+                    if (ponto.grau_apoio === 'Liderança') {
+                        corPonto = '#7c3aed'; // Roxo (Peso Pesado)
+                    } else if (ponto.grau_apoio === 'Apoiador') {
+                        corPonto = '#0ea5e9'; // Azul (Tropa)
+                    } else {
+                        corPonto = '#94a3b8'; // Cinza (Simpatizante - Radar Frio)
+                    }
+                    
+                    // Desenhando os círculos com borda branca para dar efeito de "LED"
+                    var circle = L.circle([ponto.lat, ponto.lng], {
+                        color: '#ffffff', // Borda branca
+                        weight: 2,        // Espessura da borda
+                        fillColor: corPonto,
+                        fillOpacity: 0.9,
+                        radius: 20 // Levemente maior para destaque
+                    }).addTo(layerGroup);
 
-                // O Fim do Undefined: Usando os dados formatados corretamente
-                var nome = ponto.nome || "Apoiador sem nome";
-                var endereco = `${ponto.logradouro || ''} ${ponto.numero || ''}`.trim() || "Rua não informada";
-                var cidade_bairro = `${ponto.bairro || ''} - ${ponto.cidade || ''}`.trim() || "";
+                    var nome = ponto.nome || "Apoiador sem nome";
+                    var endereco = `${ponto.logradouro || ''} ${ponto.numero || ''}`.trim() || "Rua não informada";
+                    var cidade_bairro = `${ponto.bairro || ''} ${ponto.cidade ? '- ' + ponto.cidade : ''}`.trim() || "";
+                    
+                    var badgeNivel = isAlto ? 
+                        `<span class="badge mb-2" style="background-color: #f3e8ff; color: #7c3aed; font-size: 0.65rem;">LIDERANÇA</span>` : 
+                        `<span class="badge mb-2" style="background-color: #e0f2fe; color: #0ea5e9; font-size: 0.65rem;">APOIADOR</span>`;
 
-                var popupContent = `
-                    <div style="min-width: 150px;">
-                        <strong style="font-size: 14px;">${nome}</strong><br>
-                        <span style="color: #666; font-size: 12px;">
-                            ${endereco}<br>
-                            ${cidade_bairro}
-                        </span>
-                    </div>
-                `;
-                circle.bindPopup(popupContent);
-            }
-        });
+                    // Popup redesenhado com o UX Premium
+                    var popupContent = `
+                        <div style="min-width: 180px;">
+                            <h6 class="fw-bold mb-1 text-dark" style="font-size: 0.95rem;">${nome}</h6>
+                            ${badgeNivel}
+                            <div class="mt-2 text-muted" style="font-size: 0.8rem; line-height: 1.4;">
+                                <i class="fa-solid fa-location-dot me-1" style="color: ${corPonto};"></i> ${endereco}<br>
+                                <span class="ms-3">${cidade_bairro}</span>
+                            </div>
+                        </div>
+                    `;
+                    circle.bindPopup(popupContent);
+                }
+            });
 
-        var bounds = layerGroup.getBounds();
+            // 4. Centraliza a câmera nos pontos (Seu código original perfeito)
+            var bounds = layerGroup.getBounds();
             if (bounds.isValid()) {
-                // maxZoom: 15 limita a aproximação. Quanto menor o número, mais longe fica.
                 map.fitBounds(bounds, { 
                     padding: [50, 50],
                     maxZoom: 15 
@@ -89,8 +197,10 @@
             }
         }
 
-    setTimeout(function(){ 
-        map.invalidateSize(); 
-    }, 400);
+        // Garante que o mapa preencha o container corretamente
+        setTimeout(function(){ 
+            map.invalidateSize(); 
+        }, 400);
+    });
 </script>
 {% endblock %}

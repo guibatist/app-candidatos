@@ -40,6 +40,10 @@
     
     .form-control-premium { background-color: #f1f5f9 !important; border: 2px solid transparent !important; border-radius: 12px; padding: 12px 15px; font-weight: 500; transition: all 0.2s; }
     .form-control-premium:focus { background-color: #ffffff !important; border-color: var(--indigo-primary) !important; box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1) !important; }
+
+    /* Lista de Tarefas do Modal */
+    .task-card { transition: all 0.2s; border-radius: 16px; border: 1px solid var(--slate-200); }
+    .task-card:hover { border-color: var(--indigo-primary); transform: translateY(-2px); box-shadow: 0 10px 25px -5px rgba(79, 70, 229, 0.15); }
 </style>
 
 <div class="container-fluid py-4">
@@ -50,10 +54,20 @@
                 <i class="fa-solid fa-arrow-left me-2"></i> Base Geral de Apoio
             </a>
             <h2 class="fw-bold text-dark mb-0">{{ apoiador.nome }}</h2>
-            <div class="d-flex align-items-center gap-3 mt-1">
-                <span class="badge {% if apoiador.grau_apoio == 'forte' %}bg-success{% elif apoiador.grau_apoio == 'medio' %}bg-warning{% else %}bg-danger{% endif %} rounded-pill px-3 py-2 fw-bold">
-                    Apoio {{ apoiador.grau_apoio|capitalize }}
-                </span>
+            <div class="d-flex align-items-center gap-3 mt-2">
+                {% if apoiador.grau_apoio == 'Liderança' %}
+                    <span class="badge rounded-pill px-3 py-2 fw-bold" style="background-color: #f3e8ff; color: #7c3aed;">
+                        <i class="fa-solid fa-crown me-1"></i> Liderança
+                    </span>
+                {% elif apoiador.grau_apoio == 'Apoiador' %}
+                    <span class="badge bg-info bg-opacity-10 text-info rounded-pill px-3 py-2 fw-bold" style="color: #0ea5e9 !important;">
+                        Apoiador
+                    </span>
+                {% else %}
+                    <span class="badge bg-light text-secondary rounded-pill px-3 py-2 fw-bold border">
+                        Simpatizante
+                    </span>
+                {% endif %}
                 <span class="text-muted small fw-bold">• Origem: {{ apoiador.origem_cadastro or 'Direto' }}</span>
             </div>
         </div>
@@ -185,16 +199,45 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content overflow-hidden">
             <div class="modal-header bg-indigo text-white border-0 p-4">
-                <h5 class="fw-bold mb-0">Agendar Missão Operacional</h5>
+                <h5 class="fw-bold mb-0">Nova Tarefa</h5>
                 <button type="button" class="btn-close btn-close-white shadow-none" data-bs-dismiss="modal"></button>
             </div>
             <form action="{{ url_for('crm.criar_tarefa_perfil', apoiador_id=apoiador.id) }}" method="POST">
                 <div class="modal-body p-4">
-                    <div class="mb-3"><label class="info-label">Tipo de Ação</label><select name="tipo" class="form-select form-control-premium" required><option value="Visita Técnica">Visita Técnica</option><option value="Entrega de Material">Entrega de Material</option><option value="Ligação / WhatsApp">Ligação / WhatsApp</option><option value="Reunião">Reunião</option></select></div>
-                    <div class="mb-3"><label class="info-label">Delegar para Assessor</label><select name="assessor_id" class="form-select form-control-premium" required><option value="" disabled selected>Escolha o responsável...</option>{% for u in assessores %}<option value="{{ u.id }}">{{ u.nome }}</option>{% endfor %}</select></div>
-                    <div class="mb-3"><label class="info-label">Data Limite</label><input type="date" name="data_limite" class="form-control form-control-premium" required></div>
-                    <div class="mb-3"><label class="info-label">Instruções</label><textarea name="descricao" class="form-control form-control-premium" rows="3" placeholder="O que deve ser feito?"></textarea></div>
-                    <button type="submit" class="btn btn-indigo w-100 rounded-pill py-3 fw-bold mt-2 shadow-lg">Lançar Missão na Equipe</button>
+                    <div class="mb-3">
+                        <label class="info-label">Tipo de Ação</label>
+                        <select name="tipo" class="form-select form-control-premium" required>
+                            <option value="Visita Técnica">Visita Presencial</option>
+                            <option value="Entrega de Material">Entrega de Material</option>
+                            <option value="Ligação / WhatsApp">Ligação / WhatsApp</option>
+                            <option value="Reunião">Reunião / Café</option>
+                            <option value="Convite Evento">Convite para Evento</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="info-label">Delegar para Assessor</label>
+                        <select name="assessor_id" class="form-select form-control-premium" required>
+                            <option value="" disabled selected>Escolha o responsável...</option>
+                            {% for u in assessores %}
+                                <option value="{{ u.id }}">{{ u.nome }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="info-label">Data Limite (Prazo)</label>
+                        <input type="date" name="data_limite" class="form-control form-control-premium" required value="{{ agora.strftime('%Y-%m-%d') if agora else '' }}">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="info-label">Instruções / Detalhes</label>
+                        <textarea name="descricao" class="form-control form-control-premium" rows="3" placeholder="O que o assessor precisa saber para cumprir essa missão?"></textarea>
+                    </div>
+
+                    <button type="submit" class="btn btn-indigo w-100 rounded-pill py-3 fw-bold mt-2 shadow-lg">
+                        <i class="fa-solid fa-paper-plane me-2"></i>Enviar para o Radar do Assessor
+                    </button>
                 </div>
             </form>
         </div>
@@ -203,24 +246,74 @@
 
 <div class="modal fade" id="modalHistoricoTarefas" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg">
+        <div class="modal-content bg-light">
             <div class="modal-header border-0 p-4 pb-0">
-                <h4 class="fw-bold text-dark">Histórico de Missões</h4>
+                <h4 class="fw-bold text-dark d-flex align-items-center">
+                    <i class="fa-solid fa-list-check text-indigo me-2"></i> Lista de Missões
+                </h4>
                 <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body p-4">
-                <div class="modal-scroll">
+            <div class="modal-body p-4 pt-3">
+                <div class="modal-scroll pe-2">
                     {% for t in tarefas_vinculadas %}
-                    <div class="p-3 bg-light rounded-4 border mb-3 d-flex justify-content-between align-items-center">
-                        <div>
-                            <span class="badge {% if t.status == 'concluida' %}bg-success{% else %}bg-primary{% endif %} rounded-pill small mb-1">{{ t.status|upper }}</span>
-                            <h6 class="fw-bold mb-0 text-dark">{{ t.tipo }}</h6>
-                            <p class="small text-muted mb-0">Prazo: {{ t.data_limite.strftime('%d/%m/%Y') if t.data_limite else 'S/D' }}</p>
+                    <div class="task-card bg-white p-4 mb-3 position-relative overflow-hidden">
+                        
+                        <div class="position-absolute top-0 bottom-0 start-0" style="width: 6px; background-color: 
+                            {% if t.status == 'concluida' %}
+                                #10b981
+                            {% elif t.status == 'pendente' and t.data_limite and agora and t.data_limite|string < agora.strftime('%Y-%m-%d') %}
+                                #ef4444
+                            {% else %}
+                                #3b82f6
+                            {% endif %};">
                         </div>
-                        <a href="{{ url_for('crm.detalhe_tarefa', tarefa_id=t.id) }}" class="btn btn-sm btn-indigo rounded-pill px-4 fw-bold shadow-sm">Ver Operação</a>
+
+                        <div class="d-flex justify-content-between align-items-start mb-2 ms-2">
+                            <div>
+                                <h6 class="fw-bold text-dark mb-1 fs-5">{{ t.tipo }}</h6>
+                                <span class="badge 
+                                    {% if t.status == 'concluida' %}
+                                        bg-success
+                                    {% elif t.status == 'pendente' and t.data_limite and agora and t.data_limite|string < agora.strftime('%Y-%m-%d') %}
+                                        bg-danger
+                                    {% else %}
+                                        bg-primary
+                                    {% endif %} 
+                                    bg-opacity-10 text-dark border rounded-pill px-3 py-1 fw-bold small">
+                                    {{ t.status|upper }}
+                                </span>
+                            </div>
+                            <a href="{{ url_for('crm.detalhe_tarefa', tarefa_id=t.id) }}" class="btn btn-sm btn-outline-secondary rounded-pill px-3 fw-bold border-2">
+                                Ver Detalhes <i class="fa-solid fa-arrow-right ms-1"></i>
+                            </a>
+                        </div>
+                        
+                        <div class="ms-2 mt-3 text-muted small" style="line-height: 1.5; max-height: 40px; overflow: hidden; text-overflow: ellipsis;">
+                            {{ t.descricao or 'Nenhuma descrição detalhada fornecida.' }}
+                        </div>
+                        
+                        <hr class="ms-2 my-3 text-muted opacity-25">
+                        
+                        <div class="ms-2 d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center text-muted small fw-bold">
+                                <div class="bg-light rounded-circle d-flex justify-content-center align-items-center me-2" style="width: 28px; height: 28px;">
+                                    <i class="fa-solid fa-user-helmet text-indigo"></i>
+                                </div>
+                                Responsável: <span class="text-dark ms-1">{{ t.assessor_nome or 'Não Atribuído' }}</span>
+                            </div>
+                            
+                            <div class="text-muted small fw-bold">
+                                <i class="fa-regular fa-calendar-xmark me-1 text-danger"></i> 
+                                Prazo: <span class="text-dark">{{ t.data_limite.strftime('%d/%m/%Y') if t.data_limite else 'Sem data' }}</span>
+                            </div>
+                        </div>
                     </div>
                     {% else %}
-                    <div class="text-center py-4 text-muted small italic">Nenhuma missão vinculada a este perfil.</div>
+                    <div class="text-center py-5">
+                        <i class="fa-solid fa-ghost fa-3x text-muted opacity-25 mb-3"></i>
+                        <h6 class="fw-bold text-muted">Nenhuma missão operacional</h6>
+                        <p class="small text-muted mb-0">Esta base ainda não possui tarefas ou despachos registrados.</p>
+                    </div>
                     {% endfor %}
                 </div>
             </div>
@@ -252,15 +345,12 @@
                             <div class="col-md-5"><label class="info-label">Bairro</label><input type="text" name="bairro" class="form-control form-control-premium" value="{{ apoiador.bairro }}"></div>
                         </div>
 
-                        <div class="modal-section-title">Fidelidade</div>
+                        <div class="modal-section-title">Fidelidade e Potencial</div>
                         <div class="row g-3 mb-4">
-                            <div class="col-md-6"><label class="info-label">Votos na Casa</label><input type="number" name="votos_familia" class="form-control form-control-premium" value="{{ apoiador.votos_familia or 1 }}"></div>
-                            <div class="col-md-6"><label class="info-label">Grau de Apoio</label>
-                                <select name="grau_apoio" class="form-select form-control-premium">
-                                    <option value="forte" {% if apoiador.grau_apoio == 'forte' %}selected{% endif %}>🟢 Forte</option>
-                                    <option value="medio" {% if apoiador.grau_apoio == 'medio' %}selected{% endif %}>🟡 Médio</option>
-                                    <option value="fraco" {% if apoiador.grau_apoio == 'fraco' %}selected{% endif %}>🔴 Fraco</option>
-                                </select>
+                            <div class="col-12">
+                                <label class="info-label d-block">Potencial de Votos na Casa</label>
+                                <p class="text-muted" style="font-size: 0.75rem; margin-bottom: 8px;">A classificação (Liderança, Apoiador ou Simpatizante) será calculada automaticamente.</p>
+                                <input type="number" name="votos_familia" class="form-control form-control-premium w-50" value="{{ apoiador.votos_familia or 1 }}" min="1">
                             </div>
                         </div>
                     </div>

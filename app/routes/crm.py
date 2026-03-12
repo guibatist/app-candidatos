@@ -189,25 +189,6 @@ def listar_equipe():
 # BLOCO 4: GESTÃO DE APOIADORES
 # ==========================================
 
-@crm_bp.route('/apoiadores')
-def listar_apoiadores():
-    ctx = obter_contexto_acesso()
-    if not ctx: return redirect(url_for('auth.login'))
-    
-    apoiadores = CRMService.get_apoiadores(ctx['cliente_id'])
-    return render_template('crm/apoiadores.html', apoiadores=apoiadores, permissoes=ctx['permissoes'])
-
-@crm_bp.route('/apoiadores/novo', methods=['GET', 'POST'])
-def novo_apoiador():
-    ctx = obter_contexto_acesso()
-    if not ctx: return redirect(url_for('auth.login'))
-    
-    if request.method == 'POST':
-        CRMService.adicionar_apoiador(ctx['cliente_id'], request.form)
-        return redirect(url_for('crm.listar_apoiadores'))
-        
-    return render_template('crm/form_apoiador.html', permissoes=ctx['permissoes'])
-
 @crm_bp.route('/apoiadores/<apoiador_id>')
 def perfil_apoiador(apoiador_id):
     ctx = obter_contexto_acesso()
@@ -233,18 +214,23 @@ def perfil_apoiador(apoiador_id):
             """, (apoiador_id,))
             interacoes = cursor.fetchall()
 
-            # 3. Resumo Tarefas
+            # 3. Resumo Tarefas (Com conversão de tipo para evitar erro 500)
             cursor.execute("""
                 SELECT COUNT(*) as total,
                        SUM(CASE WHEN status = 'pendente' THEN 1 ELSE 0 END) as pendentes,
-                       SUM(CASE WHEN status = 'atrasada' THEN 1 ELSE 0 END) as atrasadas
+                       SUM(CASE 
+                           WHEN status = 'atrasada' THEN 1 
+                           WHEN status = 'pendente' AND data_limite::timestamp < NOW() THEN 1 
+                           ELSE 0 
+                       END) as atrasadas
                 FROM tarefas WHERE apoiador_id = %s
             """, (apoiador_id,))
-            resumo_tarefas = cursor.fetchone()
+            resumo_tarefas = cursor.fetchone()  
 
-            # 4. Lista Tarefas
+            # 4. Lista Tarefas (Usando 'tipo' como o título da missão)
             cursor.execute("""
-                SELECT t.id, t.tipo, t.status, t.data_limite, u.nome as delegado_nome
+                SELECT t.id, t.tipo, t.status, t.data_limite, t.descricao,
+                       u.nome as assessor_nome
                 FROM tarefas t LEFT JOIN usuarios u ON t.assessor_id = u.id
                 WHERE t.apoiador_id = %s ORDER BY t.data_limite DESC NULLS LAST
             """, (apoiador_id,))
@@ -262,7 +248,46 @@ def perfil_apoiador(apoiador_id):
     return render_template('crm/perfil_apoiador.html', 
                            apoiador=apoiador, interacoes=interacoes, 
                            resumo=resumo_tarefas, tarefas_vinculadas=tarefas_vinculadas, 
-                           assessores=assessores, permissoes=ctx['permissoes'])
+                           assessores=assessores, permissoes=ctx['permissoes'],
+                           agora=datetime.now())
+
+@crm_bp.route('/apoiadores')
+def listar_apoiadores():
+    ctx = obter_contexto_acesso()
+    if not ctx: return redirect(url_for('auth.login'))
+    
+    apoiadores = CRMService.get_apoiadores(ctx['cliente_id'])
+    return render_template('crm/apoiadores.html', apoiadores=apoiadores, permissoes=ctx['permissoes'])
+
+@crm_bp.route('/apoiadores/novo', methods=['GET', 'POST'])
+def novo_apoiador():
+    ctx = obter_contexto_acesso()
+    if not ctx: return redirect(url_for('auth.login'))
+    
+    if request.method == 'POST':
+        # 1. Transforma o request.form (imutável) num dicionário editável
+        dados = dict(request.form)
+        
+        # 2. Captura os votos da família (se vier vazio ou com erro, assume 1)
+        try:
+            votos = int(dados.get('votos_familia') or 1)
+        except ValueError:
+            votos = 1
+            
+        # 3. O Motor de Inteligência Eleitoral
+        if votos <= 1:
+            dados['grau_apoio'] = 'Simpatizante'
+        elif 2 <= votos <= 4:
+            dados['grau_apoio'] = 'Apoiador'
+        else:
+            dados['grau_apoio'] = 'Liderança'
+            
+        # 4. Manda para o Service já com o grau_apoio calculado e cravado
+        CRMService.adicionar_apoiador(ctx['cliente_id'], dados)
+        return redirect(url_for('crm.listar_apoiadores'))
+        
+    return render_template('crm/form_apoiador.html', permissoes=ctx['permissoes'])
+
 
 @crm_bp.route('/apoiadores/<apoiador_id>/editar', methods=['POST'])
 def editar_apoiador(apoiador_id):
@@ -276,18 +301,30 @@ def editar_apoiador(apoiador_id):
              'lideranca': 'on' in request.form,
              'tags': ",".join(tags_list) if tags_list else None}
 
+    # --- MOTOR DE INTELIGÊNCIA AUTOMÁTICO ---
+    try:
+        votos = int(dados.get('votos_familia') or 1)
+    except ValueError:
+        votos = 1
+
+    if votos <= 1:
+        dados['grau_apoio'] = 'Simpatizante'
+    elif 2 <= votos <= 4:
+        dados['grau_apoio'] = 'Apoiador'
+    else:
+        dados['grau_apoio'] = 'Liderança'
+        dados['lideranca'] = True # Força checkbox de liderança se tiver 5+ votos
+    # ----------------------------------------
+
     conn = get_db_connection()
     try:
         with conn.cursor() as cursor:
             cursor.execute("""
                 UPDATE apoiadores SET 
-                    nome=%(nome)s, telefone=%(telefone)s, indicado_por=%(indicado_por)s, sexo=%(sexo)s, 
-                    faixa_etaria=%(faixa_etaria)s, renda_familiar=%(renda_familiar)s, grau_instrucao=%(grau_instrucao)s, 
-                    origem_cadastro=%(origem_cadastro)s, posicionamento_politico=%(posicionamento_politico)s, 
-                    cep=%(cep)s, logradouro=%(logradouro)s, numero=%(numero)s, complemento=%(complemento)s, 
-                    bairro=%(bairro)s, cidade=%(cidade)s, uf=%(uf)s, grau_apoio=%(grau_apoio)s, 
-                    votos_familia=%(votos_familia)s, oferece_muro=%(oferece_muro)s, oferece_carro=%(oferece_carro)s, 
-                    lideranca=%(lideranca)s, observacoes=%(observacoes)s, tags=%(tags)s
+                    nome=%(nome)s, telefone=%(telefone)s, logradouro=%(logradouro)s, 
+                    numero=%(numero)s, bairro=%(bairro)s, cep=%(cep)s,
+                    votos_familia=%(votos_familia)s, grau_apoio=%(grau_apoio)s,
+                    lideranca=%(lideranca)s, tags=%(tags)s
                 WHERE id = %(id)s AND cliente_id = %(cliente_id)s
             """, {**dados, 'id': apoiador_id, 'cliente_id': ctx['cliente_id']})
         conn.commit()
@@ -344,51 +381,38 @@ def registrar_interacao(apoiador_id):
     return redirect(url_for('crm.perfil_apoiador', apoiador_id=apoiador_id))
 
 
+
 # ==========================================
 # BLOCO 5: GESTÃO DE TAREFAS (CRIAÇÃO/EDICAO)
 # ==========================================
 
-@crm_bp.route('/apoiadores/<apoiador_id>/tarefa/nova', methods=['POST'])
+@crm_bp.route('/apoiadores/<apoiador_id>/tarefa', methods=['POST'])
 def criar_tarefa_perfil(apoiador_id):
     ctx = obter_contexto_acesso()
     if not ctx: return redirect(url_for('auth.login'))
     
+    # Coleta dados do modal
+    tipo = request.form.get('tipo')
     assessor_id = request.form.get('assessor_id')
-    tipo_tarefa = request.form.get('tipo')
-    descricao_tarefa = request.form.get('descricao')
     data_limite = request.form.get('data_limite')
-
+    descricao = request.form.get('descricao')
+    
     conn = get_db_connection()
     try:
-        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-            # 1. Busca os dados do Assessor que vai receber a tarefa
-            cursor.execute("SELECT nome, email FROM usuarios WHERE id = %s", (assessor_id,))
-            assessor = cursor.fetchone()
-
-            # 2. Insere a tarefa no banco
+        with conn.cursor() as cursor:
+            # Note que usamos o 'tipo' como título e tipo simultaneamente já que o banco não tem 'titulo'
             cursor.execute("""
-                INSERT INTO tarefas (id, cliente_id, criador_id, assessor_id, apoiador_id, tipo, descricao, status, data_limite)
-                VALUES (gen_random_uuid(), %s, %s, %s, %s, %s, %s, 'pendente', %s)
-            """, (ctx['cliente_id'], ctx['user_id'], assessor_id, apoiador_id, 
-                  tipo_tarefa, descricao_tarefa, data_limite))
-            
-            conn.commit()
-
-            # 3. Dispara o e-mail se o assessor foi encontrado
-            if assessor and assessor['email']:
-                enviar_alerta_sistema(
-                    destinatario=assessor['email'],
-                    nome_usuario=assessor['nome'],
-                    tipo_alerta="📅 Nova Tarefa Atribuída",
-                    descricao=f"Você tem uma nova missão: <b>{tipo_tarefa}</b>.<br>Detalhes: {descricao_tarefa}<br>Prazo: {data_limite}"
-                )
-
-        flash('Tarefa agendada e assessor notificado!', 'success')
+                INSERT INTO tarefas (cliente_id, apoiador_id, assessor_id, tipo, descricao, data_limite, status, lida)
+                VALUES (%s, %s, %s, %s, %s, %s, 'pendente', FALSE)
+            """, (ctx['cliente_id'], apoiador_id, assessor_id, tipo, descricao, data_limite))
+        conn.commit()
+        flash('Missão operacional lançada com sucesso!', 'success')
     except Exception as e:
-        print(f"Erro ao criar tarefa e notificar: {e}")
-        flash('Erro ao criar tarefa.', 'danger')
+        print(f"Erro ao criar tarefa: {e}")
+        flash('Erro ao agendar tarefa.', 'danger')
     finally:
         if conn: conn.close()
+        
     return redirect(url_for('crm.perfil_apoiador', apoiador_id=apoiador_id))
 
 # No arquivo app/routes/crm.py

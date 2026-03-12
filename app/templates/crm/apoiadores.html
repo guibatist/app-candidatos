@@ -27,7 +27,7 @@
         </div>
         <div class="col-md-4">
             <div class="card border-0 shadow-sm rounded-4 bg-white p-3 border-start border-success border-4">
-                <p class="text-muted small fw-bold mb-1 text-uppercase">Multiplicadores (Forte)</p>
+                <p class="text-muted small fw-bold mb-1 text-uppercase">Multiplicadores (Lideranças)</p>
                 <h3 class="fw-bold text-dark mb-0" id="bi-multiplicadores">0</h3>
             </div>
         </div>
@@ -47,7 +47,7 @@
                         <th class="ps-4 py-3 fw-bold border-0">Apoiador</th>
                         <th class="py-3 fw-bold border-0">Contato</th>
                         <th class="py-3 fw-bold border-0">Localização</th>
-                        <th class="py-3 fw-bold border-0 text-center">Grau de Apoio</th>
+                        <th class="py-3 fw-bold border-0 text-center">Nível de Apoio</th>
                         <th class="pe-4 py-3 fw-bold border-0 text-end">Ações</th>
                     </tr>
                 </thead>
@@ -88,12 +88,18 @@
                         </td>
                         
                         <td class="py-3 text-center">
-                            {% if a.grau_apoio == 'forte' %}
-                                <span class="badge bg-success bg-opacity-10 text-success border border-success rounded-pill px-3">Forte</span>
-                            {% elif a.grau_apoio == 'medio' %}
-                                <span class="badge bg-warning bg-opacity-10 text-warning border border-warning rounded-pill px-3">Médio</span>
+                            {% if a.grau_apoio == 'Liderança' %}
+                                <span class="badge bg-purple-light text-purple border-0 rounded-pill px-3 py-2 fw-bold" style="background-color: #f3e8ff; color: #7c3aed;">
+                                    <i class="fa-solid fa-crown me-1"></i> Liderança
+                                </span>
+                            {% elif a.grau_apoio == 'Apoiador' %}
+                                <span class="badge bg-info bg-opacity-10 text-info border-0 rounded-pill px-3 py-2 fw-bold" style="color: #0ea5e9 !important;">
+                                    Apoiador
+                                </span>
                             {% else %}
-                                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger rounded-pill px-3">Fraco</span>
+                                <span class="badge bg-light text-secondary border-0 rounded-pill px-3 py-2 fw-bold">
+                                    Simpatizante
+                                </span>
                             {% endif %}
                         </td>
                         
@@ -130,6 +136,16 @@
         <p class="text-muted small mb-4">Selecione as opções abaixo para microdirecionar a sua base. Os dados são atualizados em tempo real.</p>
         
         <div class="d-flex flex-column gap-3">
+            <div>
+                <label class="form-label small fw-bold text-muted">Nível de Apoio</label>
+                <select id="filtro-apoio" class="form-select border-light shadow-sm filtro-crm bg-light">
+                    <option value="">Todos</option>
+                    <option value="Liderança">Lideranças</option>
+                    <option value="Apoiador">Apoiadores</option>
+                    <option value="Simpatizante">Simpatizantes</option>
+                </select>
+            </div>
+
             <div>
                 <label class="form-label small fw-bold text-muted">Cidade</label>
                 <select id="filtro-cidade" class="form-select border-light shadow-sm filtro-crm bg-light">
@@ -197,7 +213,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const biMultiplicadores = document.getElementById('bi-multiplicadores');
     const biVotos = document.getElementById('bi-votos');
 
-    // 1. Dicionários para capturar os dados reais da base
+    // 1. Dicionários para capturar os dados reais da base (Removemos 'apoio' daqui pois ele é fixo no filtro)
     const dadosReais = {
         cidade: new Set(),
         bairro: new Set(),
@@ -249,6 +265,7 @@ document.addEventListener('DOMContentLoaded', function() {
             origem: document.getElementById('filtro-origem').value,
             instrucao: document.getElementById('filtro-instrucao').value,
             posicionamento: document.getElementById('filtro-posicionamento').value,
+            apoio: document.getElementById('filtro-apoio').value // Novo filtro capturado
         };
 
         linhas.forEach(linha => {
@@ -265,7 +282,8 @@ document.addEventListener('DOMContentLoaded', function() {
             if (mostrar) {
                 total++;
                 votos += parseInt(linha.dataset.votos) || 1;
-                if (linha.dataset.apoio === 'forte') multiplicadores++;
+                // Conta apenas quem for 'Liderança' agora
+                if (linha.dataset.apoio === 'Liderança') multiplicadores++; 
             }
         });
 
@@ -274,7 +292,7 @@ document.addEventListener('DOMContentLoaded', function() {
         biVotos.textContent = votos;
     }
 
-    // 3. Gatilhos: Atualiza o B.I. instantaneamente enquanto o usuário muda no Offcanvas
+    // 3. Gatilhos: Atualiza o B.I. instantaneamente
     filtros.forEach(select => {
         select.addEventListener('change', aplicarFiltros);
     });
@@ -297,7 +315,6 @@ document.addEventListener('DOMContentLoaded', function() {
     .btn-outline-indigo:hover { background-color: #4f46e5; color: white; }
     .border-indigo { border-color: #4f46e5 !important; }
     
-    /* Suaviza a transição das linhas da tabela sumindo/aparecendo */
     .linha-apoiador { transition: opacity 0.2s ease-in-out; }
 </style>
 {% endblock %}
