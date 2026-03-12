@@ -143,5 +143,42 @@
             }
         });
     </script>
+
+<script>
+function atualizarNotificacoes() {
+    fetch('/crm/api/notificacoes/contagem')
+        .then(response => response.json())
+        .then(data => {
+            const badge = document.getElementById('badge-notificacoes');
+            if (badge) {
+                if (data.count > 0) {
+                    badge.innerText = data.count;
+                    badge.style.display = 'inline-flex'; // Mostra se tiver algo
+                    // Opcional: faz o badge pulsar se o número aumentou
+                    badge.classList.add('pulse-animation'); 
+                } else {
+                    badge.style.display = 'none'; // Esconde se for zero
+                }
+            }
+        })
+        .catch(err => console.error('Erro ao buscar notificações:', err));
+}
+
+// Verifica a cada 30 segundos (30000 ms)
+setInterval(atualizarNotificacoes, 30000);
+
+// Primeira execução ao carregar a página
+document.addEventListener('DOMContentLoaded', atualizarNotificacoes);
+</script>
+
+<style>
+/* Uma animação discreta para quando chegar algo novo */
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+}
+.pulse-animation { animation: pulse 0.5s ease-in-out; }
+</style>
 </body>
 </html>

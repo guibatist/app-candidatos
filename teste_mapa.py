@@ -1,18 +1,29 @@
-import requests
+import smtplib
+import os
+from pathlib import Path
+from dotenv import load_dotenv
 
-query = "Estrada São Cristóvão, Embu das Artes, SP, Brasil"
-url = f"https://nominatim.openstreetmap.org/search?format=json&q={query}&limit=1"
-headers = {'User-Agent': 'AppCRM_Teste_Isolado/1.0'}
+env_path = Path(__file__).parent / '.env'
+load_dotenv(dotenv_path=env_path)
 
-print(f"Buscando: {query}...")
-resposta = requests.get(url, headers=headers)
+# Usando os nomes que estão no seu arquivo
+host = os.getenv('SMTP_HOST')
+port = os.getenv('SMTP_PORT')
+user = os.getenv('SMTP_USER')
+passw = os.getenv('SMTP_PASS')
 
-print(f"Código do Servidor: {resposta.status_code}")
+print(f"DEBUG: HOST={host}, PORT={port}, USER={user}")
+
 try:
-    dados = resposta.json()
-    if dados:
-        print(f"LAT: {dados[0]['lat']} | LON: {dados[0]['lon']}")
-    else:
-        print("O satélite não achou a rua (Retornou lista vazia [])")
+    if not host or not port:
+        raise ValueError("Variáveis não encontradas! Verifique se os nomes no .env batem.")
+
+    print("Conectando...")
+    server = smtplib.SMTP(host, int(port))
+    server.starttls()
+    print("Logando...")
+    server.login(user, passw)
+    print("SUCESSO!")
+    server.quit()
 except Exception as e:
-    print(f"Erro ao ler os dados: {e}")
+    print(f"ERRO: {e}")

@@ -2,9 +2,12 @@
 {% block content %}
 
 <style>
-    /* === DESIGN SYSTEM VOTAHUB === */
+    /* === DESIGN SYSTEM VOTAHUB: THEMA ROXO === */
     :root { 
-        --indigo-hub: #4f46e5; 
+        --purple-hub: #7c3aed;       /* Roxo vibrante principal */
+        --purple-hover: #6d28d9;     /* Roxo escuro para hover */
+        --purple-light: #f3e8ff;     /* Fundo roxo suave */
+        --purple-border: #ddd6fe;    /* Borda roxa suave */
         --slate-50: #f8fafc;
         --slate-100: #f1f5f9;
         --slate-200: #e2e8f0;
@@ -15,43 +18,59 @@
     }
     
     .info-label { font-size: 0.65rem; font-weight: 800; color: var(--slate-400); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 4px; display: block; }
+    
+    /* Botões Customizados */
     .btn-back-hub { background: #fff; border: 1px solid var(--slate-200); color: var(--slate-700); font-weight: 700; padding: 10px 20px; border-radius: 12px; transition: all 0.2s; display: inline-flex; align-items: center; text-decoration: none; font-size: 0.85rem; }
-    .btn-back-hub:hover { border-color: var(--indigo-hub); color: var(--indigo-hub); transform: translateX(-5px); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+    .btn-back-hub:hover { border-color: var(--purple-hub); color: var(--purple-hub); transform: translateX(-5px); box-shadow: 0 4px 12px rgba(124, 58, 237, 0.1); }
+    
+    .btn-purple { background-color: var(--purple-hub); color: #fff; border: none; transition: 0.2s; }
+    .btn-purple:hover { background-color: var(--purple-hover); color: #fff; transform: translateY(-2px); box-shadow: 0 4px 15px rgba(124, 58, 237, 0.3); }
 
+    .bg-purple-light { background-color: var(--purple-light); }
+    .text-purple { color: var(--purple-hub); }
+
+    /* Layout */
     .view-row { height: var(--view-height); }
     .col-sidebar { display: flex; flex-direction: column; gap: 20px; height: 100%; }
-    .card-briefing { flex-shrink: 0; border-radius: var(--radius-ultra); border: none; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-    .card-team { flex-grow: 1; display: flex; flex-direction: column; overflow: hidden; border-radius: var(--radius-ultra); border: none; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+    
+    /* Cartões */
+    .card-hub { border-radius: var(--radius-ultra); border: none; box-shadow: 0 4px 20px rgba(0,0,0,0.04); background: #fff; }
+    .card-team { flex-grow: 1; display: flex; flex-direction: column; overflow: hidden; }
     .team-scroll-area { flex-grow: 1; overflow-y: auto; padding-right: 5px; }
 
-    .chat-card { display: flex; flex-direction: column; height: 100%; border-radius: var(--radius-ultra); overflow: hidden; border: 1px solid var(--slate-200); background: #fff; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+    /* Chat */
+    .chat-card { display: flex; flex-direction: column; height: 100%; border-radius: var(--radius-ultra); overflow: hidden; border: 1px solid var(--purple-border); background: #fff; box-shadow: 0 10px 30px rgba(124, 58, 237, 0.05); }
     .chat-messages { flex: 1; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 18px; }
     .msg-item { display: flex; gap: 12px; max-width: 85%; }
     .msg-mine { align-self: flex-end; flex-direction: row-reverse; }
-    .msg-avatar { width: 36px; height: 36px; border-radius: 10px; background: var(--slate-100); display: flex; align-items: center; justify-content: center; font-weight: 700; color: var(--slate-700); flex-shrink: 0; }
-    .msg-mine .msg-avatar { background: var(--indigo-hub); color: #fff; }
-    .msg-bubble { padding: 12px 18px; border-radius: 16px; font-size: 0.95rem; line-height: 1.5; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
-    .msg-received .msg-bubble { background: #f1f5f9; color: #1e293b; border-top-left-radius: 4px; }
-    .msg-mine .msg-bubble { background: var(--indigo-hub); color: #fff; border-top-right-radius: 4px; }
     
-    .btn-ellipsis { color: var(--slate-400); background: transparent; border: none; padding: 6px 10px; border-radius: 8px; transition: 0.2s; }
-    .btn-ellipsis:hover { background: var(--slate-100); color: var(--indigo-hub); }
-
-    .task-archived-overlay { filter: grayscale(0.5); opacity: 0.8; pointer-events: none; }
+    .msg-avatar { width: 38px; height: 38px; border-radius: 12px; background: var(--slate-100); display: flex; align-items: center; justify-content: center; font-weight: 700; color: var(--slate-700); flex-shrink: 0; border: 2px solid #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+    .msg-mine .msg-avatar { background: var(--purple-hub); color: #fff; }
+    
+    .msg-bubble { padding: 14px 18px; border-radius: 18px; font-size: 0.95rem; line-height: 1.5; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
+    .msg-received .msg-bubble { background: #f8fafc; color: #1e293b; border: 1px solid var(--slate-200); border-top-left-radius: 4px; }
+    .msg-mine .msg-bubble { background: linear-gradient(135deg, var(--purple-hub), var(--purple-hover)); color: #fff; border-top-right-radius: 4px; border: none; }
+    
+    /* Detalhes Info Box */
+    .info-box { display: flex; align-items: center; background: var(--slate-50); padding: 15px; border-radius: 16px; border: 1px solid var(--slate-200); transition: 0.2s; }
+    .info-box:hover { border-color: var(--purple-border); background: #fff; box-shadow: 0 4px 10px rgba(124, 58, 237, 0.05); }
+    .info-icon { width: 45px; height: 45px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; margin-right: 15px; }
+    
+    .task-archived { filter: grayscale(0.6); opacity: 0.9; pointer-events: none; }
 </style>
 
-<div class="container-fluid py-4">
+<div class="container-fluid py-4 {% if esta_concluida %}task-archived{% endif %}">
     
     {% if esta_concluida %}
-    <div class="alert bg-success bg-opacity-10 border-success text-success d-flex align-items-center mb-4 rounded-4 shadow-sm">
+    <div class="alert bg-success bg-opacity-10 border-success text-success d-flex align-items-center mb-4 rounded-4 shadow-sm p-3">
         <i class="fa-solid fa-circle-check fa-2x me-3"></i>
         <div>
-            <h6 class="fw-bold mb-0">Missão Concluída</h6>
-            <span class="small">Esta tarefa foi finalizada e está em modo de leitura.</span>
+            <h6 class="fw-bold mb-0">Missão Cumprida</h6>
+            <span class="small">Esta tarefa foi finalizada e arquivada em modo de leitura.</span>
         </div>
     </div>
     {% elif not pode_editar %}
-    <div class="alert bg-warning bg-opacity-10 border-warning text-dark d-flex align-items-center mb-4 rounded-4 shadow-sm">
+    <div class="alert bg-warning bg-opacity-10 border-warning text-dark d-flex align-items-center mb-4 rounded-4 shadow-sm p-3">
         <i class="fa-solid fa-lock fa-2x me-3 text-warning"></i>
         <div>
             <h6 class="fw-bold mb-0">Acesso Restrito</h6>
@@ -64,43 +83,49 @@
         <div class="d-flex align-items-center gap-4">
             <a href="{{ url_for('crm.listar_todas_tarefas') }}" class="btn-back-hub"><i class="fa-solid fa-arrow-left me-2"></i> Painel</a>
             <div>
-                <h2 class="fw-bold text-dark mb-0">{{ tarefa.tipo }}</h2>
-                <div class="d-flex align-items-center gap-3 mt-1">
-                    <span class="badge {% if esta_concluida %}bg-success{% else %}bg-primary{% endif %} rounded-pill px-3 py-1 fw-bold shadow-sm">{{ tarefa.status | upper }}</span>
-                    <span class="text-muted small fw-bold">Apoiador: {{ tarefa.apoiador_nome or 'Geral' }}</span>
-                </div>
+                <h2 class="fw-bold text-dark mb-0 d-flex align-items-center gap-3">
+                    {{ tarefa.tipo }}
+                    <span class="badge {% if esta_concluida %}bg-success{% else %}bg-purple{% endif %} rounded-pill px-3 py-2 fs-6 shadow-sm" style="{% if not esta_concluida %}background-color: var(--purple-hub);{% endif %}">{{ tarefa.status | upper }}</span>
+                </h2>
             </div>
         </div>
 
         <div class="d-flex gap-2">
             {% if pode_editar and not esta_concluida %}
-                <button class="btn btn-white border shadow-sm fw-bold px-4 rounded-pill" data-bs-toggle="modal" data-bs-target="#modalEditarTarefa">Editar</button>
+                <button class="btn btn-white border shadow-sm fw-bold px-4 rounded-pill text-dark hover-purple" data-bs-toggle="modal" data-bs-target="#modalEditarTarefa">
+                    <i class="fa-solid fa-pen me-2"></i> Editar
+                </button>
                 <form action="{{ url_for('crm.concluir_tarefa', tarefa_id=tarefa.id) }}" method="POST" class="m-0">
-                    <button type="submit" class="btn btn-success shadow-sm px-4 fw-bold rounded-pill">Concluir Missão</button>
+                    <button type="submit" class="btn btn-success shadow-sm px-4 fw-bold rounded-pill">
+                        <i class="fa-solid fa-check me-2"></i> Concluir Missão
+                    </button>
                 </form>
             {% elif not pode_editar and not esta_concluida %}
                 <form action="{{ url_for('crm.solicitar_acesso_tarefa', tarefa_id=tarefa.id) }}" method="POST" class="m-0">
-                    <button type="submit" class="btn btn-warning text-dark rounded-pill px-4 fw-bold shadow-sm">Pedir Acesso</button>
+                    <button type="submit" class="btn btn-warning text-dark rounded-pill px-4 fw-bold shadow-sm">
+                        <i class="fa-solid fa-key me-2"></i> Pedir Acesso
+                    </button>
                 </form>
             {% endif %}
         </div>
     </div>
 
     <div class="row g-4 view-row">
+        
         <div class="col-lg-5 col-sidebar">
             
             {% if pedidos and eh_lider and not esta_concluida %}
-            <div class="card p-3 border-warning bg-warning bg-opacity-10 mb-3 rounded-4">
-                <h6 class="fw-bold mb-3"><i class="fa-solid fa-user-clock me-2"></i>Pedidos de Acesso</h6>
+            <div class="card p-3 border-warning bg-warning bg-opacity-10 mb-2 rounded-4">
+                <h6 class="fw-bold mb-3 text-dark"><i class="fa-solid fa-user-clock me-2 text-warning"></i>Solicitações Pendentes</h6>
                 {% for p in pedidos %}
                 <div class="d-flex justify-content-between align-items-center mb-2 bg-white p-2 rounded-3 shadow-sm">
                     <span class="small fw-bold">{{ p.nome }}</span>
                     <div class="d-flex gap-2">
                         <form action="{{ url_for('crm.responder_pedido_acesso', tarefa_id=tarefa.id, usuario_id=p.usuario_id, acao='aprovar') }}" method="POST" class="m-0">
-                            <button type="submit" class="btn btn-sm btn-success rounded-pill px-3 shadow-sm">Sim</button>
+                            <button type="submit" class="btn btn-sm btn-success rounded-pill px-3 shadow-sm"><i class="fa-solid fa-check"></i></button>
                         </form>
                         <form action="{{ url_for('crm.responder_pedido_acesso', tarefa_id=tarefa.id, usuario_id=p.usuario_id, acao='recusar') }}" method="POST" class="m-0">
-                            <button type="submit" class="btn btn-sm btn-danger rounded-pill px-3 shadow-sm">Não</button>
+                            <button type="submit" class="btn btn-sm btn-danger rounded-pill px-3 shadow-sm"><i class="fa-solid fa-xmark"></i></button>
                         </form>
                     </div>
                 </div>
@@ -108,30 +133,88 @@
             </div>
             {% endif %}
 
-            <div class="card card-briefing p-4 bg-white shadow-sm border-0">
-                <label class="info-label">Descrição da Missão</label>
-                <div class="text-dark mt-2 p-3 bg-light rounded-4 border border-dashed small">{{ tarefa.descricao or 'Sem briefing.' }}</div>
+            <div class="card card-hub p-4">
+                <h6 class="fw-bold mb-3 text-dark"><i class="fa-solid fa-bolt me-2 text-purple"></i>Dados da Missão</h6>
+                <div class="d-flex flex-column gap-3">
+                    
+                    <div class="info-box">
+                        <div class="info-icon bg-purple-light text-purple">
+                            <i class="fa-regular fa-calendar-check"></i>
+                        </div>
+                        <div>
+                            <label class="info-label mb-0">Prazo Limite</label>
+                            <span class="fw-bold text-dark fs-6">
+                                {% if tarefa.data_limite %}
+                                    {% if tarefa.data_limite|length >= 10 %}
+                                        {# Converte YYYY-MM-DD para DD/MM/YYYY via fatiamento #}
+                                        {{ tarefa.data_limite[8:10] }}/{{ tarefa.data_limite[5:7] }}/{{ tarefa.data_limite[0:4] }}
+                                    {% else %}
+                                        {{ tarefa.data_limite }}
+                                    {% endif %}
+                                {% else %}
+                                    Sem prazo definido
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="info-box">
+                        <div class="info-icon bg-purple-light text-purple">
+                            <i class="fa-solid fa-handshake-angle"></i>
+                        </div>
+                        <div>
+                            <label class="info-label mb-0">Apoiador Vinculado</label>
+                            {% if tarefa.apoiador_id %}
+                                <a href="{{ url_for('crm.perfil_apoiador', apoiador_id=tarefa.apoiador_id) }}" class="fw-bold text-decoration-none fs-6 text-purple" style="transition: 0.2s;">
+                                    {{ tarefa.apoiador_nome }} <i class="fa-solid fa-arrow-up-right-from-square ms-1" style="font-size: 0.8rem;"></i>
+                                </a>
+                            {% else %}
+                                <span class="fw-bold text-dark fs-6">Geral (Nenhum específico)</span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                </div>
             </div>
 
-            <div class="card card-team p-4 bg-white shadow-sm border-0">
+            <div class="card card-hub p-4">
+                <label class="info-label"><i class="fa-solid fa-align-left me-2"></i>Briefing</label>
+                <div class="text-dark mt-2 p-3 rounded-4 border border-dashed small bg-slate-50" style="background-color: var(--slate-50); line-height: 1.6;">
+                    {{ tarefa.descricao or 'Sem instruções adicionais fornecidas para esta missão.' }}
+                </div>
+            </div>
+
+            <div class="card card-hub card-team p-4">
                 <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h6 class="fw-bold text-dark mb-0">Equipe</h6>
+                    <h6 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-users me-2 text-purple"></i>Equipe</h6>
                     {% if eh_lider and not esta_concluida %}
-                    <button class="btn btn-sm btn-primary rounded-pill px-3 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#modalAdicionarMembro">Convidar</button>
+                    <button class="btn btn-sm btn-purple rounded-pill px-3 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#modalAdicionarMembro">
+                        <i class="fa-solid fa-user-plus me-1"></i> Convidar
+                    </button>
                     {% endif %}
                 </div>
                 <div class="team-scroll-area">
                     <div class="list-group list-group-flush">
                         <div class="list-group-item px-0 border-0 d-flex align-items-center mb-3">
-                            <div class="msg-avatar bg-primary text-white">{{ (tarefa.delegado_nome or 'A')[0]|upper }}</div>
-                            <div class="ms-3"><h6 class="mb-0 fw-bold small text-dark">{{ tarefa.delegado_nome or 'Não atribuída' }}</h6><span class="text-primary small fw-bold">COORDENADOR</span></div>
+                            <div class="msg-avatar bg-purple-light text-purple border-0" style="background: var(--purple-hub); color: white;">
+                                {{ (tarefa.delegado_nome or 'A')[0]|upper }}
+                            </div>
+                            <div class="ms-3">
+                                <h6 class="mb-0 fw-bold text-dark small">{{ tarefa.delegado_nome or 'Não atribuída' }}</h6>
+                                <span class="small fw-bold text-purple">COORDENADOR</span>
+                            </div>
                         </div>
+                        
                         {% if tarefa.criador_id and tarefa.criador_id != tarefa.assessor_id %}
                         <div class="list-group-item px-0 border-0 d-flex align-items-center mb-3">
-                            <div class="msg-avatar bg-dark text-white">{{ (tarefa.criador_nome or 'C')[0]|upper }}</div>
-                            <div class="ms-3"><h6 class="mb-0 fw-bold small text-dark">{{ tarefa.criador_nome }}</h6><span class="text-muted small fw-bold">CRIADOR</span></div>
+                            <div class="msg-avatar bg-dark text-white border-0">{{ (tarefa.criador_nome or 'C')[0]|upper }}</div>
+                            <div class="ms-3">
+                                <h6 class="mb-0 fw-bold text-dark small">{{ tarefa.criador_nome }}</h6>
+                                <span class="text-muted small fw-bold">CRIADOR</span>
+                            </div>
                         </div>
                         {% endif %}
+                        
                         {% for m in membros %}
                             {% if m.usuario_id != tarefa.assessor_id and m.usuario_id != tarefa.criador_id %}
                             <div class="list-group-item px-0 border-0 d-flex justify-content-between align-items-center mb-2">
@@ -142,7 +225,7 @@
                                 {% if eh_lider and not esta_concluida %}
                                 <form action="{{ url_for('crm.remover_membro_tarefa', tarefa_id=tarefa.id) }}" method="POST" class="m-0">
                                     <input type="hidden" name="usuario_id" value="{{ m.usuario_id }}">
-                                    <button type="submit" class="btn btn-link text-danger p-0"><i class="fa-solid fa-trash-can"></i></button>
+                                    <button type="submit" class="btn btn-link text-danger p-0 shadow-none"><i class="fa-solid fa-trash-can"></i></button>
                                 </form>
                                 {% endif %}
                             </div>
@@ -154,29 +237,41 @@
         </div>
 
         <div class="col-lg-7">
-            <div class="chat-card shadow-sm h-100">
-                <div class="p-3 bg-white border-bottom fw-bold text-dark">Alinhamento Interno</div>
+            <div class="chat-card">
+                <div class="p-4 bg-white border-bottom d-flex align-items-center">
+                    <div class="bg-purple-light text-purple rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                        <i class="fa-solid fa-comments"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0">Alinhamento Interno</h6>
+                        <span class="small text-muted">Apenas membros da equipe têm acesso</span>
+                    </div>
+                </div>
+                
                 <div class="chat-messages" id="taskChatBox">
                     {% for msg in mensagens %}
-                    <div class="msg-item {% if msg.usuario_id|string == session.user_id|string %}msg-mine{% endif %}">
-                        <div class="msg-avatar shadow-sm">{{ msg.nome[0]|upper }}</div>
+                    <div class="msg-item {% if msg.usuario_id|string == session.user_id|string %}msg-mine{% else %}msg-received{% endif %}">
+                        <div class="msg-avatar">{{ msg.nome[0]|upper }}</div>
                         <div class="d-flex flex-column">
-                            <div class="small text-muted mb-1" style="font-size: 0.6rem; {% if msg.usuario_id|string == session.user_id|string %}text-align: right;{% endif %}">{{ msg.nome }}</div>
-                            <div class="msg-bubble shadow-sm">{{ msg.mensagem }}</div>
+                            <div class="small text-muted mb-1 fw-bold" style="font-size: 0.65rem; letter-spacing: 0.5px; {% if msg.usuario_id|string == session.user_id|string %}text-align: right; color: var(--purple-hub) !important;{% endif %}">
+                                {{ msg.nome|upper }}
+                            </div>
+                            <div class="msg-bubble">{{ msg.mensagem }}</div>
                         </div>
                     </div>
                     {% endfor %}
                 </div>
+                
                 <div class="p-4 bg-white border-top">
                     {% if pode_editar and not esta_concluida %}
                     <form action="{{ url_for('crm.enviar_mensagem_tarefa', tarefa_id=tarefa.id) }}" method="POST" class="d-flex gap-3 m-0">
-                        <input type="text" name="conteudo" class="form-control rounded-pill bg-light border-0 px-4 py-3" placeholder="Mensagem..." required autocomplete="off">
-                        <button type="submit" class="btn btn-primary rounded-circle shadow-lg" style="width: 50px; height: 50px;"><i class="fa-solid fa-paper-plane"></i></button>
+                        <input type="text" name="conteudo" class="form-control rounded-pill bg-slate-50 border-0 px-4 py-3" placeholder="Escreva sua mensagem aqui..." required autocomplete="off" style="box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);">
+                        <button type="submit" class="btn btn-purple rounded-circle shadow-sm" style="width: 54px; height: 54px;"><i class="fa-solid fa-paper-plane"></i></button>
                     </form>
                     {% elif esta_concluida %}
-                    <div class="text-center text-muted small py-2"><i class="fa-solid fa-lock me-2"></i> Esta conversa foi encerrada.</div>
+                    <div class="text-center text-muted small py-3 bg-slate-50 rounded-pill"><i class="fa-solid fa-lock me-2"></i> Esta conversa foi encerrada.</div>
                     {% else %}
-                    <div class="text-center text-muted small py-2">Peça acesso para falar.</div>
+                    <div class="text-center text-muted small py-3 bg-slate-50 rounded-pill"><i class="fa-solid fa-hand me-2"></i> Peça acesso para enviar mensagens.</div>
                     {% endif %}
                 </div>
             </div>
@@ -184,16 +279,29 @@
     </div>
 </div>
 
+{% if not esta_concluida %}
 <div class="modal fade" id="modalEditarTarefa" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content rounded-4 border-0 shadow-lg">
-            <div class="modal-header bg-dark text-white border-0"><h5 class="fw-bold mb-0">Reajustar Missão</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+            <div class="modal-header bg-purple-light text-purple border-0 p-4">
+                <h5 class="fw-bold mb-0"><i class="fa-solid fa-pen-to-square me-2"></i>Reajustar Missão</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
             <form action="{{ url_for('crm.editar_tarefa', tarefa_id=tarefa.id) }}" method="POST">
                 <div class="modal-body p-4">
-                    <div class="mb-4"><label class="info-label">Tipo</label><input type="text" name="tipo" class="form-control bg-light border-0 py-3" value="{{ tarefa.tipo }}" required></div>
-                    <div class="mb-4"><label class="info-label">Prazo</label><input type="date" name="data_limite" class="form-control bg-light border-0 py-3" value="{{ tarefa.data_limite }}"></div>
-                    <div class="mb-4"><label class="info-label">Descrição</label><textarea name="descricao" class="form-control bg-light border-0 py-3" rows="5">{{ tarefa.descricao }}</textarea></div>
-                    <button type="submit" class="btn btn-primary w-100 py-3 fw-bold rounded-3">Salvar Alterações</button>
+                    <div class="mb-4">
+                        <label class="info-label">Tipo da Ação</label>
+                        <input type="text" name="tipo" class="form-control bg-slate-50 border-0 py-3 rounded-3" value="{{ tarefa.tipo }}" required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="info-label">Prazo Final</label>
+                        <input type="date" name="data_limite" class="form-control bg-slate-50 border-0 py-3 rounded-3" value="{{ tarefa.data_limite }}">
+                    </div>
+                    <div class="mb-4">
+                        <label class="info-label">Briefing / Descrição</label>
+                        <textarea name="descricao" class="form-control bg-slate-50 border-0 py-3 rounded-3" rows="5">{{ tarefa.descricao }}</textarea>
+                    </div>
+                    <button type="submit" class="btn btn-purple w-100 py-3 fw-bold rounded-pill shadow-sm">Salvar Alterações</button>
                 </div>
             </form>
         </div>
@@ -203,20 +311,26 @@
 <div class="modal fade" id="modalAdicionarMembro" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content rounded-4 border-0 shadow-lg">
-            <div class="modal-header bg-primary text-white border-0"><h5 class="fw-bold mb-0">Convidar para Equipe</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+            <div class="modal-header text-white border-0 p-4" style="background: var(--purple-hub);">
+                <h5 class="fw-bold mb-0"><i class="fa-solid fa-user-plus me-2"></i>Convidar para Equipe</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
             <form action="{{ url_for('crm.adicionar_membro_tarefa', tarefa_id=tarefa.id) }}" method="POST">
                 <div class="modal-body p-4">
-                    <label class="info-label">Usuário</label>
-                    <select name="usuario_id" class="form-select bg-light border-0 mb-4" required>
-                        <option value="">Escolha um assessor...</option>
-                        {% for u in usuarios_equipa %}<option value="{{ u.id }}">{{ u.nome }}</option>{% endfor %}
+                    <label class="info-label mb-2">Selecione o Assessor</label>
+                    <select name="usuario_id" class="form-select bg-slate-50 border-0 py-3 rounded-3 mb-4" required>
+                        <option value="">Escolha na lista...</option>
+                        {% for u in usuarios_equipa %}
+                        <option value="{{ u.id }}">{{ u.nome }}</option>
+                        {% endfor %}
                     </select>
-                    <button type="submit" class="btn btn-primary w-100 py-3 fw-bold rounded-3 shadow-lg">Adicionar à Equipe</button>
+                    <button type="submit" class="btn btn-purple w-100 py-3 fw-bold rounded-pill shadow-sm">Adicionar Membro</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
+{% endif %}
 
 <script>
     document.addEventListener("DOMContentLoaded", function() {

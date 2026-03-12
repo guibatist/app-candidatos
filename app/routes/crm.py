@@ -1182,3 +1182,21 @@ def meu_perfil():
 
 from flask import jsonify
 
+
+@crm_bp.route('/api/notificacoes/contagem')
+def contagem_notificacoes():
+    ctx = obter_contexto_acesso()
+    if not ctx: return {"count": 0}, 401
+    
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            # Conta apenas notificações de sistema não lidas
+            cursor.execute("""
+                SELECT COUNT(*) FROM tarefas 
+                WHERE assessor_id = %s AND tipo = 'Aviso de Sistema' AND lida = FALSE
+            """, (str(ctx['user_id']),))
+            total = cursor.fetchone()[0]
+            return {"count": total}, 200
+    finally:
+        if conn: conn.close()

@@ -177,24 +177,34 @@ def trocar_senha():
             
     return redirect(url_for('auth.login'))
 
-# Adicione isso ao seu arquivo de utilitários de e-mail (ou auth.py)
 def enviar_alerta_sistema(destinatario, nome_usuario, tipo_alerta, descricao):
-    assunto = f"VotaHub | Novo Alerta: {tipo_alerta}"
+    from flask_mail import Message
+    from app import mail
+    from flask import current_app # Importante para pegar o contexto
+    import uuid
     
-    # Design System do e-mail seguindo o padrão do Login
-    html_body = f"""
-    <div style="font-family: 'Inter', Arial; color: #1f2937; max-width: 600px; margin: auto; border: 1px solid #e5e7eb; border-radius: 12px; padding: 20px;">
-        <h2 style="color: #4f46e5;">🚀 VotaHub Alertas</h2>
-        <p>Olá, <strong>{nome_usuario}</strong>!</p>
-        <div style="background-color: #f9fafb; padding: 15px; border-radius: 8px; border-left: 4px solid #4f46e5;">
-            <p style="margin: 0; font-weight: bold;">{tipo_alerta}</p>
-            <p style="margin: 5px 0 0 0; color: #4b5563;">{descricao}</p>
-        </div>
-        <p style="margin-top: 20px;">
-            <a href="https://seusite.com/login" style="background-color: #4f46e5; color: white; padding: 10px 20px; text-decoration: none; border-radius: 6px; font-weight: bold;">Ver no Painel</a>
+    # ID Único para evitar agrupamento no Gmail
+    ticket_id = uuid.uuid4().hex[:6].upper()
+    assunto = f"[{ticket_id}] {tipo_alerta}"
+    
+    msg = Message(assunto, recipients=[destinatario])
+    
+    # Template HTML
+    msg.html = f"""
+    <div style="font-family: sans-serif; color: #334155; max-width: 600px; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px;">
+        <h2 style="color: #4f46e5;">VotaHub CRM</h2>
+        <p>Olá <b>{nome_usuario}</b>,</p>
+        <p style="background: #f8fafc; border-left: 4px solid #4f46e5; padding: 15px;">
+            <b>{tipo_alerta}</b><br>{descricao}
         </p>
-        <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 20px 0;">
-        <p style="font-size: 12px; color: #9ca3af;">Este é um e-mail automático. Não é necessário responder.</p>
+        <small style="color: #94a3b8;">Ref: {ticket_id}</small>
     </div>
     """
-    disparar_email_assincrono(destinatario, assunto, html_body)
+    
+    try:
+        # O segredo: usar o current_app para garantir a conexão
+        with current_app.app_context():
+            mail.send(msg)
+            print(f"[MAIL-SUCCESS] E-mail enviado para {destinatario}")
+    except Exception as e:
+        print(f"[MAIL-ERROR] Falha crítica: {e}")
