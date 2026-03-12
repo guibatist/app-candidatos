@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 import math
-from flask import Blueprint, render_template, session, redirect, url_for, request, jsonify, flash, g
+from flask import Blueprint, render_template, session, redirect, url_for, request, jsonify, flash, g, make_response
 from psycopg2.extras import RealDictCursor
 from app.routes.auth import enviar_alerta_sistema
 # Nossos módulos
@@ -1184,19 +1184,27 @@ from flask import jsonify
 
 
 @crm_bp.route('/api/notificacoes/contagem')
-def contagem_notificacoes():
-    ctx = obter_contexto_acesso()
-    if not ctx: return {"count": 0}, 401
+def api_contagem_notificacoes():
+    user_id = session.get('user_id')
+    if not user_id: 
+        return jsonify({'count': 0})
     
     conn = get_db_connection()
     try:
         with conn.cursor() as cursor:
-            # Conta apenas notificações de sistema não lidas
+            # Filtro real: Tarefas e Mensagens NÃO LIDAS
             cursor.execute("""
-                SELECT COUNT(*) FROM tarefas 
-                WHERE assessor_id = %s AND tipo = 'Aviso de Sistema' AND lida = FALSE
-            """, (str(ctx['user_id']),))
-            total = cursor.fetchone()[0]
-            return {"count": total}, 200
+                SELECT 
+                    (SELECT COUNT(id) FROM tarefas WHERE (assessor_id = %s OR cliente_id = %s) AND lida = FALSE) +
+                    (SELECT COUNT(id) FROM mensagens WHERE destinatario_id = %s AND lida = FALSE AND apagada = FALSE)
+                as total
+            """, (str(user_id), str(user_id), str(user_id)))
+            
+            total = cursor.fetchone()[0] or 0
+            
+            # Criamos a resposta e mandamos o navegador NÃO guardar cache
+            resp = make_response(jsonify({'count': total}))
+            resp.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+            return resp
     finally:
         if conn: conn.close()

@@ -114,7 +114,14 @@
     
     /* Mostra a bolinha apenas quando fechada para não poluir a aberta */
     #sidebar.collapsed .badge-floating { display: flex; } 
+    #sidebar:not(.collapsed) #sidebar-badge-floating {
+    display: none !important;
+    }
 
+    /* REGRA DE FERRO: Esconde o número lateral (Pill) quando a sidebar estiver FECHADA */
+    #sidebar.collapsed #sidebar-badge-pill {
+        display: none !important;
+    }
     #sidebar.collapsed .nav-item { justify-content: center; padding: 0; }
     
     .nav-item.locked { opacity: 0.4; cursor: not-allowed; filter: grayscale(1); }
@@ -165,14 +172,14 @@
             <a href="{{ url_for('crm.notificacoes') }}" class="nav-item {% if request.endpoint == 'crm.notificacoes' %}active{% endif %}">
                 <div class="nav-icon-wrapper">
                     <i class="fa-solid fa-bell nav-icon"></i>
-                    {% if g.total_notificacoes > 0 %}
-                        <span class="badge-floating">{{ g.total_notificacoes }}</span>
-                    {% endif %}
+                    <span id="sidebar-badge-floating" class="badge-floating" style="{% if g.total_notificacoes > 0 %}display: flex;{% else %}display: none;{% endif %}">
+                        {{ g.total_notificacoes }}
+                    </span>
                 </div>
                 <span class="nav-text">Notificações</span>
-                {% if g.total_notificacoes > 0 %}
-                    <span class="badge badge-pill-nav">{{ g.total_notificacoes }}</span>
-                {% endif %}
+                <span id="sidebar-badge-pill" class="badge badge-pill-nav" style="{% if g.total_notificacoes > 0 %}display: inline-block;{% else %}display: none;{% endif %}">
+                    {{ g.total_notificacoes }}
+                </span>
             </a>
 
             <div class="nav-category mt-4">Estratégia IA</div>
@@ -209,14 +216,69 @@
         </a>
     </div>
 </nav>
-<script>
-    // Se o utilizador limpou as notificações nesta sessão, esconde os badges na sidebar
-    if (sessionStorage.getItem('notificacoes_limpas') === 'true') {
-        const b1 = document.getElementById('sidebar-badge-floating');
-        const b2 = document.getElementById('sidebar-badge-pill');
-        if (b1) b1.style.display = 'none';
-        if (b2) b2.style.display = 'none';
+<style>
+    /* Animação de Pulo para Notificação Nova */
+    @keyframes pop-notification {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.4); background-color: #ef4444; }
+        100% { transform: scale(1); }
     }
+    .badge-pop {
+        animation: pop-notification 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+</style>
+
+<script>
+    function radarNotificacoes() {
+        // 1. Se o utilizador limpou as notificações nesta sessão, o radar descansa
+        if (sessionStorage.getItem('notificacoes_limpas') === 'true') return;
+
+        // 2. O truque Anti-Cache: adicionamos o tempo exato em milissegundos na URL
+        // Isso obriga o navegador a perguntar pro servidor de novo, em vez de usar memória velha.
+        const urlSemCache = '/crm/api/notificacoes/contagem?t=' + new Date().getTime();
+
+        fetch(urlSemCache)
+            .then(res => res.json())
+            .then(data => {
+                // 3. Encontra as "bolinhas" no HTML da sidebar
+                const bFloating = document.getElementById('sidebar-badge-floating');
+                const bPill = document.getElementById('sidebar-badge-pill');
+                
+                const valorNovo = data.count;
+
+                // 4. Lógica para atualizar a tela
+                const aplicarMudanca = (el, displayType) => {
+                    if (!el) return;
+                    
+                    const valorAntigo = parseInt(el.innerText) || 0;
+
+                    if (valorNovo > 0) {
+                        el.innerText = valorNovo;
+                        el.style.setProperty('display', displayType, 'important');
+                        
+                        // O número subiu? Faz a bolinha pular!
+                        if (valorNovo > valorAntigo) {
+                            el.classList.remove('badge-pop');
+                            void el.offsetWidth; // Truque Jedi para reiniciar a animação CSS
+                            el.classList.add('badge-pop');
+                        }
+                    } else {
+                        el.style.setProperty('display', 'none', 'important');
+                    }
+                };
+
+                // 5. Atualiza os dois formatos (Sidebar aberta e fechada)
+                aplicarMudanca(bFloating, 'flex');
+                aplicarMudanca(bPill, 'inline-block');
+            })
+            .catch(e => console.warn("Radar silencioso ignorou erro de rede."));
+    }
+
+    // 6. Gatilho inicial
+    document.addEventListener('DOMContentLoaded', () => {
+        // Para testes rápidos, você pode mudar o 30000 (30 seg) para 5000 (5 seg) temporariamente.
+        setInterval(radarNotificacoes, 30000); 
+    });
 </script>
 
 {% if session.role != 'superadmin' %}
