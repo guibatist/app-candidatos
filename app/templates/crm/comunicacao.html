@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+    .text-indigo { color: #4f46e5 !important; }
+    .btn-indigo { background-color: #4f46e5; color: white; border: none; }
+    .btn-indigo:hover { background-color: #3f36c5; color: white; }
+    .btn-outline-indigo { color: #4f46e5; border-color: #4f46e5; background-color: transparent; }
+    .btn-outline-indigo:hover { background-color: #4f46e5; color: white; }
+    .border-indigo { border-color: #4f46e5 !important; }
+    
+    .bg-indigo-light { background-color: #eef2ff !important; }
+</style>
+
+<div class="container-fluid py-4">
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold text-dark mb-0">Central de Demandas</h2>
+            <p class="text-muted small">Gestão de solicitações do site, triagem e atendimento direto ao cidadão.</p>
+        </div>
+        
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-secondary rounded-pill px-4 shadow-sm fw-bold" onclick="window.location.reload();">
+                <i class="fa-solid fa-rotate-right me-2"></i> Atualizar
+            </button>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 bg-white p-3 border-start border-indigo border-4" style="border-left-color: #4f46e5 !important;">
+                <p class="text-muted small fw-bold mb-1 text-uppercase">Total de Entradas</p>
+                <h3 class="fw-bold text-dark mb-0">{{ resumo.total }}</h3>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 bg-white p-3 border-start border-warning border-4">
+                <p class="text-muted small fw-bold mb-1 text-uppercase">Aguardando Retorno</p>
+                <h3 class="fw-bold text-dark mb-0">{{ resumo.novas }}</h3>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 bg-white p-3 border-start border-success border-4">
+                <p class="text-muted small fw-bold mb-1 text-uppercase">Demandas Concluídas</p>
+                <h3 class="fw-bold text-dark mb-0">{{ resumo.resolvidas }}</h3>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+        <div class="table-responsive" style="min-height: 50vh;">
+            <table class="table table-hover align-middle mb-0 bg-white">
+                <thead class="bg-light text-muted small text-uppercase">
+                    <tr>
+                        <th class="ps-4 py-3 fw-bold border-0">Cidadão</th>
+                        <th class="py-3 fw-bold border-0">Solicitação</th>
+                        <th class="py-3 fw-bold border-0">Recebido em</th>
+                        <th class="py-3 fw-bold border-0 text-center">Status</th>
+                        <th class="pe-4 py-3 fw-bold border-0 text-end">Ações</th>
+                    </tr>
+                </thead>
+                <tbody class="border-top-0">
+                    {% for d in demandas %}
+                    <tr class="{% if d.status == 'Resolvida' %}opacity-75 bg-light{% endif %}">
+                        
+                        <td class="ps-4 py-3">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="bg-indigo-light rounded-circle d-flex justify-content-center align-items-center text-indigo fw-bold" style="width: 40px; height: 40px;">
+                                    {{ d.nome_solicitante[0]|upper if d.nome_solicitante else '?' }}
+                                </div>
+                                <div>
+                                    <h6 class="mb-0 fw-bold text-dark">{{ d.nome_solicitante }}</h6>
+                                    <a href="https://wa.me/55{{ d.telefone_solicitante|replace('(', '')|replace(')', '')|replace('-', '')|replace(' ', '') }}" target="_blank" class="text-decoration-none text-muted small fw-medium">
+                                        <i class="fa-brands fa-whatsapp text-success me-1"></i> {{ d.telefone_solicitante }}
+                                    </a>
+                                </div>
+                            </div>
+                        </td>
+                        
+                        <td class="py-3" style="max-width: 300px;">
+                            <span class="d-block fw-bold text-dark text-truncate">{{ d.titulo }}</span>
+                            <span class="text-muted small d-inline-block text-truncate w-100">{{ d.descricao }}</span>
+                        </td>
+
+                        <td class="py-3">
+                            <span class="d-block fw-medium text-dark">{{ d.data_recebimento.strftime('%d/%m/%Y') }}</span>
+                            <span class="text-muted small">{{ d.data_recebimento.strftime('%H:%M') }}</span>
+                        </td>
+                        
+                        <td class="py-3 text-center">
+                            {% if d.status == 'Nova' %}
+                                <span class="badge bg-warning bg-opacity-10 text-warning border-0 rounded-pill px-3 py-2 fw-bold" style="color: #d97706 !important;">
+                                    <i class="fa-solid fa-circle-dot small me-1"></i> Pendente
+                                </span>
+                            {% else %}
+                                <span class="badge bg-success bg-opacity-10 text-success border-0 rounded-pill px-3 py-2 fw-bold">
+                                    <i class="fa-solid fa-check me-1"></i> Concluída
+                                </span>
+                            {% endif %}
+                        </td>
+                        
+                        <td class="pe-4 py-3 text-end">
+                            <div class="d-flex justify-content-end gap-2">
+                                <button class="btn btn-sm btn-light text-indigo fw-bold rounded-pill px-3 shadow-sm" style="border: 1px solid #4f46e5;" data-bs-toggle="modal" data-bs-target="#modalDemanda{{ d.id }}">
+                                    Abrir <i class="fa-solid fa-arrow-right ms-1"></i>
+                                </button>
+                                
+                                {% if d.status == 'Nova' %}
+                                <form action="{{ url_for('crm.concluir_demanda', demanda_id=d.id) }}" method="POST" class="d-inline">
+                                    <button type="submit" class="btn btn-sm btn-success fw-bold rounded-pill px-3 shadow-sm" title="Marcar como Concluída">
+                                        <i class="fa-solid fa-check"></i>
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+
+                    <div class="modal fade" id="modalDemanda{{ d.id }}" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+                                <div class="modal-header bg-light border-bottom p-4">
+                                    <h5 class="fw-bold text-dark mb-0">
+                                        <i class="fa-solid fa-file-lines text-indigo me-2"></i> Detalhes da Solicitação
+                                    </h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body p-4">
+                                    <div class="mb-4">
+                                        <p class="text-muted small fw-bold text-uppercase mb-1">Cidadão</p>
+                                        <h6 class="fw-bold text-dark mb-0">{{ d.nome_solicitante }}</h6>
+                                        <p class="small text-muted mb-0">{{ d.telefone_solicitante }} {% if d.email_solicitante %} | {{ d.email_solicitante }} {% endif %}</p>
+                                    </div>
+                                    
+                                    <div class="mb-4">
+                                        <p class="text-muted small fw-bold text-uppercase mb-1">Assunto / Título</p>
+                                        <h6 class="fw-bold text-dark">{{ d.titulo }}</h6>
+                                    </div>
+
+                                    <div>
+                                        <p class="text-muted small fw-bold text-uppercase mb-1">Descrição Completa</p>
+                                        <div class="p-3 bg-light rounded-3 border" style="max-height: 250px; overflow-y: auto;">
+                                            <p class="mb-0 text-dark small" style="line-height: 1.6; white-space: pre-wrap;">{{ d.descricao }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="modal-footer bg-white border-top p-4 d-flex justify-content-between">
+                                    <span class="text-muted small"><i class="fa-regular fa-calendar me-1"></i> {{ d.data_recebimento.strftime('%d/%m/%Y %H:%M') }}</span>
+                                    <div class="d-flex gap-2">
+                                        <button type="button" class="btn btn-outline-secondary fw-bold rounded-pill px-4" data-bs-dismiss="modal">Fechar</button>
+                                        <a href="https://wa.me/55{{ d.telefone_solicitante|replace('(', '')|replace(')', '')|replace('-', '')|replace(' ', '') }}" target="_blank" class="btn btn-success fw-bold rounded-pill px-4 shadow-sm">
+                                            <i class="fa-brands fa-whatsapp me-2"></i> WhatsApp
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center py-5 text-muted">
+                            <i class="fa-solid fa-inbox fs-2 mb-3 text-light"></i>
+                            <p class="mb-0 fw-medium">Sua Caixa de Entrada está limpa.</p>
+                            <p class="small">Nenhuma demanda foi recebida pelo site até o momento.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}

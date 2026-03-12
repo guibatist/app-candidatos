@@ -134,7 +134,7 @@
                 <div class="nav-icon-wrapper"><i class="fa-solid fa-users-gear nav-icon"></i></div>
                 <span class="nav-text">Minha Equipe</span>
             </a>
-            <a href="#" class="nav-item">
+            <a href="{{ url_for('crm.caixa_entrada') }}" class="nav-item {% if 'comunicacao' in request.path %}active{% endif %}">
                 <div class="nav-icon-wrapper"><i class="fa-solid fa-bullhorn nav-icon"></i></div>
                 <span class="nav-text">Comunicação</span>
             </a>

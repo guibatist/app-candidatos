@@ -1438,3 +1438,97 @@ def preview_relatorio():
         return jsonify({'error': str(e)}), 500
     finally:
         if conn: conn.close()
+
+# MODELO
+# No final do seu arquivo app/routes/crm.py
+
+@crm_bp.route('/campanha')
+def landing_page_campanha():
+    # Esta página é pública, então não precisa do 'obter_contexto_acesso'
+    return render_template('site/landing_page.html')
+
+@crm_bp.route('/api/site/receber-demanda', methods=['POST'])
+def receber_demanda_site():
+    nome = request.form.get('nome')
+    telefone = request.form.get('telefone')
+    email = request.form.get('email')
+    titulo = request.form.get('titulo_demanda')
+    descricao = request.form.get('descricao_demanda')
+    
+    conn = get_db_connection()
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            # 1. Salva a demanda na tabela isolada
+            cursor.execute("""
+                INSERT INTO demandas_site 
+                (nome_solicitante, telefone_solicitante, email_solicitante, titulo, descricao)
+                VALUES (%s, %s, %s, %s, %s)
+            """, (nome, telefone, email, titulo, descricao))
+            
+            conn.commit()
+
+            # 2. Prepara o link do WhatsApp (Aqui você define para QUEM vai a mensagem)
+            # Pode colocar o seu número ou o do Candidato fixo por enquanto
+            meu_numero = "5511999999999" # Coloque o número real aqui (DDI + DDD + Numero)
+            
+            msg = f"Olá! Recebi uma nova demanda pelo site:%0A%0A*Assunto:* {titulo}%0A*Cidadão:* {nome}%0A*Telefone:* {telefone}"
+            wa_url = f"https://wa.me/{meu_numero}?text={msg}"
+            
+            return jsonify({'sucesso': True, 'whatsapp_url': wa_url})
+            
+    except Exception as e:
+        print(f"Erro ao processar demanda: {e}")
+        return jsonify({'sucesso': False}), 500
+    finally:
+        conn.close()
+
+@crm_bp.route('/comunicacao')
+def caixa_entrada():
+    ctx = obter_contexto_acesso()
+    if not ctx: return redirect(url_for('auth.login'))
+    
+    conn = get_db_connection()
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            # Busca todas as demandas do site
+            cursor.execute("""
+                SELECT * FROM demandas_site 
+                ORDER BY data_recebimento DESC
+            """)
+            demandas = cursor.fetchall()
+            
+            # Conta os status para os cards do topo
+            resumo = {
+                'total': len(demandas),
+                'novas': sum(1 for d in demandas if d['status'] == 'Nova'),
+                'resolvidas': sum(1 for d in demandas if d['status'] == 'Resolvida')
+            }
+            
+    finally:
+        if conn: conn.close()
+        
+    return render_template('crm/comunicacao.html', demandas=demandas, resumo=resumo, permissoes=ctx['permissoes'])
+
+@crm_bp.route('/comunicacao/concluir/<int:demanda_id>', methods=['POST'])
+def concluir_demanda(demanda_id):
+    ctx = obter_contexto_acesso()
+    if not ctx: return redirect(url_for('auth.login'))
+    
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                UPDATE demandas_site 
+                SET status = 'Resolvida' 
+                WHERE id = %s
+            """, (demanda_id,))
+            conn.commit()
+            
+        flash('Demanda marcada como concluída com sucesso!', 'success')
+    except Exception as e:
+        print(f"Erro ao concluir demanda: {e}")
+        flash('Erro ao atualizar o status da demanda.', 'danger')
+    finally:
+        if conn: conn.close()
+        
+    return redirect(url_for('crm.caixa_entrada'))

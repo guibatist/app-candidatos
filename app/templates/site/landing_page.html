@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>João Candidato | Construindo o Futuro com Você</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --brand-primary: #1e3a8a; /* Azul Político Moderno */
+            --brand-secondary: #f59e0b; /* Amarelo/Laranja de Ação */
+            --brand-whatsapp: #10b981; /* Verde WhatsApp */
+        }
+
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #334155; }
+
+        /* === HERO SECTION === */
+        .hero-section {
+            background: linear-gradient(135deg, var(--brand-primary), #312e81);
+            color: white;
+            padding: 120px 0 100px;
+            position: relative;
+            overflow: hidden;
+        }
+        .hero-title { font-weight: 900; font-size: 3.8rem; line-height: 1.1; margin-bottom: 25px; }
+        .hero-subtitle { font-size: 1.3rem; opacity: 0.95; margin-bottom: 35px; font-weight: 400; max-width: 600px; }
+        
+        .badge-hero {
+            background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2); color: white;
+            padding: 10px 20px; border-radius: 50px; font-weight: 700; font-size: 0.9rem;
+            display: inline-block; margin-bottom: 25px; text-transform: uppercase; letter-spacing: 1.5px;
+        }
+
+        /* === FORMULÁRIO DE DEMANDAS (O CÉREBRO) === */
+        .demand-card {
+            background: white; border-radius: 28px; padding: 45px;
+            box-shadow: 0 30px 60px -15px rgba(0,0,0,0.25);
+            position: relative; z-index: 10; margin-top: -60px;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .form-control-custom {
+            background-color: #f1f5f9; border: 2px solid transparent; border-radius: 14px;
+            padding: 18px 25px; font-weight: 500; transition: all 0.3s;
+        }
+        .form-control-custom:focus {
+            background-color: white; border-color: var(--brand-primary);
+            box-shadow: 0 0 0 5px rgba(30, 58, 138, 0.1);
+        }
+
+        .btn-whatsapp {
+            background-color: var(--brand-whatsapp); color: white; border: none;
+            border-radius: 14px; padding: 20px 25px; font-weight: 800; font-size: 1.2rem;
+            transition: all 0.3s; width: 100%; display: flex; align-items: center; justify-content: center;
+            position: relative; overflow: hidden;
+        }
+        .btn-whatsapp:hover { background-color: #059669; transform: translateY(-4px); box-shadow: 0 15px 30px rgba(16, 185, 129, 0.3); color: white;}
+
+        /* Loader do Botão */
+        .btn-loader { display: none; width: 22px; height: 22px; border: 3px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: white; animation: spin 1s ease-in-out infinite; margin-left: 12px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* === SEÇÃO SOBRE === */
+        .about-section { padding: 100px 0; background: white; }
+        .feature-box { text-align: center; padding: 35px; border-radius: 24px; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); height: 100%; }
+        .feature-box:hover { background: #f8fafc; transform: translateY(-8px); box-shadow: 0 10px 25px rgba(0,0,0,0.03); }
+        .feature-icon { font-size: 2.8rem; color: var(--brand-secondary); margin-bottom: 25px; }
+        .feature-title { font-weight: 700; color: #1e293b; margin-bottom: 15px; }
+    </style>
+</head>
+<body>
+
+    <section class="hero-section">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-6 mb-5 mb-lg-0">
+                    <div class="badge-hero"><i class="fa-solid fa-satellite-dish me-2"></i> Gabinete Digital do João Candidato</div>
+                    <h1 class="hero-title">O seu bairro tem voz. E nós queremos ouvir.</h1>
+                    <p class="hero-subtitle">Mande sua demanda, sugestão ou reclamação diretamente para a nossa equipe. Vamos registrar, acompanhar e buscar a solução com você.</p>
+                    <a href="#form-demanda" class="btn btn-light rounded-pill px-5 py-3 fw-bold text-primary shadow-lg fs-6">
+                        Fazer uma Solicitação <i class="fa-solid fa-arrow-down ms-2"></i>
+                    </a>
+                </div>
+                <div class="col-lg-6 text-center">
+                    <img src="https://ui-avatars.com/api/?name=João Candidato&size=450&background=f59e0b&color=fff&rounded=true" alt="João Candidato" class="img-fluid drop-shadow" style="max-width: 85%; filter: drop-shadow(0 25px 35px rgba(0,0,0,0.3));">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="container" id="form-demanda">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="demand-card shadow-lg">
+                    <div class="text-center mb-5">
+                        <div class="d-inline-flex align-items-center justify-content-center bg-purple bg-opacity-10 text-purple rounded-circle mb-3 border" style="width: 70px; height: 70px; color: var(--brand-primary);"><i class="fa-solid fa-file-signature fs-2"></i></div>
+                        <h3 class="fw-bold text-dark">Registrar Minha Demanda</h3>
+                        <p class="text-muted mb-0 max-width-600 mx-auto">Preencha os dados abaixo. Nossa IA vai direcionar sua demanda para o assessor responsável pela sua região no WhatsApp.</p>
+                    </div>
+
+                    <form id="formGabineteDigital">
+                        <div class="row g-4">
+                            <div class="col-md-12">
+                                <label class="fw-bold small text-muted ms-1 mb-1 text-uppercase letter-spacing-1">Nome Completo</label>
+                                <input type="text" name="nome" class="form-control form-control-custom" placeholder="Ex: Maria Silva" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="fw-bold small text-muted ms-1 mb-1 text-uppercase letter-spacing-1">WhatsApp</label>
+                                <input type="tel" name="telefone" class="form-control form-control-custom" placeholder="(00) 00000-0000" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="fw-bold small text-muted ms-1 mb-1 text-uppercase letter-spacing-1">E-mail (Opcional)</label>
+                                <input type="email" name="email" class="form-control form-control-custom" placeholder="seu@email.com">
+                            </div>
+                            <div class="col-12 mt-5">
+                                <hr class="opacity-10">
+                            </div>
+                            <div class="col-md-12">
+                                <label class="fw-bold small text-muted ms-1 mb-1 text-uppercase letter-spacing-1">Título da Demanda</label>
+                                <input type="text" name="titulo_demanda" class="form-control form-control-custom" placeholder="Ex: Buraco na Rua das Flores" required>
+                            </div>
+                            <div class="col-md-12">
+                                <label class="fw-bold small text-muted ms-1 mb-1 text-uppercase letter-spacing-1">Descrição Detalhada</label>
+                                <textarea name="descricao_demanda" class="form-control form-control-custom" rows="4" placeholder="Explique o que está acontecendo de forma clara..." required></textarea>
+                            </div>
+                            <div class="col-12 mt-5">
+                                <button type="submit" id="btnSubmit" class="btn-whatsapp shadow-lg">
+                                    <span id="btnText"><i class="fa-brands fa-whatsapp fs-3 me-3"></i> Enviar e Falar no WhatsApp</span>
+                                    <div class="btn-loader" id="btnLoader"></div>
+                                </button>
+                                <p class="text-center small text-muted mt-4 mb-0"><i class="fa-solid fa-lock me-1"></i> Seus dados estão protegidos pela LGPD e serão usados apenas para retorno da sua demanda.</p>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="about-section mt-5">
+        <div class="container">
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="feature-box bg-white border">
+                        <i class="fa-solid fa-ear-listen feature-icon"></i>
+                        <h5 class="feature-title">Escuta Ativa</h5>
+                        <p class="text-muted small mb-0">Não fazemos política de gabinete. Toda demanda registrada aqui vira uma missão real para a nossa equipe de rua.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-box bg-white border">
+                        <i class="fa-solid fa-truck-fast feature-icon"></i>
+                        <h5 class="feature-title">Ação Rápida</h5>
+                        <p class="text-muted small mb-0">Nossos assessores são notificados em tempo real. Você não fala com robôs, fala com pessoas da sua cidade.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-box bg-white border">
+                        <i class="fa-solid fa-handshake-angle feature-icon"></i>
+                        <h5 class="feature-title">Transparência</h5>
+                        <p class="text-muted small mb-0">Acompanhe o status do seu pedido. Quando o problema for resolvido, nós fazemos questão de te avisar.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="bg-dark text-white text-center py-5 mt-5">
+        <div class="container">
+            <p class="mb-1 small fw-bold opacity-75">CNPJ: 00.000.000/0001-00 | João Candidato - Construindo o Futuro</p>
+            <p class="mb-0 small opacity-50 mt-1">Tecnologia fornecida por VotaHub Inteligência Eleitoral.</p>
+        </div>
+    </footer>
+
+    <script>
+        document.getElementById('formGabineteDigital').addEventListener('submit', function(e) {
+            e.preventDefault(); // Impede o site de recarregar
+            
+            const btn = document.getElementById('btnSubmit');
+            const btnText = document.getElementById('btnText');
+            const btnLoader = document.getElementById('btnLoader');
+            
+            // Estado de Carregamento (UX)
+            btn.disabled = true;
+            btnText.innerHTML = "Sorteando Assessor e Preparando WhatsApp...";
+            btnLoader.style.display = "block";
+
+            // Captura os dados do formulário
+            const formData = new FormData(this);
+
+            // POST para a rota que vamos criar no Python (/api/site/receber-demanda)
+            fetch('/crm/api/site/receber-demanda', { // Adicionei o /crm aqui
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if(data.sucesso) {
+                    // O Python devolve o link do WhatsApp sorteado e montado
+                    window.location.href = data.whatsapp_url;
+                } else {
+                    alert('Houve um erro ao processar sua demanda. Tente novamente.');
+                    resetBtn();
+                }
+            })
+            .catch(error => {
+                console.error('Erro:', error);
+                alert('Houve um erro de rede. Tente novamente.');
+                resetBtn();
+            });
+
+            function resetBtn() {
+                btn.disabled = false;
+                btnText.innerHTML = '<i class="fa-brands fa-whatsapp fs-3 me-3"></i> Enviar e Falar no WhatsApp';
+                btnLoader.style.display = "none";
+            }
+        });
+    </script>
+</body>
+</html>
