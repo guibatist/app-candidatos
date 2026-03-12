@@ -135,16 +135,20 @@
                 <span class="nav-text">Minha Equipe</span>
             </a>
             <a href="{{ url_for('crm.caixa_entrada') }}" class="nav-item {% if 'comunicacao' in request.path %}active{% endif %}">
-                <div class="nav-icon-wrapper"><i class="fa-solid fa-bullhorn nav-icon"></i></div>
+                <div class="nav-icon-wrapper">
+                    <i class="fa-solid fa-bullhorn nav-icon"></i>
+                    <span id="sidebar-badge-floating" class="badge-floating" style="display: none;">0</span>
+                </div>
                 <span class="nav-text">Comunicação</span>
+                <span id="sidebar-badge-pill" class="badge-pill-nav" style="display: none;">0</span>
             </a>
             <a href="/crm/tarefas" class="nav-item {% if 'tarefa' in request.path %}active{% endif %}">
                 <div class="nav-icon-wrapper"><i class="fa-solid fa-list-check nav-icon"></i></div>
                 <span class="nav-text">Tarefas Ativas</span>
             </a>
             <a href="{{ url_for('crm.painel_relatorios') }}" class="nav-item {% if 'relatorio' in request.path %}active{% endif %}">
-                <div class="nav-icon-wrapper"><i class="fa-solid fa-file-excel nav-icon"></i></div>
-                <span class="nav-text">Exportação XLSX</span>
+                <div class="nav-icon-wrapper"><i class="fa-solid fa-chart-column nav-icon"></i></div>
+                <span class="nav-text">Relatórios</span>
             </a>
             <a href="{{ url_for('crm.notificacoes') }}" class="nav-item {% if request.endpoint == 'crm.notificacoes' %}active{% endif %}">
                 <div class="nav-icon-wrapper">

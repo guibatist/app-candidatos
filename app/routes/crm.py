@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 import math
 from flask import Blueprint, render_template, session, redirect, url_for, request, jsonify, flash, g, make_response
+from flask_mail import Message
 from psycopg2.extras import RealDictCursor
 from app.routes.auth import enviar_alerta_sistema
 # Nossos módulos
@@ -1221,34 +1222,6 @@ def meu_perfil():
     return render_template('crm/perfil.html', usuario=usuario)
 
 from flask import jsonify
-
-
-@crm_bp.route('/api/notificacoes/contagem')
-def api_contagem_notificacoes():
-    user_id = session.get('user_id')
-    if not user_id: 
-        return jsonify({'count': 0})
-    
-    conn = get_db_connection()
-    try:
-        with conn.cursor() as cursor:
-            # Filtro real: Tarefas e Mensagens NÃO LIDAS
-            cursor.execute("""
-                SELECT 
-                    (SELECT COUNT(id) FROM tarefas WHERE (assessor_id = %s OR cliente_id = %s) AND lida = FALSE) +
-                    (SELECT COUNT(id) FROM mensagens WHERE destinatario_id = %s AND lida = FALSE AND apagada = FALSE)
-                as total
-            """, (str(user_id), str(user_id), str(user_id)))
-            
-            total = cursor.fetchone()[0] or 0
-            
-            # Criamos a resposta e mandamos o navegador NÃO guardar cache
-            resp = make_response(jsonify({'count': total}))
-            resp.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
-            return resp
-    finally:
-        if conn: conn.close()
-
     
 # ==========================================
 # BLOCO DE INTELIGÊNCIA E RELATÓRIOS
@@ -1449,6 +1422,8 @@ def landing_page_campanha():
 
 @crm_bp.route('/api/site/receber-demanda', methods=['POST'])
 def receber_demanda_site():
+    
+
     nome = request.form.get('nome')
     telefone = request.form.get('telefone')
     email = request.form.get('email')
@@ -1457,30 +1432,38 @@ def receber_demanda_site():
     
     conn = get_db_connection()
     try:
-        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-            # 1. Salva a demanda na tabela isolada
+        with conn.cursor() as cursor:
+            # Salva a demanda
             cursor.execute("""
                 INSERT INTO demandas_site 
-                (nome_solicitante, telefone_solicitante, email_solicitante, titulo, descricao)
-                VALUES (%s, %s, %s, %s, %s)
+                (nome_solicitante, telefone_solicitante, email_solicitante, titulo, descricao, status)
+                VALUES (%s, %s, %s, %s, %s, 'Nova')
             """, (nome, telefone, email, titulo, descricao))
-            
             conn.commit()
 
-            # 2. Prepara o link do WhatsApp (Aqui você define para QUEM vai a mensagem)
-            # Pode colocar o seu número ou o do Candidato fixo por enquanto
-            meu_numero = "5511999999999" # Coloque o número real aqui (DDI + DDD + Numero)
-            
-            msg = f"Olá! Recebi uma nova demanda pelo site:%0A%0A*Assunto:* {titulo}%0A*Cidadão:* {nome}%0A*Telefone:* {telefone}"
-            wa_url = f"https://wa.me/{meu_numero}?text={msg}"
-            
-            return jsonify({'sucesso': True, 'whatsapp_url': wa_url})
+        # --- DISPARO DE E-MAIL USANDO SUA FUNÇÃO ROBUSTA ---
+        # Substitua pelo seu e-mail ou pegue o e-mail do candidato no banco
+        email_destino = "seu-email@exemplo.com" 
+        
+        enviar_alerta_sistema(
+            destinatario=email_destino,
+            nome_usuario="Equipe de Gabinete",
+            tipo_alerta="Nova Demanda Recebida via Site",
+            descricao=f"O cidadão {nome} enviou uma solicitação: {titulo}"
+        )
+        # --------------------------------------------------
+
+        # Prepara WhatsApp e retorna
+        meu_numero = "5511999999999" 
+        wa_url = f"https://wa.me/{meu_numero}?text=Nova+demanda+recebida!"
+        
+        return jsonify({'sucesso': True, 'whatsapp_url': wa_url})
             
     except Exception as e:
-        print(f"Erro ao processar demanda: {e}")
+        print(f"Erro: {e}")
         return jsonify({'sucesso': False}), 500
     finally:
-        conn.close()
+        if conn: conn.close()
 
 @crm_bp.route('/comunicacao')
 def caixa_entrada():
@@ -1532,3 +1515,19 @@ def concluir_demanda(demanda_id):
         if conn: conn.close()
         
     return redirect(url_for('crm.caixa_entrada'))
+
+@crm_bp.route('/api/notificacoes/contagem')
+def contagem_notificacoes():
+    conn = get_db_connection()
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            # Conta apenas as demandas novas direto no banco, super rápido
+            cursor.execute("SELECT COUNT(*) as total FROM demandas_site WHERE status = 'Nova'")
+            resultado = cursor.fetchone()
+            
+            return jsonify({'count': resultado['total'] if resultado else 0})
+    except Exception as e:
+        print(f"Erro no radar: {e}")
+        return jsonify({'count': 0})
+    finally:
+        conn.close()
