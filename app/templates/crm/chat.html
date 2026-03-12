@@ -2,30 +2,42 @@
 {% block content %}
 
 <style>
-    /* === IDENTIDADE VISUAL VOTAHUB CHAT === */
+    /* === IDENTIDADE VISUAL VOTAHUB: THEMA ROXO === */
     :root {
-        --chat-bg: #f8fafc;        /* Cinza muito claro, executivo */
-        --chat-primary: #4f46e5;   /* O Índigo do site Institucional */
-        --chat-primary-dark: #3730a3;
+        --purple-hub: #7c3aed;       
+        --purple-hover: #6d28d9;     
+        --purple-light: #f3e8ff;     
+        --purple-border: #ddd6fe;    
+        --chat-bg: #f8fafc;          
         --text-light: #ffffff;
         --text-dark: #1e293b;
     }
+
+    /* Utilitários Roxos */
+    .text-purple { color: var(--purple-hub) !important; }
+    .bg-purple-light { background-color: var(--purple-light) !important; }
+    
+    .btn-back-hub { background: #fff; border: 1px solid #e2e8f0; color: #334155; font-weight: 700; padding: 10px 20px; border-radius: 12px; transition: all 0.2s; display: inline-flex; align-items: center; text-decoration: none; font-size: 0.85rem; }
+    .btn-back-hub:hover { border-color: var(--purple-hub); color: var(--purple-hub); transform: translateX(-5px); box-shadow: 0 4px 12px rgba(124, 58, 237, 0.1); }
+    
+    .btn-purple { background-color: var(--purple-hub); color: #fff; border: none; transition: 0.2s; }
+    .btn-purple:hover { background-color: var(--purple-hover); color: #fff; transform: translateY(-2px); box-shadow: 0 4px 15px rgba(124, 58, 237, 0.3); }
 
     .chat-container {
         height: calc(100vh - 180px);
         display: flex;
         flex-direction: column;
         background-color: var(--chat-bg); 
-        border-radius: 16px;
+        border-radius: 24px;
         overflow: hidden;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.03);
-        border: 1px solid #e2e8f0;
+        box-shadow: 0 10px 30px rgba(124, 58, 237, 0.05);
+        border: 1px solid var(--purple-border);
     }
     
     .chat-header {
         background-color: #ffffff;
-        padding: 15px 20px;
-        border-bottom: 1px solid #e2e8f0;
+        padding: 15px 24px;
+        border-bottom: 1px solid var(--purple-border);
         display: flex;
         align-items: center;
         gap: 15px;
@@ -35,30 +47,31 @@
     .chat-messages {
         flex: 1;
         overflow-y: auto;
-        padding: 25px 20px;
+        padding: 25px 24px;
         display: flex;
         flex-direction: column;
-        gap: 12px;
+        gap: 15px;
     }
 
     /* === BOLHAS DE MENSAGEM === */
     .msg-bubble {
         max-width: 75%;
-        padding: 12px 18px;
+        padding: 14px 18px;
         border-radius: 18px;
         position: relative;
         word-wrap: break-word;
         font-size: 0.95rem;
-        line-height: 1.4;
+        line-height: 1.5;
     }
 
-    /* Mensagem que EU envio (Índigo Executivo) */
+    /* Mensagem que EU envio (Degradê Roxo) */
     .msg-sent {
         align-self: flex-end;
-        background-color: var(--chat-primary); 
+        background: linear-gradient(135deg, var(--purple-hub), var(--purple-hover));
         color: var(--text-light);
-        border-bottom-right-radius: 4px; /* Ponta sutil */
-        box-shadow: 0 4px 10px rgba(79, 70, 229, 0.2);
+        border-bottom-right-radius: 4px; 
+        box-shadow: 0 4px 10px rgba(124, 58, 237, 0.2);
+        border: none;
     }
 
     /* Mensagem que ELES enviam (Branco Limpo) */
@@ -68,75 +81,80 @@
         color: var(--text-dark);
         border-bottom-left-radius: 4px;
         box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-        border: 1px solid #f1f5f9;
+        border: 1px solid #e2e8f0;
     }
 
     /* === TIMESTAMPS === */
     .msg-time {
         font-size: 0.65rem;
         margin-top: 6px;
-        font-weight: 500;
+        font-weight: 600;
         letter-spacing: 0.5px;
     }
-    .msg-sent .msg-time { color: rgba(255, 255, 255, 0.7); }
+    .msg-sent .msg-time { color: rgba(255, 255, 255, 0.75); }
     .msg-received .msg-time { color: #94a3b8; }
 
     /* === CAIXA DE CITAÇÃO (REPLY) === */
     .reply-box-sent {
         background-color: rgba(255, 255, 255, 0.15);
         border-left: 4px solid #ffffff;
-        border-radius: 6px;
-        padding: 8px 10px;
-        margin-bottom: 8px;
+        border-radius: 8px;
+        padding: 10px 12px;
+        margin-bottom: 10px;
     }
     .reply-box-received {
-        background-color: #f1f5f9;
-        border-left: 4px solid var(--chat-primary);
-        border-radius: 6px;
-        padding: 8px 10px;
-        margin-bottom: 8px;
+        background-color: var(--purple-light);
+        border-left: 4px solid var(--purple-hub);
+        border-radius: 8px;
+        padding: 10px 12px;
+        margin-bottom: 10px;
     }
 
     /* === ÁREA DE DIGITAÇÃO === */
     .chat-input-area {
         background-color: #ffffff;
-        padding: 15px 20px;
-        border-top: 1px solid #e2e8f0;
+        padding: 18px 24px;
+        border-top: 1px solid var(--purple-border);
         display: flex;
-        gap: 12px;
+        gap: 15px;
         align-items: center;
         z-index: 11;
     }
 
     .chat-input-area input {
         border-radius: 30px;
-        padding: 14px 24px;
+        padding: 16px 24px;
         border: 1px solid #e2e8f0;
         background-color: #f8fafc;
         transition: all 0.3s;
+        box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
     }
     
     .chat-input-area input:focus {
         background-color: #ffffff;
-        border-color: var(--chat-primary);
-        box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+        border-color: var(--purple-hub);
+        box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.1);
         outline: none;
     }
+
+    .border-purple { border-color: var(--purple-hub) !important; }
 </style>
 
 <div class="container-fluid py-4">
-    <a href="{{ url_for('crm.listar_equipe') }}" class="btn btn-sm btn-light text-muted mb-3 border-0 shadow-sm fw-bold">
-        <i class="fa-solid fa-arrow-left me-2"></i> Voltar para Equipe
-    </a>
+    <div class="mb-4">
+        <a href="{{ url_for('crm.listar_equipe') }}" class="btn-back-hub">
+            <i class="fa-solid fa-arrow-left me-2"></i> Voltar para Equipe
+        </a>
+    </div>
 
 <div class="chat-container position-relative">
         <div class="chat-header">
-            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold shadow-sm" style="width: 45px; height: 45px; font-size: 1.2rem;">
+            <div class="text-white rounded-circle d-flex align-items-center justify-content-center fw-bold shadow-sm" style="background: var(--purple-hub); width: 48px; height: 48px; font-size: 1.2rem;">
                 {{ destinatario.nome[0] | upper }}
             </div>
             <div>
-                <h5 class="mb-0 fw-bold">{{ destinatario.nome }}</h5>
-                <span class="badge bg-light text-dark border">{{ destinatario.role | capitalize }}</span>
+                <h5 class="mb-0 fw-bold text-dark">{{ destinatario.nome }}</h5>
+                <span class="badge bg-purple-light text-purple border-0 px-2 py-1 mt-1">{{ destinatario.role | capitalize }}</span>
             </div>
         </div>
 
@@ -145,16 +163,16 @@
                 {% set is_mine = (msg.remetente_id == meu_id) %}
                 {% set alinhamento = 'msg-sent' if is_mine else 'msg-received' %}
                 
-                <div class="msg-bubble {{ alinhamento }} d-flex align-items-start gap-2">
-                    <div class="flex-grow-1" style="min-width: 120px;">
+                <div class="d-flex align-items-start gap-2 {% if is_mine %}flex-row-reverse{% endif %}">
+                    <div class="msg-bubble {{ alinhamento }}" style="min-width: 120px;">
                         
                         {% if msg.respondendo_a_conteudo %}
                             {% set reply_class = 'reply-box-sent' if is_mine else 'reply-box-received' %}
                             <div class="{{ reply_class }}" style="font-size: 0.8rem;">
-                                <div class="fw-bold {% if is_mine %}text-white{% else %}text-primary{% endif %} opacity-75 mb-1" style="font-size: 0.75rem;">
+                                <div class="fw-bold {% if is_mine %}text-white{% else %}text-purple{% endif %} opacity-75 mb-1" style="font-size: 0.75rem;">
                                     {% if msg.respondendo_a_remetente == meu_id %}Você{% else %}{{ destinatario.nome }}{% endif %}
                                 </div>
-                                <div class="text-truncate" style="max-width: 200px; {% if is_mine %}color: rgba(255,255,255,0.9);{% else %}color: #475569;{% endif %}">
+                                <div class="text-truncate" style="max-width: 250px; {% if is_mine %}color: rgba(255,255,255,0.9);{% else %}color: #475569;{% endif %}">
                                     {{ msg.respondendo_a_conteudo }}
                                 </div>
                             </div>
@@ -166,11 +184,11 @@
                             <div>{{ msg.conteudo }}</div>
                         {% endif %}
                         
-                        <span class="msg-time d-flex justify-content-end align-items-center gap-1">
+                        <span class="msg-time d-flex {% if is_mine %}justify-content-end{% else %}justify-content-start{% endif %} align-items-center gap-1">
                             {{ msg.data_envio_local.strftime('%H:%M') }}
                             {% if is_mine %}
                                 {% if msg.lida %}
-                                    <i class="fa-solid fa-check-double" style="color: #a5b4fc;"></i>
+                                    <i class="fa-solid fa-check-double" style="color: var(--purple-border);"></i>
                                 {% else %}
                                     <i class="fa-solid fa-check" style="opacity: 0.7;"></i>
                                 {% endif %}
@@ -179,13 +197,13 @@
                     </div>
 
                     {% if not msg.apagada %}
-                    <div class="dropdown">
-                        <button class="btn btn-sm btn-link p-0 border-0 {% if is_mine %}text-white opacity-75{% else %}text-muted{% endif %}" type="button" data-bs-toggle="dropdown">
-                            <i class="fa-solid fa-chevron-down" style="font-size: 0.7rem;"></i>
+                    <div class="dropdown align-self-center">
+                        <button class="btn btn-sm btn-link p-0 border-0 text-muted" type="button" data-bs-toggle="dropdown">
+                            <i class="fa-solid fa-ellipsis-vertical px-2 py-1"></i>
                         </button>
-                        <ul class="dropdown-menu dropdown-menu-end shadow border-0" style="font-size: 0.85rem; border-radius: 12px;">
+                        <ul class="dropdown-menu shadow border-0" style="font-size: 0.85rem; border-radius: 16px;">
                             <li>
-                                <button type="button" class="dropdown-item text-primary btn-responder py-2" 
+                                <button type="button" class="dropdown-item text-purple btn-responder py-2 fw-bold" 
                                         data-msg-id="{{ msg.id }}" 
                                         data-msg-nome="{% if is_mine %}Você{% else %}{{ destinatario.nome }}{% endif %}"
                                         data-msg-texto="{{ msg.conteudo }}">
@@ -196,7 +214,7 @@
                             <li>
                                 <form action="{{ url_for('crm.apagar_mensagem', mensagem_id=msg.id) }}" method="POST" class="m-0 p-0">
                                     <input type="hidden" name="destinatario_id" value="{{ destinatario.id }}">
-                                    <button type="submit" class="dropdown-item text-danger py-2"><i class="fa-solid fa-trash me-2"></i>Apagar</button>
+                                    <button type="submit" class="dropdown-item text-danger py-2 fw-bold"><i class="fa-solid fa-trash me-2"></i>Apagar</button>
                                 </form>
                             </li>
                             {% endif %}
@@ -206,27 +224,27 @@
                 </div>
             {% else %}
                 <div class="text-center text-muted my-auto opacity-50">
-                    <div class="bg-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3 shadow-sm" style="width: 80px; height: 80px;">
-                        <i class="fa-solid fa-bolt-lightning fa-2x text-primary"></i>
+                    <div class="bg-purple-light rounded-circle d-inline-flex align-items-center justify-content-center mb-3 shadow-sm" style="width: 80px; height: 80px;">
+                        <i class="fa-solid fa-bolt-lightning fa-2x text-purple"></i>
                     </div>
                     <h5 class="fw-bold text-dark">Canal Seguro</h5>
-                    <p>Inicie a comunicação estratégica com sua equipe.</p>
+                    <p>Inicie o alinhamento estratégico com sua equipe.</p>
                 </div>
             {% endfor %}
         </div>
 
-        <div id="replyPreviewBox" class="d-none bg-white p-2 mx-3 mt-2 rounded border-start border-4 border-primary position-relative shadow-sm" style="z-index: 10;">
+        <div id="replyPreviewBox" class="d-none bg-white p-3 mx-4 mt-2 rounded-3 border-start border-4 border-purple position-relative shadow-sm" style="z-index: 10;">
             <button type="button" class="btn-close position-absolute top-0 end-0 m-2" style="font-size: 0.6rem;" onclick="cancelarResposta()"></button>
-            <div class="fw-bold small text-primary" id="replyPreviewName">Respondendo a...</div>
+            <div class="fw-bold small text-purple mb-1" id="replyPreviewName">Respondendo a...</div>
             <div class="text-muted small text-truncate pe-4" id="replyPreviewText"></div>
         </div>
 
         <div class="chat-input-area" style="position: relative; z-index: 11;">
-            <form action="{{ url_for('crm.chat', destinatario_id=destinatario.id) }}" method="POST" class="w-100 d-flex gap-2 m-0">
+            <form action="{{ url_for('crm.chat', destinatario_id=destinatario.id) }}" method="POST" class="w-100 d-flex gap-3 m-0">
                 <input type="hidden" name="respondendo_a_id" id="respondendoAIdInput" value="">
                 
-                <input type="text" name="conteudo" class="form-control" placeholder="Digite uma mensagem..." required autocomplete="off" autofocus>
-                <button type="submit" class="btn btn-primary rounded-circle shadow-sm" style="width: 48px; height: 48px; flex-shrink: 0;">
+                <input type="text" name="conteudo" class="form-control" placeholder="Escreva sua mensagem aqui..." required autocomplete="off" autofocus>
+                <button type="submit" class="btn btn-purple rounded-circle shadow-sm" style="width: 54px; height: 54px; flex-shrink: 0;">
                     <i class="fa-solid fa-paper-plane"></i>
                 </button>
             </form>
