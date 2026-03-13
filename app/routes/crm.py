@@ -1550,71 +1550,61 @@ def concluir_demanda(demanda_id):
 
 @crm_bp.route('/api/notificacoes/contagem')
 def contagem_notificacoes():
-    # 1. Verifica se o usuário está logado na sessão do VotoImpacto
-    user_id = session.get('user_id')
-    
-    if not user_id:
+    # Usamos o contexto para pegar o ID da CAMPANHA (cliente_id)
+    ctx = obter_contexto_acesso()
+    if not ctx:
         return jsonify({'count': 0, 'status': 'sessao_expirada'}), 401
 
     conn = get_db_connection()
     try:
-        # Usamos RealDictCursor para facilitar a leitura do resultado
         with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-            
-            # 2. QUERY FILTRADA: Conta apenas demandas 'Nova' do cliente logado
-            # O uso do %s previne SQL Injection
+            # AQUI: Mudamos para buscar pelo cliente_id do contexto
             query = """
                 SELECT COUNT(*) as total 
                 FROM demandas_site 
                 WHERE status = 'Nova' 
                 AND cliente_id = %s
             """
-            cursor.execute(query, (user_id,))
+            cursor.execute(query, (ctx['cliente_id'],))
             resultado = cursor.fetchone()
             
-            # 3. Retorna o JSON para o Radar (JavaScript)
             total = resultado['total'] if resultado else 0
             
             return jsonify({
                 'count': total,
                 'status': 'sucesso',
-                'timestamp': datetime.now().strftime('%H:%M:%S') # Útil para debug no console
+                'timestamp': datetime.now().strftime('%H:%M:%S')
             })
-
     except Exception as e:
-        # Log de erro silencioso no servidor para não expor estrutura ao usuário
         print(f"🚨 [ERRO RADAR]: {e}")
         return jsonify({'count': 0, 'status': 'erro_interno'}), 500
-        
     finally:
-        if conn:
-            conn.close()
+        if conn: conn.close()
 
 @crm_bp.route('/api/notificacoes/radar')
 def radar_notificacoes():
-    user_id = session.get('user_id')
-    if not user_id:
+    ctx = obter_contexto_acesso()
+    if not ctx:
         return jsonify({'total': 0}), 401
 
     conn = get_db_connection()
     try:
         with conn.cursor() as cursor:
-            # Fazemos a mesma soma do context_processor, mas via API para o JS
-            
-            # Demandas Site
-            cursor.execute("SELECT COUNT(id) FROM demandas_site WHERE cliente_id = %s AND status = 'Nova'", (user_id,))
+            # 1. Demandas do Site (Usa o ID da Campanha)
+            cursor.execute("SELECT COUNT(id) FROM demandas_site WHERE cliente_id = %s AND status = 'Nova'", (ctx['cliente_id'],))
             d = cursor.fetchone()[0] or 0
             
-            # Mensagens
-            cursor.execute("SELECT COUNT(id) FROM mensagens WHERE destinatario_id = %s AND lida = FALSE", (user_id,))
+            # 2. Mensagens Internas (Aqui sim usa o user_id, pois a mensagem é para a PESSOA)
+            cursor.execute("SELECT COUNT(id) FROM mensagens WHERE destinatario_id = %s AND lida = FALSE", (ctx['user_id'],))
             m = cursor.fetchone()[0] or 0
             
-            # Tarefas
-            cursor.execute("SELECT COUNT(id) FROM tarefas WHERE (assessor_id = %s OR cliente_id = %s) AND lida = FALSE", (user_id, user_id))
+            # 3. Tarefas (Usa o ID do usuário que deve fazer a tarefa)
+            cursor.execute("SELECT COUNT(id) FROM tarefas WHERE assessor_id = %s AND lida = FALSE", (ctx['user_id'],))
             t = cursor.fetchone()[0] or 0
 
             return jsonify({'total': d + m + t})
-    except:
+    except Exception as e:
+        print(f"🚨 [ERRO RADAR DETALHADO]: {e}")
         return jsonify({'total': 0})
     finally:
         conn.close()

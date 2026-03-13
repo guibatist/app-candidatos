@@ -60,7 +60,7 @@
     .nav-item:hover, .nav-link-custom:hover { background-color: var(--sidebar-hover); color: var(--sidebar-active-text); }
     .nav-item.active { background-color: var(--sidebar-active-bg); color: var(--sidebar-active-text); border-left-color: var(--sidebar-active-border); }
 
-    /* --- ÍCONES PADRÃO (SÓBRIOS) --- */
+    /* --- ÍCONES --- */
     .nav-icon-wrapper {
         position: relative; width: 24px; min-width: 24px; height: 24px;
         display: flex; align-items: center; justify-content: center;
@@ -70,38 +70,55 @@
     .nav-icon { font-size: 1.1rem; flex-shrink: 0; color: var(--sidebar-text); transition: color 0.2s; }
     .nav-item:hover .nav-icon, .nav-item.active .nav-icon, .nav-link-custom:hover .nav-icon { color: var(--sidebar-active-text); }
 
-    /* --- ÍCONES DA IA (O DESTAQUE DA SIDEBAR) --- */
+    /* --- ESTILOS IA --- */
     .ai-icon-geo { color: #f59e0b !important; filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.4)); }
     .ai-icon-strat { color: #0ea5e9 !important; filter: drop-shadow(0 0 6px rgba(14, 165, 233, 0.4)); }
     .ai-icon-creative { color: #a855f7 !important; filter: drop-shadow(0 0 6px rgba(168, 85, 247, 0.4)); }
-    .nav-category-ai { color: #a855f7; } /* Título da categoria IA um pouco mais forte */
+    .nav-category-ai { color: #a855f7; }
 
-    /* --- BADGES E ESTADOS --- */
+    /* --- BADGES (CONTROLE DE EXIBIÇÃO) --- */
     .badge-pill-nav {
         margin-left: auto; font-size: 0.65rem; padding: 2px 8px; border-radius: 20px;
         font-weight: 800; flex-shrink: 0; background-color: #ef4444; color: white;
+        display: inline-block;
     }
 
     .badge-floating {
         position: absolute; top: -5px; right: -7px; background-color: #ef4444; color: white;
-        font-size: 0.6rem; width: 17px; height: 17px; border-radius: 50%; display: none; 
-        align-items: center; justify-content: center; border: 2px solid var(--sidebar-bg); font-weight: 900; z-index: 5;
+        font-size: 0.6rem; width: 17px; height: 17px; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center; 
+        border: 2px solid var(--sidebar-bg); font-weight: 900; z-index: 5;
     }
 
-    /* COMPORTAMENTO COLLAPSED */
+    /* REGRAS DE VISIBILIDADE CRÍTICAS */
+    
+    /* Quando ABERTA: Esconde o floating, mostra o pill */
+    #sidebar:not(.collapsed) .badge-floating { display: none !important; }
+    #sidebar:not(.collapsed) .badge-pill-nav { display: inline-block; }
+
+    /* Quando FECHADA: Mostra o floating, esconde o pill e o texto */
+    #sidebar.collapsed .badge-floating { display: flex !important; }
+    #sidebar.collapsed .badge-pill-nav { display: none !important; }
+    #sidebar.collapsed .nav-text { display: none !important; }
+    
+    /* Estado "vazio" controlado por classe para não quebrar o layout */
+    .badge-hidden { display: none !important; }
+
     #sidebar.collapsed .nav-icon-wrapper { margin-right: 0; }
-    #sidebar.collapsed .nav-text, #sidebar.collapsed .badge-pill-nav { display: none !important; }
-    #sidebar.collapsed .badge-floating { display: flex; } 
-    #sidebar:not(.collapsed) #sidebar-badge-floating { display: none !important; }
-    #sidebar.collapsed #sidebar-badge-pill { display: none !important; }
     #sidebar.collapsed .nav-item, #sidebar.collapsed .nav-link-custom { justify-content: center; padding: 0; }
     
     .nav-item.locked { opacity: 0.5; cursor: not-allowed; }
     .nav-item.locked:hover { background-color: transparent; }
 
-    /* Scrollbar estilizada */
     .sidebar-nav::-webkit-scrollbar { width: 4px; }
     .sidebar-nav::-webkit-scrollbar-thumb { background: #1f2937; border-radius: 10px; }
+
+    @keyframes pop-notification {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.4); background-color: #ef4444; }
+        100% { transform: scale(1); }
+    }
+    .badge-pop { animation: pop-notification 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
 </style>
 
 <nav id="sidebar">
@@ -137,10 +154,10 @@
             <a href="{{ url_for('crm.caixa_entrada') }}" class="nav-item {% if 'comunicacao' in request.path %}active{% endif %}">
                 <div class="nav-icon-wrapper">
                     <i class="fa-solid fa-bullhorn nav-icon"></i>
-                    <span id="sidebar-badge-floating" class="badge-floating" style="display: none;">0</span>
+                    <span id="sidebar-badge-floating" class="badge-floating badge-hidden">0</span>
                 </div>
                 <span class="nav-text">Comunicação</span>
-                <span id="sidebar-badge-pill" class="badge-pill-nav" style="display: none;">0</span>
+                <span id="sidebar-badge-pill" class="badge-pill-nav badge-hidden">0</span>
             </a>
             <a href="/crm/tarefas" class="nav-item {% if 'tarefa' in request.path %}active{% endif %}">
                 <div class="nav-icon-wrapper"><i class="fa-solid fa-list-check nav-icon"></i></div>
@@ -153,12 +170,12 @@
             <a href="{{ url_for('crm.notificacoes') }}" class="nav-item {% if request.endpoint == 'crm.notificacoes' %}active{% endif %}">
                 <div class="nav-icon-wrapper">
                     <i class="fa-solid fa-bell nav-icon"></i>
-                    <span id="sidebar-badge-floating" class="badge-floating" style="{% if g.total_notificacoes > 0 %}display: flex;{% else %}display: none;{% endif %}">
+                    <span class="badge-floating {% if not g.total_notificacoes or g.total_notificacoes == 0 %}badge-hidden{% endif %}">
                         {{ g.total_notificacoes }}
                     </span>
                 </div>
                 <span class="nav-text">Notificações</span>
-                <span id="sidebar-badge-pill" class="badge badge-pill-nav" style="{% if g.total_notificacoes > 0 %}display: inline-block;{% else %}display: none;{% endif %}">
+                <span class="badge-pill-nav {% if not g.total_notificacoes or g.total_notificacoes == 0 %}badge-hidden{% endif %}">
                     {{ g.total_notificacoes }}
                 </span>
             </a>
@@ -198,19 +215,8 @@
     </div>
 </nav>
 
-<style>
-    @keyframes pop-notification {
-        0% { transform: scale(1); }
-        50% { transform: scale(1.4); background-color: #ef4444; }
-        100% { transform: scale(1); }
-    }
-    .badge-pop { animation: pop-notification 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-</style>
-
 <script>
     function radarNotificacoes() {
-        if (sessionStorage.getItem('notificacoes_limpas') === 'true') return;
-
         const urlSemCache = '/crm/api/notificacoes/contagem?t=' + new Date().getTime();
 
         fetch(urlSemCache)
@@ -220,30 +226,35 @@
                 const bPill = document.getElementById('sidebar-badge-pill');
                 const valorNovo = data.count;
 
-                const aplicarMudanca = (el, displayType) => {
+                const atualizarBadge = (el) => {
                     if (!el) return;
                     const valorAntigo = parseInt(el.innerText) || 0;
 
                     if (valorNovo > 0) {
                         el.innerText = valorNovo;
-                        el.style.setProperty('display', displayType, 'important');
+                        el.classList.remove('badge-hidden');
+                        
+                        // Efeito de pulso se o número subir
                         if (valorNovo > valorAntigo) {
                             el.classList.remove('badge-pop');
                             void el.offsetWidth; 
                             el.classList.add('badge-pop');
                         }
                     } else {
-                        el.style.setProperty('display', 'none', 'important');
+                        el.classList.add('badge-hidden');
                     }
                 };
 
-                aplicarMudanca(bFloating, 'flex');
-                aplicarMudanca(bPill, 'inline-block');
+                atualizarBadge(bFloating);
+                atualizarBadge(bPill);
             })
-            .catch(e => console.warn("Radar silencioso ignorou erro de rede."));
+            .catch(e => console.warn("Radar offline."));
     }
 
     document.addEventListener('DOMContentLoaded', () => {
+        // Primeira execução imediata
+        radarNotificacoes();
+        // Loop a cada 30 segundos
         setInterval(radarNotificacoes, 30000); 
     });
 </script>
@@ -258,38 +269,22 @@
         <button class="btn btn-primary w-100 fw-bold py-3 rounded-3 mb-4 shadow-sm" data-bs-toggle="modal" data-bs-target="#modalSuporte" data-bs-dismiss="offcanvas">
             <i class="fa-solid fa-plus me-2"></i> Nova Solicitação
         </button>
-
         <h6 class="fw-bold text-muted small text-uppercase mb-3">Histórico</h6>
-        
         {% if meus_chamados %}
             {% for c in meus_chamados %}
                 <div class="card border-0 shadow-sm rounded-4 mb-3">
                     <div class="card-body p-3">
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <span class="fw-bold small text-dark">{{ c.tipo }}</span>
-                            {% if c.status == 'Aberto' %}
-                                <span class="badge bg-danger bg-opacity-10 text-danger rounded-pill">Aberto</span>
-                            {% elif c.status == 'Em Análise' %}
-                                <span class="badge bg-warning bg-opacity-10 text-warning rounded-pill">Em Análise</span>
-                            {% else %}
-                                <span class="badge bg-success bg-opacity-10 text-success rounded-pill">Concluído</span>
-                            {% endif %}
+                            <span class="badge {% if c.status == 'Aberto' %}bg-danger{% elif c.status == 'Em Análise' %}bg-warning{% else %}bg-success{% endif %} bg-opacity-10 text-{% if c.status == 'Aberto' %}danger{% elif c.status == 'Em Análise' %}warning{% else %}success{% endif %} rounded-pill">{{ c.status }}</span>
                         </div>
-                        <p class="small text-muted mb-0" style="line-height: 1.4;">{{ c.descricao }}</p>
-                        
-                        {% if c.resposta_admin %}
-                        <div class="mt-3 p-3 bg-light rounded-3 border-start border-4 border-info">
-                            <p class="small fw-bold text-info mb-1"><i class="fa-solid fa-reply me-1"></i>Resposta da Equipe:</p>
-                            <p class="small text-dark mb-0">{{ c.resposta_admin }}</p>
-                        </div>
-                        {% endif %}
+                        <p class="small text-muted mb-0">{{ c.descricao }}</p>
                     </div>
                 </div>
             {% endfor %}
         {% else %}
             <div class="text-center py-5 text-muted">
-                <i class="fa-regular fa-folder-open fs-1 mb-2 opacity-25"></i>
-                <p class="small">Você não possui chamados abertos.</p>
+                <p class="small">Nenhum chamado aberto.</p>
             </div>
         {% endif %}
     </div>
@@ -300,26 +295,23 @@
         <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
             <form action="/crm/suporte/abrir" method="POST">
                 <div class="modal-header border-0 px-4 pt-4">
-                    <h5 class="fw-bold mb-0 text-dark">Como podemos ajudar?</h5>
+                    <h5 class="fw-bold mb-0 text-dark">Abrir Chamado</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body px-4 text-dark">
+                <div class="modal-body px-4">
                     <div class="mb-3">
-                        <label class="form-label small fw-bold text-muted uppercase">Tipo de Solicitação</label>
-                        <select name="tipo_chamado" class="form-select bg-light border-0 rounded-3 py-2" required>
+                        <select name="tipo_chamado" class="form-select bg-light border-0 rounded-3" required>
                             <option value="Dúvida Técnica">Dúvida Técnica</option>
-                            <option value="Reportar Bug">Erro no Sistema (Bug)</option>
-                            <option value="Sugestão de Melhoria">Sugestão de Melhoria</option>
-                            <option value="Financeiro/Plano">Financeiro / Plano</option>
+                            <option value="Reportar Bug">Erro no Sistema</option>
+                            <option value="Sugestão de Melhoria">Sugestão</option>
                         </select>
                     </div>
                     <div class="mb-4">
-                        <label class="form-label small fw-bold text-muted uppercase">Descrição Detalhada</label>
-                        <textarea name="descricao" class="form-control bg-light border-0 rounded-3" rows="4" placeholder="Descreva o problema ou solicitação de forma clara..." required></textarea>
+                        <textarea name="descricao" class="form-control bg-light border-0 rounded-3" rows="4" placeholder="Detalhes..." required></textarea>
                     </div>
                 </div>
                 <div class="modal-footer border-0 px-4 pb-4">
-                    <button type="submit" class="btn btn-primary w-100 py-3 fw-bold rounded-3 shadow-sm">Enviar para o Master</button>
+                    <button type="submit" class="btn btn-primary w-100 py-3 fw-bold rounded-3">Enviar</button>
                 </div>
             </form>
         </div>
