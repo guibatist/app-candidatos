@@ -1,0 +1,21 @@
+{% extends "emails/layout_base.html" %}
+{% block content %}
+    <h2 style="color: #ef4444; margin: 0 0 15px 0; font-size: 22px; font-weight: 700;">🚨 Alerta de Tarefas Atrasadas</h2>
+    <p style="color: #475569; font-size: 15px;">Olá, equipe de campanha de <strong>{{ nome_candidato }}</strong>.</p>
+    <p style="color: #475569; font-size: 14px;">As seguintes missões estão fora do prazo e precisam de atenção:</p>
+    
+    <div style="margin: 25px 0; background-color: #f8fafc; padding: 20px; border-radius: 8px; border-left: 4px solid #ef4444;">
+        <ul style="margin: 0; padding-left: 20px; color: #334155; font-size: 14px; line-height: 1.8;">
+            {% for t in tarefas %}
+            <li style="margin-bottom: 10px;">
+                <strong>#{{ t.id[-6:] }} - {{ t.tipo }}</strong><br>
+                <span style="color: #64748b; font-size: 13px;">Proprietário: {{ t.assessor_nome or 'Não atribuído' }} | Venceu em: {{ t.data_limite }}</span>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    
+    <div style="text-align: center; margin-top: 35px;">
+        <a href="https://votoimpacto.com.br/crm/dashboard" style="display: inline-block; padding: 12px 25px; background-color: #ef4444; color: #ffffff; text-decoration: none; border-radius: 50px; font-weight: 700; font-size: 14px;">Resolver Pendências no VotaHub</a>
+    </div>
+{% endblock %}

@@ -63,6 +63,15 @@ def _enviar_email_worker(destinatario, assunto, corpo_html):
     except Exception as e:
         print(f"[MAILER-ERROR] Falha ao enviar e-mail para {destinatario}: {str(e)}")
 
+def enviar_async(app_context, msg):
+    with app_context:
+        try:
+            mail.send(msg)
+            print(f"[MAIL-SUCCESS] Entregue para: {msg.recipients[0]}")
+        except Exception as e:
+            # AQUI ESTÁ O DIAGNÓSTICO FATAL
+            print(f"[MAIL-FATAL-ERROR] Falha ao entregar para {msg.recipients[0]}: {str(e)}")
+
 def disparar_email_assincrono(destinatario, assunto, corpo_html):
     """Dispara a thread para não bloquear a requisição HTTP do usuário (Background Task)."""
     thread = threading.Thread(target=_enviar_email_worker, args=(destinatario, assunto, corpo_html))

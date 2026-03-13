@@ -6,7 +6,7 @@ import time
 from datetime import datetime
 from psycopg2.extras import RealDictCursor
 from app.utils.db import get_db_connection
-
+from app.utils.mailer import Mailer
 # === BLOCO 2: SERVIÇO CORE DO CRM ===
 class CRMService:
     

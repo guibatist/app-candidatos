@@ -88,3 +88,19 @@ class Mailer:
         html = render_template('emails/re_onboarding.html', nome=nome, email=email, senha=senha, protocolo=protocolo)
         assunto = f"Atualização de Credenciais [Ref: #{protocolo}]"
         disparar_email_assincrono(email, assunto, html)
+
+    @staticmethod
+    def enviar_relatorio_atrasos(email_destinatario, nome_candidato, tarefas):
+        """Envia o compilado semanal de tarefas atrasadas para a equipe."""
+        from app.routes.auth import disparar_email_assincrono
+        from flask import render_template
+        
+        protocolo = Mailer.gerar_protocolo()
+        assunto = f"🚨 Relatório de Atrasos - {nome_candidato} [Ref: #{protocolo}]"
+        
+        html = render_template('emails/relatorio_atrasos.html',
+                               nome_candidato=nome_candidato,
+                               tarefas=tarefas,
+                               protocolo=protocolo)
+        
+        disparar_email_assincrono(email_destinatario, assunto, html)

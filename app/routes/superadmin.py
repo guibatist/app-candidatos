@@ -447,3 +447,18 @@ def atualizar_chamado(chamado_id):
         if conn: conn.close()
         
     return redirect(url_for('superadmin.listar_chamados'))
+
+
+from app.services.cron_service import CronService # Ajuste o import conforme onde você salvou a função
+
+@superadmin_bp.route('/testar-cron-semanal')
+def testar_cron_semanal():
+    if not is_superadmin(): 
+        return "Acesso negado", 403
+        
+    sucesso = CronService.processar_relatorios_semanais()
+    
+    if sucesso:
+        return "Relatório semanal processado e e-mails disparados com sucesso! Verifique sua caixa de entrada."
+    else:
+        return "Erro ao processar relatório. Verifique os logs do terminal.", 500
