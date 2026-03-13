@@ -1,0 +1,14 @@
+{% extends "emails/layout_base.html" %}
+{% block content %}
+    <h2 style="color: #1e293b; margin: 0 0 15px 0; font-size: 22px; font-weight: 700;">Aviso do Sistema</h2>
+    <p style="color: #475569; font-size: 15px;">Olá, <strong>{{ nome_usuario }}</strong>.</p>
+    
+    <div style="background-color: #f8fafc; border-left: 4px solid #4f46e5; padding: 20px; border-radius: 0 8px 8px 0; margin: 25px 0;">
+        <strong style="color: #4f46e5; display: block; margin-bottom: 8px; font-size: 16px;">{{ tipo_alerta }}</strong>
+        <span style="font-size: 14px; color: #475569; line-height: 1.6;">{{ descricao }}</span>
+    </div>
+    
+    <div style="text-align: center; margin-top: 35px;">
+        <a href="https://votoimpacto.com.br/crm/dashboard" style="display: inline-block; padding: 14px 30px; background-color: #4f46e5; color: #ffffff; text-decoration: none; border-radius: 50px; font-weight: 700; font-size: 14px;">Acessar o VotaHub</a>
+    </div>
+{% endblock %}

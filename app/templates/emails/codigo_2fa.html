@@ -1,0 +1,13 @@
+{% extends "emails/layout_base.html" %}
+{% block content %}
+    <h2 style="color: #1e293b; margin: 0 0 15px 0; font-size: 22px; font-weight: 700;">Verificação de Acesso</h2>
+    <p style="color: #475569; font-size: 15px;">Olá {{ nome }}, utilize o código abaixo para concluir seu login:</p>
+    
+    <div style="margin: 30px 0; text-align: center;">
+        <span style="display: inline-block; padding: 20px 40px; background-color: #eff6ff; color: #2563eb; font-size: 36px; font-weight: 800; border-radius: 12px; letter-spacing: 8px; border: 1px solid #dbeafe;">
+            {{ codigo }}
+        </span>
+    </div>
+
+    <p style="font-size: 13px; color: #94a3b8; text-align: center;">Este código expira em 10 minutos por razões de segurança.</p>
+{% endblock %}

@@ -1,0 +1,10 @@
+{% extends "emails/layout_base.html" %}
+{% block content %}
+    <h2>Bem-vindo, {{ nome }}!</h2>
+    <p>Sua campanha foi provisionada com sucesso em nossa plataforma.</p>
+    <div style="background-color: #f3f4f6; padding: 15px; border-radius: 6px; margin: 20px 0;">
+        <p style="margin: 0;"><strong>E-mail:</strong> {{ email }}</p>
+        <p style="margin: 5px 0 0 0;"><strong>Senha Provisória:</strong> <span style="color: #ef4444;">{{ senha }}</span></p>
+    </div>
+    <p>Clique aqui para acessar o painel: <a href="https://votoimpacto.com.br/login">Login</a></p>
+{% endblock %}

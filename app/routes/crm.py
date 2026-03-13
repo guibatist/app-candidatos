@@ -14,7 +14,7 @@ import pandas as pd
 from io import BytesIO
 from flask import send_file
 from datetime import datetime
-
+from app.utils.mailer import Mailer
 crm_bp = Blueprint('crm', __name__)
 
 # ==========================================
@@ -411,23 +411,49 @@ def criar_tarefa_perfil(apoiador_id):
     ctx = obter_contexto_acesso()
     if not ctx: return redirect(url_for('auth.login'))
     
-    # Coleta dados do modal
     tipo = request.form.get('tipo')
     assessor_id = request.form.get('assessor_id')
     data_limite = request.form.get('data_limite')
     descricao = request.form.get('descricao')
     
+    # 1. Gera o ID obrigatório da tarefa
+    tarefa_id = f"tar_{uuid.uuid4().hex[:10]}"
+    
     conn = get_db_connection()
     try:
         with conn.cursor() as cursor:
-            # Note que usamos o 'tipo' como título e tipo simultaneamente já que o banco não tem 'titulo'
+            # 2. Insere no banco passando o ID
             cursor.execute("""
-                INSERT INTO tarefas (cliente_id, apoiador_id, assessor_id, tipo, descricao, data_limite, status, lida)
-                VALUES (%s, %s, %s, %s, %s, %s, 'pendente', FALSE)
-            """, (ctx['cliente_id'], apoiador_id, assessor_id, tipo, descricao, data_limite))
+                INSERT INTO tarefas (id, cliente_id, apoiador_id, assessor_id, tipo, descricao, data_limite, status, lida)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, 'pendente', FALSE)
+            """, (tarefa_id, ctx['cliente_id'], apoiador_id, assessor_id, tipo, descricao, data_limite))
+            
+            # 3. Pega os dados do assessor para enviar o e-mail
+            assessor_nome = None
+            assessor_email = None
+            if assessor_id:
+                cursor.execute("SELECT nome, email FROM usuarios WHERE id = %s", (assessor_id,))
+                row = cursor.fetchone()
+                if row:
+                    assessor_nome, assessor_email = row[0], row[1]
+                    
         conn.commit()
-        flash('Missão operacional lançada com sucesso!', 'success')
+        
+        # 4. Concatena os dados do form em uma string limpa e manda para o Mailer
+        if assessor_email:
+            texto_descricao = f"Você foi designado para uma nova tarefa: {tipo}. Prazo: {data_limite}."
+            
+            Mailer.enviar_aviso_sistema(
+                email=assessor_email,
+                nome_usuario=assessor_nome,
+                tipo_alerta="Nova Missão Operacional",
+                descricao=texto_descricao
+            )
+            
+        flash('Missão lançada e assessor notificado!', 'success')
+        
     except Exception as e:
+        if conn: conn.rollback()
         print(f"Erro ao criar tarefa: {e}")
         flash('Erro ao agendar tarefa.', 'danger')
     finally:

@@ -12,6 +12,9 @@ superadmin_bp = Blueprint('superadmin', __name__)
 from app.utils.db import get_db_connection
 from app.services.crm_service import CRMService
 
+# A IMPORTAÇÃO QUE ESTAVA FALTANDO:
+from app.utils.mailer import Mailer
+
 # Importação da função assíncrona de e-mail do auth.py
 try:
     from app.routes.auth import disparar_email_assincrono # Ajuste o caminho se necessário
@@ -42,41 +45,40 @@ def login_required(f):
 
 def _executar_re_onboarding(usuario_id, novo_email, nome):
     """
-    Quando um e-mail é alterado, reseta a conta e dispara o convite novamente.
+    Quando um e-mail é alterado, reseta a conta e dispara o convite 
+    com o novo template profissional via Mailer.
     """
+    from app.utils.mailer import Mailer # Importação necessária
+    
     senha_provisoria = "mudar@votahub"
     senha_hash = generate_password_hash(senha_provisoria)
     
     conn = get_db_connection()
     try:
         with conn.cursor() as cursor:
+            # Reseta a senha para o padrão e reativa a trava de primeiro acesso
             cursor.execute("""
                 UPDATE usuarios 
-                SET senha_hash = %s, primeiro_acesso = TRUE 
+                SET senha_hash = %s, primeiro_acesso = TRUE, email = %s
                 WHERE id = %s
-            """, (senha_hash, usuario_id))
+            """, (senha_hash, novo_email, usuario_id))
         conn.commit()
         
-        corpo_email = f"""
-        <div style="font-family: Inter, Arial, sans-serif; color: #1f2937;">
-            <h2 style="color: #4f46e5;">Atualização de Acesso - VotaHub</h2>
-            <p>Olá, <strong>{nome}</strong>. Seu e-mail de acesso foi atualizado/corrigido por um administrador.</p>
-            <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
-                <p style="margin: 0;"><strong>Novo E-mail:</strong> {novo_email}</p>
-                <p style="margin: 5px 0 0 0;"><strong>Senha Provisória:</strong> <span style="color: #e63946;">{senha_provisoria}</span></p>
-            </div>
-            <p><small>Por segurança, será exigida a troca desta senha no seu primeiro acesso.</small></p>
-        </div>
-        """
-        disparar_email_assincrono(novo_email, "Suas Novas Credenciais - VotaHub", corpo_email)
-        return True
+        # DISPARO VIA MAILER
+        # Usamos o template de 're_onboarding' para diferenciar de uma conta nova
+        try:
+            Mailer.enviar_primeiro_acesso(novo_email, nome, senha_provisoria)
+            return True
+        except Exception as e:
+            print(f"🚨 [MAIL-ERROR] Erro no disparo do Re-Onboarding: {e}")
+            return True # Retorna True pois o banco foi atualizado
+            
     except Exception as e:
         if conn: conn.rollback()
-        print(f"[DB-ERROR] Erro no Re-Onboarding: {e}")
+        print(f"🚨 [DB-ERROR] Erro no Re-Onboarding: {e}")
         return False
     finally:
         if conn: conn.close()
-
 
 # ==========================================
 # BLOCO 2: DASHBOARD E LISTAGENS
@@ -174,7 +176,7 @@ def perfil_campanha(campanha_id):
 @superadmin_bp.route('/campanhas/nova', methods=['POST'])
 @login_required
 def criar_campanha_completa():
-    # Captura os dados básicos
+    # 1. Captura e Sanitização dos Dados
     nome_completo = request.form.get('nome_completo', '').strip()
     email_candidato = request.form.get('email_candidato', '').strip().lower()
     cargo = request.form.get('cargo', '').strip()
@@ -190,24 +192,26 @@ def criar_campanha_completa():
     idade_raw = request.form.get('idade', '').strip()
     idade_final = int(idade_raw) if idade_raw.isdigit() else None
     
-    # Gerações de chaves
+    # 2. Geração de Identificadores e Segurança
     campanha_id = f"camp_{uuid.uuid4().hex[:10]}"
     usuario_id = f"usr_{uuid.uuid4().hex[:10]}"
     api_token = secrets.token_hex(16)
     
+    # Senha padrão do sistema conforme solicitado
     senha_provisoria = "mudar@votahub"
     senha_hash = generate_password_hash(senha_provisoria)
     
+    # 3. Persistência no Banco de Dados
     conn = get_db_connection()
     try:
         with conn.cursor() as cursor:
-            # 1. Cria a campanha com o token de site
+            # Inserção do Cliente/Campanha
             cursor.execute("""
                 INSERT INTO clientes (id, nome_candidato, cargo_disputado, partido_sigla, partido_numero, status, api_token) 
                 VALUES (%s, %s, %s, %s, %s, 'ativo', %s)
             """, (campanha_id, nome_completo, cargo, partido_sigla, partido_numero, api_token))
             
-            # 2. Cria o usuário com TODOS OS DADOS TRATADOS
+            # Inserção do Usuário (Candidato)
             cursor.execute("""
                 INSERT INTO usuarios (id, cliente_id, nome, email, senha_hash, role, primeiro_acesso, cpf, telefone, sexo, idade)
                 VALUES (%s, %s, %s, %s, %s, 'candidato', TRUE, %s, %s, %s, %s)
@@ -215,38 +219,25 @@ def criar_campanha_completa():
             
         conn.commit()
         
-        # ==========================================
-        # O CÓDIGO DO E-MAIL VOLTOU AQUI
-        # ==========================================
-        corpo_email = f"""
-        <div style="font-family: Inter, Arial, sans-serif; color: #1f2937;">
-            <h2 style="color: #8b5cf6;">Bem-vindo ao VotoImpacto!</h2>
-            <p>Olá, <strong>{nome_completo}</strong>. Sua campanha foi provisionada com sucesso.</p>
-            <p>Sua plataforma estratégica inteligente já está pronta para uso.</p>
-            <div style="background-color: #f8fafc; border-left: 4px solid #8b5cf6; padding: 15px; border-radius: 4px; margin: 20px 0;">
-                <p style="margin: 0;"><strong>E-mail de Acesso:</strong> {email_candidato}</p>
-                <p style="margin: 5px 0 0 0;"><strong>Senha Provisória:</strong> <span style="color: #e63946;">{senha_provisoria}</span></p>
-            </div>
-            <p><small>Por segurança, será exigida a troca desta senha no seu primeiro acesso.</small></p>
-        </div>
-        """
-        
+        # 4. Disparo do E-mail via Mailer (Centralizado)
         try:
-            disparar_email_assincrono(email_candidato, "Bem-vindo ao VotoImpacto - Credenciais", corpo_email)
+            # Usa o template emails/primeiro_acesso.html com o protocolo único
+            Mailer.enviar_primeiro_acesso(email_candidato, nome_completo, senha_provisoria)
             flash('Campanha configurada e e-mail enviado com sucesso!', 'success')
-        except Exception as mail_error:
-            print(f"[MAIL-ERROR] Falha ao enviar email: {mail_error}")
-            flash('Campanha criada, mas houve um erro ao enviar o e-mail.', 'warning')
+        except Exception as mail_err:
+            print(f"🚨 [MAIL-ERROR] Falha ao enviar boas-vindas: {mail_err}")
+            flash('Campanha criada, mas houve uma falha no envio do e-mail.', 'warning')
             
         return redirect(url_for('superadmin.perfil_campanha', campanha_id=campanha_id))
         
     except Exception as e:
         if conn: conn.rollback()
+        # Tratamento de erro específico para CPF duplicado
         if 'usuarios_cpf_key' in str(e):
             flash('Este CPF já está cadastrado em outra conta.', 'danger')
         else:
             flash('Erro ao provisionar a base de dados do cliente.', 'danger')
-        print(f"[DB-CRITICAL] Erro ao criar campanha: {e}") 
+        print(f"🚨 [DB-CRITICAL] Erro ao criar campanha: {e}") 
         return redirect(url_for('superadmin.painel_geral'))
     finally:
         if conn: conn.close()
@@ -254,59 +245,89 @@ def criar_campanha_completa():
 @superadmin_bp.route('/campanhas/<campanha_id>/usuario/salvar', methods=['POST'])
 @login_required
 def salvar_usuario_campanha(campanha_id):
-    """Cria ou edita um usuário, detectando alterações de e-mail para reenvio de credenciais."""
     usuario_id = request.form.get('usuario_id')
     role = request.form.get('role', 'assessor')
     nome = request.form.get('nome', '').strip()
     novo_email = request.form.get('email', '').strip().lower()
     
-    email_antigo = None
-    if usuario_id:
-        conn = get_db_connection()
-        try:
-            with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+    # Tratamento de tipos (NULL em vez de string vazia)
+    cpf = request.form.get('cpf', '').strip() or None
+    telefone = request.form.get('telefone', '').strip() or None
+    sexo = request.form.get('sexo', '').strip() or None
+    idade_raw = request.form.get('idade', '').strip()
+    idade_final = int(idade_raw) if idade_raw.isdigit() else None
+    
+    conn = get_db_connection()
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            # ==========================================================
+            # 1. VALIDAÇÃO DE UNICIDADE DE E-MAIL (A TRAVA)
+            # ==========================================================
+            if usuario_id:
+                # Se for EDIÇÃO: verifica se o e-mail já existe em OUTRO ID
+                cursor.execute("SELECT id FROM usuarios WHERE email = %s AND id != %s", (novo_email, usuario_id))
+            else:
+                # Se for CRIAÇÃO: verifica se o e-mail já existe no banco todo
+                cursor.execute("SELECT id FROM usuarios WHERE email = %s", (novo_email,))
+            
+            usuario_existente = cursor.fetchone()
+            
+            if usuario_existente:
+                flash(f'O e-mail "{novo_email}" já está sendo usado por outra pessoa no sistema.', 'danger')
+                return redirect(url_for('superadmin.perfil_campanha', campanha_id=campanha_id))
+
+            # ==========================================================
+            # 2. BUSCA E-MAIL ANTIGO PARA RE-ONBOARDING
+            # ==========================================================
+            email_antigo = None
+            if usuario_id:
                 cursor.execute("SELECT email FROM usuarios WHERE id = %s", (usuario_id,))
                 user_db = cursor.fetchone()
                 if user_db: email_antigo = user_db['email']
-        finally:
-            if conn: conn.close()
 
-    if role == 'candidato':
-        sucesso = CRMService.salvar_dados_mestre_campanha(campanha_id, request.form)
-        if sucesso: 
-            flash('Dados mestre da campanha atualizados.', 'success')
-            if email_antigo and email_antigo != novo_email:
-                _executar_re_onboarding(usuario_id, novo_email, nome)
-                flash('O e-mail foi alterado. Um novo convite foi disparado.', 'info')
-        else: 
-            flash('Erro ao atualizar dados.', 'danger')
-        return redirect(url_for('superadmin.perfil_campanha', campanha_id=campanha_id))
+            # --- FLUXO CANDIDATO ---
+            if role == 'candidato':
+                sucesso = CRMService.salvar_dados_mestre_campanha(campanha_id, request.form)
+                if sucesso: 
+                    flash('Dados mestre atualizados.', 'success')
+                    if email_antigo and email_antigo != novo_email:
+                        _executar_re_onboarding(usuario_id, novo_email, nome)
+                return redirect(url_for('superadmin.perfil_campanha', campanha_id=campanha_id))
 
-    conn = get_db_connection()
-    try:
-        with conn.cursor() as cursor:
+            # --- FLUXO ASSESSOR ---
             if not usuario_id:
+                # INSERT
                 uid = f"usr_{uuid.uuid4().hex[:10]}"
                 senha_provisoria = "mudar@votahub"
                 senha_hash = generate_password_hash(senha_provisoria)
                 
                 cursor.execute("""
-                    INSERT INTO usuarios (id, cliente_id, nome, email, role, senha_hash, primeiro_acesso, cpf, telefone)
-                    VALUES (%s, %s, %s, %s, 'assessor', %s, TRUE, %s, %s)
-                """, (uid, campanha_id, nome, novo_email, senha_hash, request.form.get('cpf'), request.form.get('telefone')))
-                flash('Assessor adicionado e convite disparado.', 'success')
+                    INSERT INTO usuarios (id, cliente_id, nome, email, role, senha_hash, primeiro_acesso, cpf, telefone, sexo, idade)
+                    VALUES (%s, %s, %s, %s, 'assessor', %s, TRUE, %s, %s, %s, %s)
+                """, (uid, campanha_id, nome, novo_email, senha_hash, cpf, telefone, sexo, idade_final))
+                
+                from app.utils.mailer import Mailer
+                Mailer.enviar_primeiro_acesso(novo_email, nome, senha_provisoria)
+                flash('Assessor adicionado com sucesso!', 'success')
             else:
+                # UPDATE
                 cursor.execute("""
-                    UPDATE usuarios SET nome=%s, email=%s, cpf=%s, sexo=%s, idade=%s, telefone=%s
+                    UPDATE usuarios 
+                    SET nome=%s, email=%s, cpf=%s, sexo=%s, idade=%s, telefone=%s
                     WHERE id=%s AND cliente_id=%s
-                """, (nome, novo_email, request.form.get('cpf'), request.form.get('sexo'), 
-                      request.form.get('idade') or None, request.form.get('telefone'),
-                      usuario_id, campanha_id))
-                flash('Dados atualizados.', 'success')
+                """, (nome, novo_email, cpf, sexo, idade_final, telefone, usuario_id, campanha_id))
+                
+                if email_antigo and email_antigo != novo_email:
+                    _executar_re_onboarding(usuario_id, novo_email, nome)
+                    flash('E-mail alterado. Novas credenciais enviadas.', 'info')
+                else:
+                    flash('Dados atualizados.', 'success')
+                    
         conn.commit()
     except Exception as e:
         if conn: conn.rollback()
-        flash('Erro interno ao salvar.', 'danger')
+        print(f"[DB-ERROR] {e}")
+        flash('Erro ao salvar: Verifique se os dados são válidos.', 'danger')
     finally:
         if conn: conn.close()
         
@@ -315,7 +336,7 @@ def salvar_usuario_campanha(campanha_id):
 @superadmin_bp.route('/usuarios/<usuario_id>/reset-senha', methods=['POST'])
 @login_required
 def resetar_senha_usuario(usuario_id):
-    """Força o reset de senha para o padrão do sistema E ENVIA O E-MAIL."""
+    """Força o reset de senha para o padrão do sistema E ENVIA O E-MAIL via Mailer."""
     campanha_id = request.form.get('campanha_id')
     senha_provisoria = "mudar@votahub"
     senha_hash = generate_password_hash(senha_provisoria)
@@ -334,24 +355,10 @@ def resetar_senha_usuario(usuario_id):
         if usuario:
             conn.commit()
             
-            # ==========================================
-            # DISPARO DO E-MAIL DE RESET (O que faltava!)
-            # ==========================================
-            corpo_email = f"""
-            <div style="font-family: Inter, Arial, sans-serif; color: #1f2937;">
-                <h2 style="color: #8b5cf6;">Acesso Redefinido - VotoImpacto</h2>
-                <p>Olá, <strong>{usuario['nome']}</strong>. O administrador redefiniu seu acesso.</p>
-                <div style="background-color: #f8fafc; border-left: 4px solid #8b5cf6; padding: 15px; border-radius: 4px; margin: 20px 0;">
-                    <p style="margin: 0;"><strong>E-mail de Acesso:</strong> {usuario['email']}</p>
-                    <p style="margin: 5px 0 0 0;"><strong>Nova Senha Provisória:</strong> <span style="color: #e63946;">{senha_provisoria}</span></p>
-                </div>
-                <p><small>Por segurança, você deverá trocar essa senha ao fazer login.</small></p>
-            </div>
-            """
-            
+            # DISPARO DO E-MAIL USANDO A NOVA CLASSE MAILER
             try:
-                # Certifique-se de que a função disparar_email_assincrono está importada no topo do arquivo!
-                disparar_email_assincrono(usuario['email'], "VotoImpacto - Novo Acesso", corpo_email)
+                # Aqui chamamos o Mailer que foi importado no topo
+                Mailer.enviar_reset_senha(usuario['email'], usuario['nome'], senha_provisoria)
                 flash('Senha resetada e e-mail enviado com sucesso!', 'success')
             except Exception as mail_err:
                 print(f"[MAIL-ERROR] Erro ao enviar reset: {mail_err}")

@@ -1,0 +1,13 @@
+{% extends "emails/layout_base.html" %}
+{% block content %}
+    <h2 style="color: #1a1a1a; margin-top: 0;">Bem-vindo ao VotoImpacto!</h2>
+    <p>Sua campanha foi provisionada com sucesso. Utilize as credenciais abaixo para seu primeiro acesso:</p>
+    <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 20px; border-radius: 6px; margin: 25px 0;">
+        <p style="margin: 0;"><strong>E-mail:</strong> {{ email }}</p>
+        <p style="margin: 10px 0 0 0;"><strong>Senha Provisória:</strong> <span style="color: #e11d48; font-weight: bold;">{{ senha }}</span></p>
+    </div>
+    <p style="font-size: 13px; color: #666;">Por segurança, você deverá cadastrar uma senha definitiva no primeiro login.</p>
+    <div style="text-align: center; margin-top: 30px;">
+        <a href="https://votoimpacto.com.br/login" style="background-color: #6366f1; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Acessar Painel</a>
+    </div>
+{% endblock %}
