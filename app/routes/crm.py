@@ -8,6 +8,7 @@ from app.routes.auth import enviar_alerta_sistema
 from ..services.crm_service import CRMService
 from app.utils.db import get_db_connection
 import uuid
+import urllib.parse
 import re
 import pandas as pd
 from io import BytesIO
@@ -82,24 +83,18 @@ def carregar_notificacoes_globais():
         if conn: conn.close()
 
 # Context Processor para garantir que o template veja o valor de 'g'
-@crm_bp.app_context_processor
-def inject_total_notificacoes():
-    return dict(total_notificacoes=getattr(g, 'total_notificacoes', 0))
 
 @crm_bp.app_context_processor
 def inject_sidebar_notificacoes():
-    # Pega o ID do usuário logado na sessão
     user_id = session.get('user_id')
     
-    # Se não houver usuário (ex: deslogado), zera o contador
     if not user_id:
         return dict(total_notificacoes=0)
     
     conn = get_db_connection()
     try:
         with conn.cursor() as cursor:
-            # 1. CONTA TAREFAS (FILTRANDO APENAS lida = FALSE)
-            # É aqui que corrigimos o erro para todos os assessores
+            # 1. TAREFAS (Igual você já tinha)
             cursor.execute("""
                 SELECT COUNT(id) FROM tarefas 
                 WHERE (assessor_id = %s OR cliente_id = %s) 
@@ -107,16 +102,24 @@ def inject_sidebar_notificacoes():
             """, (user_id, user_id))
             t_count = cursor.fetchone()[0] or 0
             
-            # 2. CONTA MENSAGENS (FILTRANDO APENAS lida = FALSE)
+            # 2. MENSAGENS (Igual você já tinha)
             cursor.execute("""
                 SELECT COUNT(id) FROM mensagens 
                 WHERE destinatario_id = %s 
                 AND lida = FALSE AND apagada = FALSE
             """, (user_id,))
             m_count = cursor.fetchone()[0] or 0
+
+            # 3. NOVIDADE: DEMANDAS DO SITE (VotoImpacto)
+            # Contamos apenas as 'Nova' que pertencem a este cliente
+            cursor.execute("""
+                SELECT COUNT(id) FROM demandas_site 
+                WHERE cliente_id = %s AND status = 'Nova'
+            """, (user_id,))
+            d_count = cursor.fetchone()[0] or 0
             
-            # Retorna a soma exata para o 'base.html' (sidebar)
-            return dict(total_notificacoes = t_count + m_count)
+            # Retorna a soma total (Tarefas + Mensagens + Demandas Site)
+            return dict(total_notificacoes = t_count + m_count + d_count)
     except Exception as e:
         print(f"Erro ao injetar notificações: {e}")
         return dict(total_notificacoes=0)
@@ -1422,75 +1425,110 @@ def landing_page_campanha():
 
 @crm_bp.route('/api/site/receber-demanda', methods=['POST'])
 def receber_demanda_site():
+    """
+    Recebe os dados do site e salva na tabela demandas_site.
+    Usa 'nome_candidato' conforme o esquema real da tabela 'clientes'.
+    """
+    token_recebido = request.form.get('api_token')
     
+    if not token_recebido:
+        return jsonify(success=False, error="Token de integração ausente."), 400
 
-    nome = request.form.get('nome')
-    telefone = request.form.get('telefone')
-    email = request.form.get('email')
-    titulo = request.form.get('titulo_demanda')
-    descricao = request.form.get('descricao_demanda')
-    
     conn = get_db_connection()
     try:
-        with conn.cursor() as cursor:
-            # Salva a demanda
+        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            # 1. Busca o ID e o Nome Real do Candidato (coluna: nome_candidato)
+            cursor.execute("SELECT id, nome_candidato FROM clientes WHERE api_token = %s", (token_recebido,))
+            cliente = cursor.fetchone()
+            
+            if not cliente:
+                return jsonify(success=False, error="Token inválido."), 401
+            
+            cliente_id = cliente['id']
+            nome_candidato = cliente['nome_candidato']
+
+            # 2. Captura os dados do formulário
+            nome_solicitante = request.form.get('nome', '').strip()
+            email_solicitante = request.form.get('email', '').strip()
+            tel_solicitante = request.form.get('telefone', '').strip()
+            titulo = request.form.get('titulo', 'Nova Demanda').strip()
+            descricao = request.form.get('mensagem', request.form.get('descricao', '')).strip()
+
+            # 3. INSERT (Usando o seu esquema confirmado da demandas_site)
             cursor.execute("""
                 INSERT INTO demandas_site 
-                (nome_solicitante, telefone_solicitante, email_solicitante, titulo, descricao, status)
-                VALUES (%s, %s, %s, %s, %s, 'Nova')
-            """, (nome, telefone, email, titulo, descricao))
-            conn.commit()
-
-        # --- DISPARO DE E-MAIL USANDO SUA FUNÇÃO ROBUSTA ---
-        # Substitua pelo seu e-mail ou pegue o e-mail do candidato no banco
-        email_destino = "seu-email@exemplo.com" 
-        
-        enviar_alerta_sistema(
-            destinatario=email_destino,
-            nome_usuario="Equipe de Gabinete",
-            tipo_alerta="Nova Demanda Recebida via Site",
-            descricao=f"O cidadão {nome} enviou uma solicitação: {titulo}"
-        )
-        # --------------------------------------------------
-
-        # Prepara WhatsApp e retorna
-        meu_numero = "5511999999999" 
-        wa_url = f"https://wa.me/{meu_numero}?text=Nova+demanda+recebida!"
-        
-        return jsonify({'sucesso': True, 'whatsapp_url': wa_url})
+                (cliente_id, nome_solicitante, email_solicitante, telefone_solicitante, titulo, descricao, status)
+                VALUES (%s, %s, %s, %s, %s, %s, 'Nova')
+            """, (cliente_id, nome_solicitante, email_solicitante, tel_solicitante, titulo, descricao))
             
+            # 4. LÓGICA DO WHATSAPP (Ainda pendente de colunas de 'usuarios')
+            # Por enquanto, não tentamos buscar em 'usuarios' para não dar erro de coluna.
+            link_wa = None 
+
+        conn.commit()
+        return jsonify(
+            success=True, 
+            message="Demanda registrada com sucesso!",
+            whatsapp_url=link_wa 
+        ), 201
+        
     except Exception as e:
-        print(f"Erro: {e}")
-        return jsonify({'sucesso': False}), 500
+        if conn: conn.rollback()
+        print(f"[DB-ERROR] Erro real: {e}") 
+        return jsonify(success=False, error="Erro interno ao processar demanda."), 500
     finally:
         if conn: conn.close()
 
+
 @crm_bp.route('/comunicacao')
 def caixa_entrada():
+    """
+    Caixa de Entrada de demandas do site.
+    Filtra as mensagens estritamente pelo cliente_id do usuário logado.
+    """
     ctx = obter_contexto_acesso()
-    if not ctx: return redirect(url_for('auth.login'))
+    if not ctx: 
+        return redirect(url_for('auth.login'))
     
     conn = get_db_connection()
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-            # Busca todas as demandas do site
+            # 1. BUSCA FILTRADA: A trava de segurança que impede o vazamento de dados
+            # O 'WHERE cliente_id = %s' garante que o Candidato A nunca veja o B
             cursor.execute("""
-                SELECT * FROM demandas_site 
+                SELECT 
+                    id, 
+                    nome_solicitante AS nome, 
+                    email_solicitante AS email, 
+                    telefone_solicitante AS telefone,
+                    descricao AS mensagem, 
+                    data_recebimento AS criado_em, 
+                    status 
+                FROM demandas_site 
+                WHERE cliente_id = %s 
                 ORDER BY data_recebimento DESC
-            """)
+            """, (ctx['cliente_id'],))
+            
             demandas = cursor.fetchall()
             
-            # Conta os status para os cards do topo
+            # 2. RESUMO CALCULADO: Gera os cards do topo apenas com dados deste candidato
             resumo = {
                 'total': len(demandas),
-                'novas': sum(1 for d in demandas if d['status'] == 'Nova'),
-                'resolvidas': sum(1 for d in demandas if d['status'] == 'Resolvida')
+                'novas': sum(1 for d in demandas if d['status'] in ['Nova', 'pendente', 'Nova Demanda']),
+                'resolvidas': sum(1 for d in demandas if d['status'] in ['Resolvida', 'Concluída'])
             }
             
+    except Exception as e:
+        print(f"[DB-ERROR] Erro ao carregar caixa de entrada: {e}")
+        demandas = []
+        resumo = {'total': 0, 'novas': 0, 'resolvidas': 0}
     finally:
         if conn: conn.close()
         
-    return render_template('crm/comunicacao.html', demandas=demandas, resumo=resumo, permissoes=ctx['permissoes'])
+    return render_template('crm/comunicacao.html', 
+                           demandas=demandas, 
+                           resumo=resumo, 
+                           permissoes=ctx['permissoes'])
 
 @crm_bp.route('/comunicacao/concluir/<int:demanda_id>', methods=['POST'])
 def concluir_demanda(demanda_id):
@@ -1518,16 +1556,71 @@ def concluir_demanda(demanda_id):
 
 @crm_bp.route('/api/notificacoes/contagem')
 def contagem_notificacoes():
+    # 1. Verifica se o usuário está logado na sessão do VotoImpacto
+    user_id = session.get('user_id')
+    
+    if not user_id:
+        return jsonify({'count': 0, 'status': 'sessao_expirada'}), 401
+
     conn = get_db_connection()
     try:
+        # Usamos RealDictCursor para facilitar a leitura do resultado
         with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-            # Conta apenas as demandas novas direto no banco, super rápido
-            cursor.execute("SELECT COUNT(*) as total FROM demandas_site WHERE status = 'Nova'")
+            
+            # 2. QUERY FILTRADA: Conta apenas demandas 'Nova' do cliente logado
+            # O uso do %s previne SQL Injection
+            query = """
+                SELECT COUNT(*) as total 
+                FROM demandas_site 
+                WHERE status = 'Nova' 
+                AND cliente_id = %s
+            """
+            cursor.execute(query, (user_id,))
             resultado = cursor.fetchone()
             
-            return jsonify({'count': resultado['total'] if resultado else 0})
+            # 3. Retorna o JSON para o Radar (JavaScript)
+            total = resultado['total'] if resultado else 0
+            
+            return jsonify({
+                'count': total,
+                'status': 'sucesso',
+                'timestamp': datetime.now().strftime('%H:%M:%S') # Útil para debug no console
+            })
+
     except Exception as e:
-        print(f"Erro no radar: {e}")
-        return jsonify({'count': 0})
+        # Log de erro silencioso no servidor para não expor estrutura ao usuário
+        print(f"🚨 [ERRO RADAR]: {e}")
+        return jsonify({'count': 0, 'status': 'erro_interno'}), 500
+        
+    finally:
+        if conn:
+            conn.close()
+
+@crm_bp.route('/api/notificacoes/radar')
+def radar_notificacoes():
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({'total': 0}), 401
+
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            # Fazemos a mesma soma do context_processor, mas via API para o JS
+            
+            # Demandas Site
+            cursor.execute("SELECT COUNT(id) FROM demandas_site WHERE cliente_id = %s AND status = 'Nova'", (user_id,))
+            d = cursor.fetchone()[0] or 0
+            
+            # Mensagens
+            cursor.execute("SELECT COUNT(id) FROM mensagens WHERE destinatario_id = %s AND lida = FALSE", (user_id,))
+            m = cursor.fetchone()[0] or 0
+            
+            # Tarefas
+            cursor.execute("SELECT COUNT(id) FROM tarefas WHERE (assessor_id = %s OR cliente_id = %s) AND lida = FALSE", (user_id, user_id))
+            t = cursor.fetchone()[0] or 0
+
+            return jsonify({'total': d + m + t})
+    except:
+        return jsonify({'total': 0})
     finally:
         conn.close()

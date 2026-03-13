@@ -103,6 +103,7 @@
                     </div>
 
                     <form id="formGabineteDigital">
+                        <input type="hidden" name="api_token" value="64bde23edf576541e2b408d057f97f4e">
                         <div class="row g-4">
                             <div class="col-md-12">
                                 <label class="fw-bold small text-muted ms-1 mb-1 text-uppercase letter-spacing-1">Nome Completo</label>
@@ -176,49 +177,59 @@
         </div>
     </footer>
 
-    <script>
-        document.getElementById('formGabineteDigital').addEventListener('submit', function(e) {
-            e.preventDefault(); // Impede o site de recarregar
-            
-            const btn = document.getElementById('btnSubmit');
-            const btnText = document.getElementById('btnText');
-            const btnLoader = document.getElementById('btnLoader');
-            
-            // Estado de Carregamento (UX)
-            btn.disabled = true;
-            btnText.innerHTML = "Sorteando Assessor e Preparando WhatsApp...";
-            btnLoader.style.display = "block";
+<script>
+    document.getElementById('formGabineteDigital').addEventListener('submit', function(e) {
+        e.preventDefault(); 
+        
+        const btn = document.getElementById('btnSubmit');
+        const btnText = document.getElementById('btnText');
+        const btnLoader = document.getElementById('btnLoader');
+        
+        // Estado de Carregamento
+        btn.disabled = true;
+        btnText.innerHTML = "Salvando Demanda e Abrindo WhatsApp...";
+        btnLoader.style.display = "block";
 
-            // Captura os dados do formulário
-            const formData = new FormData(this);
+        const formData = new FormData(this);
 
-            // POST para a rota que vamos criar no Python (/api/site/receber-demanda)
-            fetch('/crm/api/site/receber-demanda', { // Adicionei o /crm aqui
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if(data.sucesso) {
-                    // O Python devolve o link do WhatsApp sorteado e montado
-                    window.location.href = data.whatsapp_url;
+        fetch('/crm/api/site/receber-demanda', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            // AJUSTE: O Python manda 'success', não 'sucesso'
+            if(data.success) { 
+                btnText.innerHTML = "✅ Sucesso! Redirecionando...";
+                
+                // Se o Python mandou o link do WhatsApp, a gente vai pra lá
+                if (data.whatsapp_url) {
+                    setTimeout(() => {
+                        window.location.href = data.whatsapp_url;
+                    }, 1000); // Espera 1 segundo para o usuário não sustar
                 } else {
-                    alert('Houve um erro ao processar sua demanda. Tente novamente.');
+                    alert('Demanda registrada! Em breve entraremos em contato.');
+                    this.reset();
                     resetBtn();
                 }
-            })
-            .catch(error => {
-                console.error('Erro:', error);
-                alert('Houve um erro de rede. Tente novamente.');
+            } else {
+                alert('Erro: ' + (data.error || 'Falha ao processar.'));
                 resetBtn();
-            });
-
-            function resetBtn() {
-                btn.disabled = false;
-                btnText.innerHTML = '<i class="fa-brands fa-whatsapp fs-3 me-3"></i> Enviar e Falar no WhatsApp';
-                btnLoader.style.display = "none";
             }
+        })
+        .catch(error => {
+            console.error('Erro:', error);
+            alert('Erro de conexão. Verifique sua internet.');
+            resetBtn();
         });
-    </script>
+
+        function resetBtn() {
+            btn.disabled = false;
+            btnText.innerHTML = '<i class="fa-brands fa-whatsapp fs-3 me-3"></i> Enviar e Falar no WhatsApp';
+            btnLoader.style.display = "none";
+        }
+    });
+</script>
 </body>
 </html>
+

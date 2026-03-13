@@ -12,7 +12,7 @@ from psycopg2.extras import RealDictCursor
 from app.utils.db import get_db_connection
 # Autenticação .env para o gmail
 from dotenv import load_dotenv
-
+from email.message import EmailMessage
 
 load_dotenv()
 
@@ -38,24 +38,26 @@ def validar_complexidade_senha(senha):
 
 def _enviar_email_worker(destinatario, assunto, corpo_html):
     """Worker interno para disparo de e-mail SMTP via Thread."""
-    # Nota: Em produção, garanta que essas variáveis estejam no seu .env
     smtp_host = os.getenv('SMTP_HOST', 'smtp.gmail.com')
     smtp_port = int(os.getenv('SMTP_PORT', 587))
-    smtp_user = os.getenv('SMTP_USER', 'seu_email@votahub.com')
-    smtp_pass = os.getenv('SMTP_PASS', 'sua_senha_de_app')
+    smtp_user = os.getenv('SMTP_USER', 'seu_email@votahub.com') # Puxa do .env
+    smtp_pass = os.getenv('SMTP_PASS', 'sua_senha_de_app')      # Puxa do .env
 
-    msg = MIMEMultipart('alternative')
+    # Usando a biblioteca moderna do Python 3
+    msg = EmailMessage()
     msg['Subject'] = assunto
     msg['From'] = smtp_user
     msg['To'] = destinatario
     
-    msg.attach(MIMEText(corpo_html, 'html'))
+    # Isso aqui blinda o código contra qualquer erro de acentuação (UTF-8)
+    msg.set_content(corpo_html, subtype='html', charset='utf-8')
 
     try:
         server = smtplib.SMTP(smtp_host, smtp_port)
         server.starttls()
         server.login(smtp_user, smtp_pass)
-        server.sendmail(smtp_user, destinatario, msg.as_string())
+        # Atenção: Mudamos de sendmail para send_message
+        server.send_message(msg) 
         server.quit()
         print(f"[MAILER] E-mail enviado com sucesso para {destinatario}")
     except Exception as e:

@@ -17,15 +17,15 @@ class CRMService:
     def get_dashboard_data(cliente_id):
         """
         Dashboard remodelado com agregações no Banco de Dados.
-        Isso impede estouro de memória RAM escalando para milhões de registros.
+        Inclui as demandas recentes vindas do site do candidato.
         """
         conn = get_db_connection()
         if not conn: 
-            return {"kpis": {}, "grafico_bairros": {}, "grafico_ativos": {}, "top_influenciadores": {}, "timeline": []}
+            return {"kpis": {}, "demandas": [], "grafico_bairros": {}, "grafico_ativos": {}, "top_influenciadores": {}, "timeline": []}
         
         try:
             with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-                # 1. KPIs Globais e Ativos em uma única query otimizada
+                # 1. KPIs Globais e Ativos
                 cursor.execute("""
                     SELECT 
                         COUNT(id) as total,
@@ -39,7 +39,21 @@ class CRMService:
                 """, (str(cliente_id),))
                 kpis_db = cursor.fetchone()
 
-                # 2. Agrupamento de Bairros (Group By no DB)
+                # 2. Demandas Recentes do Site (COM OS NOMES CORRETOS DAS COLUNAS DA NEON)
+                cursor.execute("""
+                    SELECT 
+                        id, 
+                        nome_solicitante AS nome, 
+                        descricao AS mensagem, 
+                        data_recebimento AS criado_em, 
+                        status 
+                    FROM demandas_site 
+                    WHERE cliente_id = %s 
+                    ORDER BY data_recebimento DESC LIMIT 5
+                """, (str(cliente_id),))
+                demandas_recentes = cursor.fetchall()
+
+                # 3. Agrupamento de Bairros
                 cursor.execute("""
                     SELECT COALESCE(NULLIF(bairro, ''), 'Não Informado') as bairro, COUNT(id) as qtd 
                     FROM apoiadores 
@@ -48,7 +62,7 @@ class CRMService:
                 """, (str(cliente_id),))
                 bairros = {row['bairro']: row['qtd'] for row in cursor.fetchall()}
 
-                # 3. Top Influenciadores (Limit 5 direto no DB)
+                # 4. Top Influenciadores
                 cursor.execute("""
                     SELECT indicado_por, COUNT(id) as qtd 
                     FROM apoiadores 
@@ -57,7 +71,7 @@ class CRMService:
                 """, (str(cliente_id),))
                 top_influenciadores = {row['indicado_por']: row['qtd'] for row in cursor.fetchall()}
 
-                # 4. Timeline de Tarefas Concluídas
+                # 5. Timeline de Tarefas Concluídas
                 cursor.execute("""
                     SELECT t.id, t.descricao, t.data_criacao, t.status, a.nome as apoiador_nome 
                     FROM tarefas t
@@ -74,6 +88,7 @@ class CRMService:
                     "multiplicadores": kpis_db['multiplicadores'] or 0,
                     "ativos_total": (kpis_db['muros'] or 0) + (kpis_db['carros'] or 0) + (kpis_db['lideres'] or 0)
                 },
+                "demandas": demandas_recentes,
                 "grafico_bairros": bairros,
                 "grafico_ativos": {"Muros": kpis_db['muros'] or 0, "Carros": kpis_db['carros'] or 0, "Líderes": kpis_db['lideres'] or 0},
                 "top_influenciadores": top_influenciadores,
@@ -81,10 +96,25 @@ class CRMService:
             }
         except Exception as e:
             print(f"[DB-ERROR] Erro ao gerar dashboard otimizado: {e}")
-            return {"kpis": {}, "grafico_bairros": {}, "grafico_ativos": {}, "top_influenciadores": {}, "timeline": []}
+            return {"kpis": {}, "demandas": [], "grafico_bairros": {}, "grafico_ativos": {}, "top_influenciadores": {}, "timeline": []}
         finally:
             conn.close()
 
+    # No arquivo de Service (onde está o get_dashboard_data ou similar)
+    @staticmethod
+    def listar_demandas(cliente_id):
+        conn = get_db_connection()
+        try:
+            with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+                # AQUI ESTÁ A TRAVA: O banco só entrega o que for desse cliente_id
+                cursor.execute("""
+                    SELECT * FROM demandas_site 
+                    WHERE cliente_id = %s 
+                    ORDER BY data_recebimento DESC
+                """, (cliente_id,))
+                return cursor.fetchall()
+        finally:
+            conn.close()
 
     # ==========================================
     # SUB-BLOCO 2.2: GEOINTELIGÊNCIA
@@ -412,22 +442,26 @@ class CRMService:
         if not conn: return None
         try:
             with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+                # Busca a campanha
                 cursor.execute("SELECT * FROM clientes WHERE id = %s", (campanha_id,))
                 campanha = cursor.fetchone()
-                if not campanha: return None
-
+                
+                # Busca o candidato (Dono da campanha) com TODOS os campos
                 cursor.execute("""
-                    SELECT id, nome, email, cpf, sexo, idade, telefone, role, data_criacao 
+                    SELECT id, nome, email, role, cpf, telefone, sexo, idade 
                     FROM usuarios 
-                    WHERE cliente_id = %s 
-                    ORDER BY role ASC, nome ASC
+                    WHERE cliente_id = %s AND role = 'candidato'
                 """, (campanha_id,))
-                usuarios = cursor.fetchall()
+                candidato = cursor.fetchone()
+                
+                # Busca a equipe (assessores)
+                cursor.execute("SELECT * FROM usuarios WHERE cliente_id = %s AND role = 'assessor'", (campanha_id,))
+                assessores = cursor.fetchall()
                 
                 return {
-                    "campanha": campanha,
-                    "candidato": next((u for u in usuarios if u['role'] == 'candidato'), None),
-                    "assessores": [u for u in usuarios if u['role'] == 'assessor']
+                    'campanha': campanha,
+                    'candidato': candidato,
+                    'assessores': assessores
                 }
         finally:
             conn.close()

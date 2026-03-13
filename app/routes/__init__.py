@@ -7,19 +7,22 @@ def create_app():
     # Configurações Básicas
     app.config['SECRET_KEY'] = 'sua_chave_secreta_aqui_mude_em_producao'
     
-    # Caminho para os dados JSON 
+    # Caminho para os dados JSON (se ainda for usar, embora estejamos indo pro Postgres)
     app.config['DATA_DIR'] = os.path.join(app.root_path, 'data')
 
     # Importação das Blueprints (Rotas)
     from app.routes.auth import auth_bp
-    from app.routes.crm import cm_bp 
-    from app.routes.superadmin import superadmin_bp 
-
+    from app.routes.crm import crm_bp  # CORRIGIDO: de cm_bp para crm_bp
+    from app.routes.superadmin import superadmin_bp # CORRIGIDO: Único admin
+    
     # Registro das Blueprints
     app.register_blueprint(auth_bp, url_prefix='/auth')
-    app.register_blueprint(cm_bp, url_prefix='/crm')
+    app.register_blueprint(crm_bp, url_prefix='/crm') # CORRIGIDO: crm_bp
+    
+    # O painel master agora responde em /master
+    # Ex: /master/clientes ou /master/dashboard
     app.register_blueprint(superadmin_bp, url_prefix='/master')
-
+    
     # Rota de redirecionamento inicial
     @app.route('/')
     def index():
