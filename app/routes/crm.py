@@ -1425,85 +1425,84 @@ def landing_page_campanha():
 
 @crm_bp.route('/api/site/receber-demanda', methods=['POST'])
 def receber_demanda_site():
-    """
-    Recebe os dados do site e salva na tabela demandas_site.
-    Usa 'nome_candidato' conforme o esquema real da tabela 'clientes'.
-    """
+    # DEBUG: Isso vai mostrar no seu terminal o que o HTML está enviando de verdade
+    print(f"--- DADOS RECEBIDOS DO SITE: {request.form.to_dict()} ---")
+
     token_recebido = request.form.get('api_token')
-    
     if not token_recebido:
-        return jsonify(success=False, error="Token de integração ausente."), 400
+        return jsonify(success=False, error="Token ausente."), 400
 
     conn = get_db_connection()
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-            # 1. Busca o ID e o Nome Real do Candidato (coluna: nome_candidato)
             cursor.execute("SELECT id, nome_candidato FROM clientes WHERE api_token = %s", (token_recebido,))
             cliente = cursor.fetchone()
-            
-            if not cliente:
-                return jsonify(success=False, error="Token inválido."), 401
+            if not cliente: return jsonify(success=False, error="Token inválido."), 401
             
             cliente_id = cliente['id']
-            nome_candidato = cliente['nome_candidato']
+            nome_cand = cliente['nome_candidato']
 
-            # 2. Captura os dados do formulário
-            nome_solicitante = request.form.get('nome', '').strip()
-            email_solicitante = request.form.get('email', '').strip()
+            # CAPTURA INTELIGENTE (Tenta vários nomes comuns de formulário)
+            nome = request.form.get('nome', '').strip()
+            email = request.form.get('email', '').strip()
             tel_solicitante = request.form.get('telefone', '').strip()
-            titulo = request.form.get('titulo', 'Nova Demanda').strip()
-            descricao = request.form.get('mensagem', request.form.get('descricao', '')).strip()
+            
+            # Tenta 'titulo', 'assunto' ou 'subject'
+            titulo = request.form.get('titulo') or request.form.get('assunto') or "Nova Demanda"
+            
+            # Tenta 'mensagem', 'descricao', 'message' ou 'corpo'
+            descricao = request.form.get('mensagem') or request.form.get('descricao') or request.form.get('message', '').strip()
 
-            # 3. INSERT (Usando o seu esquema confirmado da demandas_site)
+            # INSERT NO BANCO
             cursor.execute("""
                 INSERT INTO demandas_site 
                 (cliente_id, nome_solicitante, email_solicitante, telefone_solicitante, titulo, descricao, status)
                 VALUES (%s, %s, %s, %s, %s, %s, 'Nova')
-            """, (cliente_id, nome_solicitante, email_solicitante, tel_solicitante, titulo, descricao))
+            """, (cliente_id, nome, email, tel_solicitante, titulo, descricao))
             
-            # 4. LÓGICA DO WHATSAPP (Ainda pendente de colunas de 'usuarios')
-            # Por enquanto, não tentamos buscar em 'usuarios' para não dar erro de coluna.
-            link_wa = None 
+            # BUSCA TELEFONE PARA WHATSAPP
+            cursor.execute("SELECT telefone FROM usuarios WHERE cliente_id = %s AND role = 'assessor' AND telefone != '' LIMIT 1", (cliente_id,))
+            dest = cursor.fetchone()
+            if not dest:
+                cursor.execute("SELECT telefone FROM usuarios WHERE cliente_id = %s AND telefone != '' LIMIT 1", (cliente_id,))
+                dest = cursor.fetchone()
+
+            link_wa = None
+            if dest and dest['telefone']:
+                num = re.sub(r'\D', '', str(dest['telefone']))
+                if not num.startswith('55'): num = '55' + num
+                
+                # A MENSAGEM DO ZAP: Agora usando a descricao capturada
+                texto_wa = (
+                    f"🚨 *DEMANDA URGENTE* 🚨\n\n"
+                    f"Olá, *{nome_cand}*, você recebeu uma nova demanda via site.\n\n"
+                    f"*Resumo:* {descricao}"
+                )
+                link_wa = f"https://wa.me/{num}?text={urllib.parse.quote(texto_wa)}"
 
         conn.commit()
-        return jsonify(
-            success=True, 
-            message="Demanda registrada com sucesso!",
-            whatsapp_url=link_wa 
-        ), 201
+        return jsonify(success=True, message="Demanda registrada!", whatsapp_url=link_wa), 201
         
     except Exception as e:
         if conn: conn.rollback()
-        print(f"[DB-ERROR] Erro real: {e}") 
-        return jsonify(success=False, error="Erro interno ao processar demanda."), 500
+        print(f"[DB-ERROR]: {e}")
+        return jsonify(success=False, error="Erro interno."), 500
     finally:
         if conn: conn.close()
 
 
 @crm_bp.route('/comunicacao')
 def caixa_entrada():
-    """
-    Caixa de Entrada de demandas do site.
-    Filtra as mensagens estritamente pelo cliente_id do usuário logado.
-    """
     ctx = obter_contexto_acesso()
-    if not ctx: 
-        return redirect(url_for('auth.login'))
+    if not ctx: return redirect(url_for('auth.login'))
     
     conn = get_db_connection()
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-            # 1. BUSCA FILTRADA: A trava de segurança que impede o vazamento de dados
-            # O 'WHERE cliente_id = %s' garante que o Candidato A nunca veja o B
+            # Selecionamos as colunas originais para bater com o template
             cursor.execute("""
-                SELECT 
-                    id, 
-                    nome_solicitante AS nome, 
-                    email_solicitante AS email, 
-                    telefone_solicitante AS telefone,
-                    descricao AS mensagem, 
-                    data_recebimento AS criado_em, 
-                    status 
+                SELECT id, nome_solicitante, email_solicitante, telefone_solicitante, 
+                       titulo, descricao, status, data_recebimento 
                 FROM demandas_site 
                 WHERE cliente_id = %s 
                 ORDER BY data_recebimento DESC
@@ -1511,17 +1510,12 @@ def caixa_entrada():
             
             demandas = cursor.fetchall()
             
-            # 2. RESUMO CALCULADO: Gera os cards do topo apenas com dados deste candidato
             resumo = {
                 'total': len(demandas),
-                'novas': sum(1 for d in demandas if d['status'] in ['Nova', 'pendente', 'Nova Demanda']),
-                'resolvidas': sum(1 for d in demandas if d['status'] in ['Resolvida', 'Concluída'])
+                'novas': sum(1 for d in demandas if d['status'] in ['Nova', 'pendente']),
+                'resolvidas': sum(1 for d in demandas if d['status'] == 'Resolvida')
             }
             
-    except Exception as e:
-        print(f"[DB-ERROR] Erro ao carregar caixa de entrada: {e}")
-        demandas = []
-        resumo = {'total': 0, 'novas': 0, 'resolvidas': 0}
     finally:
         if conn: conn.close()
         
