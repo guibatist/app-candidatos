@@ -512,35 +512,41 @@ def listar_todas_tarefas():
     
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-            # Atualiza status de atrasadas em massa
+            # 1. Atualiza status de atrasadas em massa (Ignorando avisos)
             cursor.execute("""
                 UPDATE tarefas SET status = 'atrasada' 
-                WHERE cliente_id = %s AND status = 'pendente' 
+                WHERE cliente_id = %s 
+                AND status = 'pendente' 
+                AND tipo != 'Aviso de Sistema'
                 AND NULLIF(data_limite, '')::DATE < CURRENT_DATE
             """, (ctx['cliente_id'],))
             conn.commit()
 
-            # Métricas
+            # 2. Métricas Reais (Filtramos 'Aviso de Sistema' para não poluir os KPIs)
             cursor.execute("""
                 SELECT COUNT(*) as total,
                        SUM(CASE WHEN status = 'atrasada' THEN 1 ELSE 0 END) as atrasadas,
                        SUM(CASE WHEN status IN ('concluida', 'concluído') THEN 1 ELSE 0 END) as concluidas
-                FROM tarefas WHERE cliente_id = %s
+                FROM tarefas 
+                WHERE cliente_id = %s 
+                AND tipo != 'Aviso de Sistema'
             """, (ctx['cliente_id'],))
             kpis_db = cursor.fetchone()
             
             if kpis_db:
+                # O total aqui agora reflete apenas MISSÕES reais
                 kpis.update({k: v or 0 for k, v in kpis_db.items()})
                 
             total_pages = math.ceil(kpis['total'] / per_page) if kpis['total'] > 0 else 1
 
-            # Busca Paginada
+            # 3. Busca Paginada (Filtramos para o Radar ficar limpo)
             cursor.execute("""
                 SELECT t.id, t.tipo, t.status, t.data_limite, u.nome as delegado_nome, a.nome as apoiador_nome
                 FROM tarefas t
                 LEFT JOIN usuarios u ON t.assessor_id = u.id
                 LEFT JOIN apoiadores a ON t.apoiador_id = a.id
-                WHERE t.cliente_id = %s
+                WHERE t.cliente_id = %s 
+                AND t.tipo != 'Aviso de Sistema'
                 ORDER BY CASE WHEN t.status = 'atrasada' THEN 1 WHEN t.status = 'pendente' THEN 2 ELSE 3 END,
                          NULLIF(t.data_limite, '')::DATE ASC NULLS LAST
                 LIMIT %s OFFSET %s
@@ -587,8 +593,17 @@ def detalhe_tarefa(tarefa_id):
                 match = re.search(r'\[Ref:(.+?)\]', tarefa['descricao'])
                 if match:
                     real_id = match.group(1).strip()
-                    cursor.execute("UPDATE tarefas SET lida = TRUE WHERE id = %s", (str(tarefa_id),))
+                    
+                    # Marcar como lida e também mudar o status para 'concluida' 
+                    # para que ela saia do Radar de missões pendentes.
+                    cursor.execute("""
+                        UPDATE tarefas 
+                        SET lida = TRUE, status = 'concluida' 
+                        WHERE id = %s
+                    """, (str(tarefa_id),))
                     conn.commit()
+                    
+                    # Redireciona para a tarefa real que importa
                     return redirect(url_for('crm.detalhe_tarefa', tarefa_id=real_id))
 
             # 3. BUSCA DEPENDÊNCIAS

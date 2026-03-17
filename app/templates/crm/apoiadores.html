@@ -1,15 +1,28 @@
 {% extends 'base.html' %}
 
 {% block content %}
+<style>
+    /* Sincronização com o design do Dashboard */
+    .border-start-saas { border-left: 5px solid var(--vh-primary) !important; }
+    .text-indigo { color: var(--vh-primary) !important; }
+    .bg-indigo-light { background-color: rgba(124, 58, 237, 0.1) !important; }
+    .btn-indigo { background-color: var(--vh-primary); color: white; border: none; }
+    .btn-indigo:hover { background-color: var(--vh-primary-dark); color: white; }
+    .btn-outline-indigo { color: var(--vh-primary); border-color: var(--vh-primary); }
+    .btn-outline-indigo:hover { background-color: var(--vh-primary); color: white; }
+    
+    .linha-apoiador { transition: opacity 0.2s ease-in-out; }
+</style>
+
 <div class="container-fluid py-4">
     
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-end mb-4 pb-2 border-bottom" style="border-color: #e2e8f0 !important;">
         <div>
-            <h2 class="fw-bold text-dark mb-0">Base de Apoiadores</h2>
-            <p class="text-muted small">Gestão, microdirecionamento e inteligência de dados.</p>
+            <h2 class="fw-bolder text-dark mb-1" style="letter-spacing: -0.5px;">Base de Apoiadores</h2>
+            <span class="text-muted" style="font-size: 0.95rem;">Gestão, microdirecionamento e inteligência de dados.</span>
         </div>
         
-        <div class="d-flex gap-2">
+        <div class="d-flex gap-2 mt-3 mt-md-0">
             <button class="btn btn-outline-indigo rounded-pill px-4 shadow-sm fw-bold" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasFiltros" aria-controls="offcanvasFiltros">
                 <i class="fa-solid fa-filter me-2"></i> Filtrar Base
             </button>
@@ -21,21 +34,44 @@
 
     <div class="row g-3 mb-4">
         <div class="col-md-4">
-            <div class="card border-0 shadow-sm rounded-4 bg-white p-3 border-start border-indigo border-4" style="border-left-color: #4f46e5 !important;">
-                <p class="text-muted small fw-bold mb-1 text-uppercase">Apoiadores Filtrados</p>
-                <h3 class="fw-bold text-dark mb-0" id="bi-total">0</h3>
+            <div class="card p-4 border-start-saas h-100 border-0 shadow-sm rounded-4">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <span class="text-muted fw-bold text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">Apoiadores Filtrados</span>
+                        <h2 class="mt-2 mb-0 fw-bolder text-dark" id="bi-total">0</h2>
+                    </div>
+                    <div class="p-2 rounded-3 bg-primary bg-opacity-10 text-primary">
+                        <i class="fa-solid fa-users fs-5"></i>
+                    </div>
+                </div>
             </div>
         </div>
+
         <div class="col-md-4">
-            <div class="card border-0 shadow-sm rounded-4 bg-white p-3 border-start border-success border-4">
-                <p class="text-muted small fw-bold mb-1 text-uppercase">Multiplicadores (Lideranças)</p>
-                <h3 class="fw-bold text-dark mb-0" id="bi-multiplicadores">0</h3>
+            <div class="card p-4 h-100 border-0 shadow-sm rounded-4">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <span class="text-muted fw-bold text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">Multiplicadores (Lideranças)</span>
+                        <h2 class="mt-2 mb-0 fw-bolder text-dark" id="bi-multiplicadores">0</h2>
+                    </div>
+                    <div class="p-2 rounded-3 text-success" style="background-color: #dcfce7;">
+                        <i class="fa-solid fa-crown fs-5"></i>
+                    </div>
+                </div>
             </div>
         </div>
+
         <div class="col-md-4">
-            <div class="card border-0 shadow-sm rounded-4 bg-white p-3 border-start border-info border-4">
-                <p class="text-muted small fw-bold mb-1 text-uppercase" title="Soma da influência familiar">Potencial de Votos (Est.)</p>
-                <h3 class="fw-bold text-dark mb-0" id="bi-votos">0</h3>
+            <div class="card p-4 h-100 border-0 shadow-sm rounded-4" style="background: linear-gradient(135deg, var(--vh-primary), var(--vh-primary-dark)); color: white;">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <span class="fw-bold text-uppercase text-white-50" style="font-size: 0.7rem; letter-spacing: 0.5px;">Potencial de Votos (Est.)</span>
+                        <h2 class="mt-2 mb-0 fw-bolder text-white" id="bi-votos">0</h2>
+                    </div>
+                    <div class="p-2 rounded-3 bg-white bg-opacity-25 text-white">
+                        <i class="fa-solid fa-box-archive fs-5"></i>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -63,7 +99,7 @@
                         data-instrucao="{{ a.grau_instrucao or '' }}"
                         data-posicionamento="{{ a.posicionamento_politico or '' }}"
                         data-apoio="{{ a.grau_apoio or '' }}"
-                        data-votos="{{ a.votos_familia or 1 }}">
+                        data-votos="{{ a.votos_familia or 0 }}">
                         
                         <td class="ps-4 py-3">
                             <div class="d-flex align-items-center gap-3">
@@ -90,7 +126,7 @@
                         
                         <td class="py-3 text-center">
                             {% if a.grau_apoio == 'Liderança' %}
-                                <span class="badge bg-purple-light text-purple border-0 rounded-pill px-3 py-2 fw-bold" style="background-color: #f3e8ff; color: #7c3aed;">
+                                <span class="badge rounded-pill px-3 py-2 fw-bold" style="background-color: #f3e8ff; color: #7c3aed;">
                                     <i class="fa-solid fa-crown me-1"></i> Liderança
                                 </span>
                             {% elif a.grau_apoio == 'Apoiador' %}
@@ -105,7 +141,7 @@
                         </td>
                         
                         <td class="pe-4 py-3 text-end">
-                            <a href="{{ url_for('crm.perfil_apoiador', apoiador_id=a.id) }}" class="btn btn-sm btn-light text-indigo fw-bold rounded-pill px-3 shadow-sm" style="border: 1px solid #4f46e5;">
+                            <a href="{{ url_for('crm.perfil_apoiador', apoiador_id=a.id) }}" class="btn btn-sm btn-outline-indigo fw-bold rounded-pill px-3 shadow-sm">
                                 Abrir Perfil <i class="fa-solid fa-arrow-right ms-1"></i>
                             </a>
                         </td>
@@ -214,14 +250,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const biMultiplicadores = document.getElementById('bi-multiplicadores');
     const biVotos = document.getElementById('bi-votos');
 
-    // 1. Dicionários para capturar os dados reais da base (Removemos 'apoio' daqui pois ele é fixo no filtro)
     const dadosReais = {
-        cidade: new Set(),
-        bairro: new Set(),
-        sexo: new Set(),
-        idade: new Set(),
-        origem: new Set(),
-        instrucao: new Set(),
+        cidade: new Set(), bairro: new Set(), sexo: new Set(),
+        idade: new Set(), origem: new Set(), instrucao: new Set(),
         posicionamento: new Set()
     };
     
@@ -252,7 +283,6 @@ document.addEventListener('DOMContentLoaded', function() {
     popularDropdown('filtro-instrucao', dadosReais.instrucao);
     popularDropdown('filtro-posicionamento', dadosReais.posicionamento);
 
-    // 2. A Função de Filtragem Dinâmica (Tempo Real)
     function aplicarFiltros() {
         let total = 0;
         let multiplicadores = 0;
@@ -266,7 +296,7 @@ document.addEventListener('DOMContentLoaded', function() {
             origem: document.getElementById('filtro-origem').value,
             instrucao: document.getElementById('filtro-instrucao').value,
             posicionamento: document.getElementById('filtro-posicionamento').value,
-            apoio: document.getElementById('filtro-apoio').value // Novo filtro capturado
+            apoio: document.getElementById('filtro-apoio').value
         };
 
         linhas.forEach(linha => {
@@ -282,8 +312,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (mostrar) {
                 total++;
-                votos += parseInt(linha.dataset.votos) || 1;
-                // Conta apenas quem for 'Liderança' agora
+                let vFam = parseInt(linha.dataset.votos) || 0;
+                votos += (vFam + 1); 
                 if (linha.dataset.apoio === 'Liderança') multiplicadores++; 
             }
         });
@@ -293,29 +323,13 @@ document.addEventListener('DOMContentLoaded', function() {
         biVotos.textContent = votos;
     }
 
-    // 3. Gatilhos: Atualiza o B.I. instantaneamente
-    filtros.forEach(select => {
-        select.addEventListener('change', aplicarFiltros);
-    });
-
+    filtros.forEach(select => select.addEventListener('change', aplicarFiltros));
     document.getElementById('btn-limpar-filtros').addEventListener('click', () => {
         filtros.forEach(select => select.value = "");
         aplicarFiltros();
     });
 
-    // Inicia calculando tudo
     aplicarFiltros();
 });
 </script>
-
-<style>
-    .text-indigo { color: #4f46e5 !important; }
-    .btn-indigo { background-color: #4f46e5; color: white; border: none; }
-    .btn-indigo:hover { background-color: #3f36c5; color: white; }
-    .btn-outline-indigo { color: #4f46e5; border-color: #4f46e5; background-color: transparent; }
-    .btn-outline-indigo:hover { background-color: #4f46e5; color: white; }
-    .border-indigo { border-color: #4f46e5 !important; }
-    
-    .linha-apoiador { transition: opacity 0.2s ease-in-out; }
-</style>
 {% endblock %}

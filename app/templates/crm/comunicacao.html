@@ -2,48 +2,109 @@
 {% block content %}
 
 <style>
+    /* === VOTAHUB PREMIUM COMMUNICATION DESIGN === */
     .text-indigo { color: #4f46e5 !important; }
-    .btn-indigo { background-color: #4f46e5; color: white; border: none; }
+    .bg-indigo-light { background-color: rgba(79, 70, 229, 0.1) !important; }
+    .btn-indigo { background-color: #4f46e5; color: white; border: none; font-weight: 700; }
     .btn-indigo:hover { background-color: #3f36c5; color: white; }
-    .btn-outline-indigo { color: #4f46e5; border-color: #4f46e5; background-color: transparent; }
+    .btn-outline-indigo { color: #4f46e5; border-color: #4f46e5; font-weight: 700; }
     .btn-outline-indigo:hover { background-color: #4f46e5; color: white; }
-    .border-indigo { border-color: #4f46e5 !important; }
     
-    .bg-indigo-light { background-color: #eef2ff !important; }
+    /* Design dos Cards (Sincronizado com Dashboard) */
+    .card-kpi {
+        border: none;
+        border-radius: 1.25rem;
+        padding: 1.5rem;
+        background: #fff;
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        height: 100%;
+    }
+    .border-start-saas { border-left: 5px solid #4f46e5 !important; }
+    .border-start-success { border-left: 5px solid #10b981 !important; }
+    
+    /* Card Roxo Gradiente para Urgência/Estratégia */
+    .card-gradient-strategic {
+        background: linear-gradient(135deg, #4f46e5, #3730a3);
+        color: white;
+        border: none;
+        border-radius: 1.25rem;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .table thead th { 
+        background-color: #f8fafc; 
+        text-transform: uppercase; 
+        font-size: 0.75rem; 
+        letter-spacing: 0.5px; 
+        font-weight: 800; 
+        color: #64748b; 
+        border: none;
+    }
+    
+    .avatar-demand {
+        width: 40px; height: 40px; border-radius: 10px;
+        display: flex; align-items: center; justify-content: center;
+        font-weight: 800;
+    }
 </style>
 
 <div class="container-fluid py-4">
     
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-end mb-4 pb-2 border-bottom" style="border-color: #e2e8f0 !important;">
         <div>
-            <h2 class="fw-bold text-dark mb-0">Central de Demandas</h2>
-            <p class="text-muted small">Gestão de solicitações do site, triagem e atendimento direto ao cidadão.</p>
+            <h2 class="fw-bolder text-dark mb-1" style="letter-spacing: -0.5px;">Central de Demandas</h2>
+            <span class="text-muted" style="font-size: 0.95rem;">Gestão de solicitações, triagem e atendimento direto ao cidadão.</span>
         </div>
         
-        <div class="d-flex gap-2">
-            <button class="btn btn-outline-secondary rounded-pill px-4 shadow-sm fw-bold" onclick="window.location.reload();">
-                <i class="fa-solid fa-rotate-right me-2"></i> Atualizar
+        <div class="d-flex gap-2 mt-3 mt-md-0">
+            <button class="btn btn-outline-secondary rounded-pill px-4 shadow-sm fw-bold bg-white" onclick="window.location.reload();">
+                <i class="fa-solid fa-rotate-right me-2"></i> Atualizar Painel
             </button>
         </div>
     </div>
 
     <div class="row g-3 mb-4">
         <div class="col-md-4">
-            <div class="card border-0 shadow-sm rounded-4 bg-white p-3 border-start border-indigo border-4" style="border-left-color: #4f46e5 !important;">
-                <p class="text-muted small fw-bold mb-1 text-uppercase">Total de Entradas</p>
-                <h3 class="fw-bold text-dark mb-0">{{ resumo.total }}</h3>
+            <div class="card-kpi border-start-saas shadow-sm">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <span class="text-muted fw-bold text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">Total de Entradas</span>
+                        <h2 class="mt-2 mb-0 fw-bolder text-dark">{{ resumo.total }}</h2>
+                    </div>
+                    <div class="p-2 rounded-3 bg-indigo-light text-indigo">
+                        <i class="fa-solid fa-inbox fs-5"></i>
+                    </div>
+                </div>
             </div>
         </div>
+
         <div class="col-md-4">
-            <div class="card border-0 shadow-sm rounded-4 bg-white p-3 border-start border-warning border-4">
-                <p class="text-muted small fw-bold mb-1 text-uppercase">Aguardando Retorno</p>
-                <h3 class="fw-bold text-dark mb-0">{{ resumo.novas }}</h3>
+            <div class="card card-gradient-strategic p-4 shadow-sm h-100">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <span class="fw-bold text-uppercase text-white-50" style="font-size: 0.7rem; letter-spacing: 0.5px;">Aguardando Retorno</span>
+                        <h2 class="mt-2 mb-0 fw-bolder text-white">{{ resumo.novas }}</h2>
+                    </div>
+                    <div class="p-2 rounded-3 bg-white bg-opacity-20 text-white">
+                        <i class="fa-solid fa-clock fs-5"></i>
+                    </div>
+                </div>
+                <i class="fa-solid fa-bullhorn position-absolute end-0 bottom-0 opacity-10" style="font-size: 6rem; margin-right: -10px; margin-bottom: -10px;"></i>
             </div>
         </div>
+
         <div class="col-md-4">
-            <div class="card border-0 shadow-sm rounded-4 bg-white p-3 border-start border-success border-4">
-                <p class="text-muted small fw-bold mb-1 text-uppercase">Demandas Concluídas</p>
-                <h3 class="fw-bold text-dark mb-0">{{ resumo.resolvidas }}</h3>
+            <div class="card-kpi border-start-success shadow-sm">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <span class="text-muted fw-bold text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">Demandas Concluídas</span>
+                        <h2 class="mt-2 mb-0 fw-bolder text-dark">{{ resumo.resolvidas }}</h2>
+                    </div>
+                    <div class="p-2 rounded-3 text-success" style="background-color: #dcfce7;">
+                        <i class="fa-solid fa-circle-check fs-5"></i>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -51,13 +112,13 @@
     <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
         <div class="table-responsive" style="min-height: 50vh;">
             <table class="table table-hover align-middle mb-0 bg-white">
-                <thead class="bg-light text-muted small text-uppercase">
+                <thead>
                     <tr>
-                        <th class="ps-4 py-3 fw-bold border-0">Cidadão</th>
-                        <th class="py-3 fw-bold border-0">Solicitação</th>
-                        <th class="py-3 fw-bold border-0">Recebido em</th>
-                        <th class="py-3 fw-bold border-0 text-center">Status</th>
-                        <th class="pe-4 py-3 fw-bold border-0 text-end">Ações</th>
+                        <th class="ps-4 py-3">Cidadão</th>
+                        <th class="py-3">Solicitação / Assunto</th>
+                        <th class="py-3">Recebido em</th>
+                        <th class="py-3 text-center">Status</th>
+                        <th class="pe-4 py-3 text-end">Ações</th>
                     </tr>
                 </thead>
                 <tbody class="border-top-0">
@@ -66,12 +127,12 @@
                         
                         <td class="ps-4 py-3">
                             <div class="d-flex align-items-center gap-3">
-                                <div class="bg-indigo-light rounded-circle d-flex justify-content-center align-items-center text-indigo fw-bold" style="width: 40px; height: 40px;">
+                                <div class="avatar-demand bg-indigo-light text-indigo">
                                     {{ d.nome_solicitante[0]|upper if d.nome_solicitante else '?' }}
                                 </div>
                                 <div>
-                                    <h6 class="mb-0 fw-bold text-dark">{{ d.nome_solicitante }}</h6>
-                                    <a href="https://wa.me/55{{ d.telefone_solicitante|replace('(', '')|replace(')', '')|replace('-', '')|replace(' ', '') }}" target="_blank" class="text-decoration-none text-muted small fw-medium">
+                                    <h6 class="mb-0 fw-bolder text-dark">{{ d.nome_solicitante }}</h6>
+                                    <a href="https://wa.me/55{{ d.telefone_solicitante|replace('(', '')|replace(')', '')|replace('-', '')|replace(' ', '') }}" target="_blank" class="text-decoration-none text-muted small fw-bold">
                                         <i class="fa-brands fa-whatsapp text-success me-1"></i> {{ d.telefone_solicitante }}
                                     </a>
                                 </div>
@@ -79,22 +140,22 @@
                         </td>
                         
                         <td class="py-3" style="max-width: 300px;">
-                            <span class="d-block fw-bold text-dark text-truncate">{{ d.titulo }}</span>
+                            <span class="d-block fw-bolder text-dark text-truncate">{{ d.titulo }}</span>
                             <span class="text-muted small d-inline-block text-truncate w-100">{{ d.descricao }}</span>
                         </td>
 
                         <td class="py-3">
-                            <span class="d-block fw-medium text-dark">{{ d.data_recebimento.strftime('%d/%m/%Y') }}</span>
-                            <span class="text-muted small">{{ d.data_recebimento.strftime('%H:%M') }}</span>
+                            <span class="d-block fw-bold text-dark">{{ d.data_recebimento.strftime('%d/%m/%Y') }}</span>
+                            <span class="text-muted small fw-bold">{{ d.data_recebimento.strftime('%H:%M') }}</span>
                         </td>
                         
                         <td class="py-3 text-center">
                             {% if d.status == 'Nova' %}
-                                <span class="badge bg-warning bg-opacity-10 text-warning border-0 rounded-pill px-3 py-2 fw-bold" style="color: #d97706 !important;">
+                                <span class="badge bg-warning bg-opacity-10 text-warning border-0 rounded-pill px-3 py-2 fw-bolder" style="color: #d97706 !important;">
                                     <i class="fa-solid fa-circle-dot small me-1"></i> Pendente
                                 </span>
                             {% else %}
-                                <span class="badge bg-success bg-opacity-10 text-success border-0 rounded-pill px-3 py-2 fw-bold">
+                                <span class="badge bg-success bg-opacity-10 text-success border-0 rounded-pill px-3 py-2 fw-bolder">
                                     <i class="fa-solid fa-check me-1"></i> Concluída
                                 </span>
                             {% endif %}
@@ -102,13 +163,13 @@
                         
                         <td class="pe-4 py-3 text-end">
                             <div class="d-flex justify-content-end gap-2">
-                                <button class="btn btn-sm btn-light text-indigo fw-bold rounded-pill px-3 shadow-sm" style="border: 1px solid #4f46e5;" data-bs-toggle="modal" data-bs-target="#modalDemanda{{ d.id }}">
+                                <button class="btn btn-sm btn-outline-indigo fw-bolder rounded-pill px-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#modalDemanda{{ d.id }}">
                                     Abrir <i class="fa-solid fa-arrow-right ms-1"></i>
                                 </button>
                                 
                                 {% if d.status == 'Nova' %}
                                 <form action="{{ url_for('crm.concluir_demanda', demanda_id=d.id) }}" method="POST" class="d-inline">
-                                    <button type="submit" class="btn btn-sm btn-success fw-bold rounded-pill px-3 shadow-sm" title="Marcar como Concluída">
+                                    <button type="submit" class="btn btn-sm btn-success fw-bolder rounded-pill px-3 shadow-sm" title="Resolver">
                                         <i class="fa-solid fa-check"></i>
                                     </button>
                                 </form>
@@ -119,38 +180,37 @@
 
                     <div class="modal fade" id="modalDemanda{{ d.id }}" tabindex="-1" aria-hidden="true">
                         <div class="modal-dialog modal-dialog-centered">
-                            <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
-                                <div class="modal-header bg-light border-bottom p-4">
-                                    <h5 class="fw-bold text-dark mb-0">
-                                        <i class="fa-solid fa-file-lines text-indigo me-2"></i> Detalhes da Solicitação
+                            <div class="modal-content border-0 shadow-lg" style="border-radius: 1.5rem;">
+                                <div class="modal-header bg-dark text-white p-4 border-0">
+                                    <h5 class="fw-bolder mb-0">
+                                        <i class="fa-solid fa-file-invoice text-indigo me-2"></i> Detalhes da Demanda
                                     </h5>
-                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                                 </div>
                                 <div class="modal-body p-4">
                                     <div class="mb-4">
-                                        <p class="text-muted small fw-bold text-uppercase mb-1">Cidadão</p>
-                                        <h6 class="fw-bold text-dark mb-0">{{ d.nome_solicitante }}</h6>
-                                        <p class="small text-muted mb-0">{{ d.telefone_solicitante }} {% if d.email_solicitante %} | {{ d.email_solicitante }} {% endif %}</p>
+                                        <label class="text-muted small fw-bold text-uppercase d-block mb-1">Cidadão Solicitante</label>
+                                        <h6 class="fw-bolder text-dark mb-0 fs-5">{{ d.nome_solicitante }}</h6>
+                                        <p class="small text-muted mb-0 fw-bold">{{ d.telefone_solicitante }} {% if d.email_solicitante %} | {{ d.email_solicitante }} {% endif %}</p>
                                     </div>
                                     
                                     <div class="mb-4">
-                                        <p class="text-muted small fw-bold text-uppercase mb-1">Assunto / Título</p>
-                                        <h6 class="fw-bold text-dark">{{ d.titulo }}</h6>
+                                        <label class="text-muted small fw-bold text-uppercase d-block mb-1">Assunto</label>
+                                        <h6 class="fw-bolder text-dark">{{ d.titulo }}</h6>
                                     </div>
 
                                     <div>
-                                        <p class="text-muted small fw-bold text-uppercase mb-1">Descrição Completa</p>
-                                        <div class="p-3 bg-light rounded-3 border" style="max-height: 250px; overflow-y: auto;">
-                                            <p class="mb-0 text-dark small" style="line-height: 1.6; white-space: pre-wrap;">{{ d.descricao }}</p>
+                                        <label class="text-muted small fw-bold text-uppercase d-block mb-1">Relato Completo</label>
+                                        <div class="p-3 bg-light rounded-4 border" style="max-height: 250px; overflow-y: auto;">
+                                            <p class="mb-0 text-dark small fw-medium" style="line-height: 1.6; white-space: pre-wrap;">{{ d.descricao }}</p>
                                         </div>
                                     </div>
                                 </div>
-                                <div class="modal-footer bg-white border-top p-4 d-flex justify-content-between">
-                                    <span class="text-muted small"><i class="fa-regular fa-calendar me-1"></i> {{ d.data_recebimento.strftime('%d/%m/%Y %H:%M') }}</span>
+                                <div class="modal-footer bg-white border-top p-4 d-flex justify-content-between align-items-center">
+                                    <span class="text-muted small fw-bold"><i class="fa-regular fa-calendar me-1 text-indigo"></i> {{ d.data_recebimento.strftime('%d/%m/%Y %H:%M') }}</span>
                                     <div class="d-flex gap-2">
-                                        <button type="button" class="btn btn-outline-secondary fw-bold rounded-pill px-4" data-bs-dismiss="modal">Fechar</button>
-                                        <a href="https://wa.me/55{{ d.telefone_solicitante|replace('(', '')|replace(')', '')|replace('-', '')|replace(' ', '') }}" target="_blank" class="btn btn-success fw-bold rounded-pill px-4 shadow-sm">
-                                            <i class="fa-brands fa-whatsapp me-2"></i> WhatsApp
+                                        <a href="https://wa.me/55{{ d.telefone_solicitante|replace('(', '')|replace(')', '')|replace('-', '')|replace(' ', '') }}" target="_blank" class="btn btn-success fw-bolder rounded-pill px-4 shadow-sm">
+                                            <i class="fa-brands fa-whatsapp me-2"></i> Responder
                                         </a>
                                     </div>
                                 </div>
@@ -160,10 +220,12 @@
 
                     {% else %}
                     <tr>
-                        <td colspan="5" class="text-center py-5 text-muted">
-                            <i class="fa-solid fa-inbox fs-2 mb-3 text-light"></i>
-                            <p class="mb-0 fw-medium">Sua Caixa de Entrada está limpa.</p>
-                            <p class="small">Nenhuma demanda foi recebida pelo site até o momento.</p>
+                        <td colspan="5" class="text-center py-5">
+                            <div class="text-muted opacity-25 mb-3">
+                                <i class="fa-solid fa-inbox fa-4x"></i>
+                            </div>
+                            <h5 class="fw-bolder text-dark">Caixa de Entrada Limpa</h5>
+                            <p class="text-muted small">Nenhuma demanda foi recebida pelo site até o momento.</p>
                         </td>
                     </tr>
                     {% endfor %}
@@ -171,7 +233,6 @@
             </table>
         </div>
     </div>
-
 </div>
 
 {% endblock %}

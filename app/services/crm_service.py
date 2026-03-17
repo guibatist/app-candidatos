@@ -505,16 +505,22 @@ class CRMService:
     def gerar_resumo_dashboard(cliente_id):
         conn = get_db_connection()
         resumo = {
-            'kpis': {'total': 0, 'potencial_votos': 0, 'multiplicadores': 0, 'ativos_total': 0,
-                     'demandas_novas': 0, 'demandas_total': 0,
-                     'tarefas_pendentes': 0, 'tarefas_concluidas': 0, 'tarefas_atrasadas': 0},
-            'grafico_crescimento': {}, 'grafico_missoes': {}, 'grafico_bairros': {}, 'grafico_demografia': {}
+            'kpis': {
+                'total': 0, 'potencial_votos': 0, 'multiplicadores': 0, 'ativos_total': 0,
+                'demandas_novas': 0, 'demandas_total': 0,
+                'tarefas_pendentes': 0, 'tarefas_concluidas': 0, 'tarefas_atrasadas': 0
+            },
+            'grafico_crescimento': {}, 
+            'grafico_missoes': {
+                'Concluídas': 0, 'Pendentes': 0, 'Atrasadas': 0  # Inicialização fixa
+            }, 
+            'grafico_bairros': {}, 
+            'grafico_demografia': {}
         }
 
         try:
             with conn.cursor() as cursor:
-                # 1. KPIs Base e Potencial de Votos REAIS
-                # Lógica: Soma (votos_familia + 1) para cada apoiador. COALESCE garante que vazio vire 0.
+                # 1. KPIs Base e Potencial de Votos
                 cursor.execute("""
                     SELECT 
                         COUNT(id) as total, 
@@ -522,27 +528,40 @@ class CRMService:
                     FROM apoiadores 
                     WHERE cliente_id = %s
                 """, (cliente_id,))
-                
+
                 row = cursor.fetchone()
                 resumo['kpis']['total'] = row[0] or 0
                 resumo['kpis']['potencial_votos'] = int(row[1] or 0)
 
-                # 2. Missões (Pizza) - Tradução rigorosa para as cores baterem
-                cursor.execute("SELECT status, COUNT(*) FROM tarefas WHERE cliente_id = %s GROUP BY status", (cliente_id,))
+                # NOVO: Busca de demandas externas (Gabinete Digital)
+                cursor.execute("SELECT COUNT(*) FROM demandas_site WHERE cliente_id = %s", (cliente_id,))
+                resumo['kpis']['demandas_total'] = cursor.fetchone()[0] or 0
+
+                # 2. Gestão de Tarefas (Filtro Crítico: tipo != 'Aviso de Sistema')
+                # Isso garante que apenas as demandas reais entrem no cálculo de desempenho.
+                cursor.execute("""
+                    SELECT status, COUNT(*) 
+                    FROM tarefas 
+                    WHERE cliente_id = %s 
+                    AND tipo != 'Aviso de Sistema' 
+                    GROUP BY status
+                """, (cliente_id,))
+                
                 for row in cursor.fetchall():
                     status_raw = str(row[0]).lower().strip()
                     qtd = int(row[1])
-                    if status_raw == 'concluida':
+                    
+                    if status_raw in ['concluida', 'concluído']:
                         resumo['grafico_missoes']['Concluídas'] = qtd
                         resumo['kpis']['tarefas_concluidas'] = qtd
                     elif status_raw == 'atrasada':
                         resumo['grafico_missoes']['Atrasadas'] = qtd
                         resumo['kpis']['tarefas_atrasadas'] = qtd
-                    else: # pendente ou qualquer outro
+                    elif status_raw == 'pendente':
                         resumo['grafico_missoes']['Pendentes'] = qtd
                         resumo['kpis']['tarefas_pendentes'] = qtd
 
-                # 3. Bairros (Voltando a busca flexível para não sumir)
+                # 3. Densidade por Bairro
                 cursor.execute("""
                     SELECT bairro, COUNT(*) FROM apoiadores 
                     WHERE cliente_id = %s AND bairro IS NOT NULL AND bairro != '' 
@@ -550,7 +569,7 @@ class CRMService:
                 """, (cliente_id,))
                 resumo['grafico_bairros'] = {str(r[0]): int(r[1]) for r in cursor.fetchall()}
 
-                # 4. Demografia
+                # 4. Perfil Demográfico
                 cursor.execute("""
                     SELECT faixa_etaria, sexo, COUNT(*) FROM apoiadores 
                     WHERE cliente_id = %s AND faixa_etaria != '' AND sexo != ''
@@ -562,20 +581,16 @@ class CRMService:
                     if sexo in ['masculino', 'm']: resumo['grafico_demografia'][faixa][0] += qtd
                     if sexo in ['feminino', 'f']: resumo['grafico_demografia'][faixa][1] += qtd
 
-                # ==========================================
-                # 5. Crescimento (Com a coluna correta: created_at)
-                # ==========================================
+                # 5. Evolução da Base (created_at)
                 hoje = datetime.now()
-                # Cria a base de 7 dias zerados para o gráfico nunca sumir da tela
                 dias_zerados = {(hoje - timedelta(days=i)).strftime('%d/%m'): 0 for i in range(6, -1, -1)}
                 resumo['grafico_crescimento'] = dias_zerados
 
-                # Se a sua coluna for data_cadastro, troque as 4 palavras 'created_at' abaixo por 'data_cadastro'
                 cursor.execute("""
                     SELECT TO_CHAR(created_at, 'DD/MM') as dia, COUNT(*) 
                     FROM apoiadores 
                     WHERE cliente_id = %s 
-                      AND created_at >= CURRENT_DATE - INTERVAL '6 days'
+                    AND created_at >= CURRENT_DATE - INTERVAL '6 days'
                     GROUP BY dia, DATE_TRUNC('day', created_at)
                     ORDER BY DATE_TRUNC('day', created_at) ASC
                 """, (cliente_id,))
@@ -587,7 +602,7 @@ class CRMService:
 
             return resumo
         except Exception as e:
-            print(f"Erro B.I.: {e}")
+            print(f"[BI-ERROR] Erro ao processar dashboard: {e}")
             return resumo
         finally:
             conn.close()

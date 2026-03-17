@@ -2,90 +2,133 @@
 {% block content %}
 
 <style>
-    .card-premium { border: none; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); background: #fff; }
-    .table > :not(caption) > * > * { padding: 1rem 1.5rem; border-bottom-color: #f1f5f9; }
-    .role-badge { font-size: 0.75rem; letter-spacing: 0.5px; font-weight: 700; text-transform: uppercase; }
-    /* Efeito hover no botão de chat */
-    .btn-chat { transition: all 0.3s; }
-    .btn-chat:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(79, 70, 229, 0.3) !important; }
+    /* === VOTAHUB PREMIUM TEAM DESIGN === */
+    .text-indigo { color: #4f46e5 !important; }
+    .bg-indigo-light { background-color: rgba(79, 70, 229, 0.1) !important; }
+    .btn-indigo { background-color: #4f46e5; color: white; border: none; font-weight: 700; }
+    .btn-indigo:hover { background-color: #3f36c5; color: white; transform: translateY(-1px); }
+    .btn-outline-indigo { color: #4f46e5; border-color: #4f46e5; font-weight: 700; }
+    .btn-outline-indigo:hover { background-color: #4f46e5; color: white; }
+
+    /* Card e Tabela */
+    .card-team { border: none; border-radius: 1.25rem; box-shadow: 0 4px 15px rgba(0,0,0,0.05); overflow: hidden; }
+    .table thead th { background-color: #f8fafc; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; font-weight: 800; color: #64748b; border-bottom: none; }
+    
+    /* Status Dot Animation */
+    .status-indicator {
+        height: 8px; width: 8px; border-radius: 50%; display: inline-block;
+        box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+    }
+    
+    .role-badge-premium {
+        font-size: 0.7rem; font-weight: 800; text-transform: uppercase;
+        letter-spacing: 0.5px; border-radius: 30px; padding: 6px 14px;
+    }
+
+    /* Avatar Circle */
+    .avatar-circle {
+        width: 42px; height: 42px; border-radius: 12px;
+        display: flex; align-items: center; justify-content: center;
+        font-weight: 800; font-size: 1.1rem;
+    }
 </style>
 
 <div class="container-fluid py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-end mb-4 pb-2 border-bottom" style="border-color: #e2e8f0 !important;">
         <div>
-            <h2 class="fw-bold mb-0">Equipe de Campanha</h2>
-            <p class="text-muted mb-0 mt-1">
+            <h2 class="fw-bolder text-dark mb-1" style="letter-spacing: -0.5px;">Equipe de Campanha</h2>
+            <span class="text-muted" style="font-size: 0.95rem;">
                 {% if role_logado == 'candidato' %}
-                    Visão geral de todos os seus assessores e mobilizadores.
+                    Gestão tática de assessores e mobilizadores.
                 {% else %}
-                    Comunicação e alinhamento com a sua equipe e candidato.
+                    Alinhamento estratégico com equipe e candidato.
                 {% endif %}
-            </p>
+            </span>
         </div>
-        <div>
-            <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-2 rounded-pill fw-bold shadow-sm">
-                <i class="fa-solid fa-network-wired me-1"></i> Conectado
+        <div class="mt-3 mt-md-0">
+            <span class="badge bg-white text-indigo border shadow-sm px-3 py-2 rounded-pill fw-bolder">
+                <i class="fa-solid fa-signal me-1"></i> Central de Comando Ativa
             </span>
         </div>
     </div>
 
-    <div class="card card-premium overflow-hidden">
+    <div class="card card-team bg-white">
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0">
-                <thead class="bg-light">
+                <thead>
                     <tr>
-                        <th class="text-muted small fw-bold ps-4">NOME DO MEMBRO</th>
-                        <th class="text-muted small fw-bold">CONTATO</th>
-                        <th class="text-muted small fw-bold">HIERARQUIA</th>
-                        <th class="text-muted small fw-bold text-end pe-4">AÇÃO</th>
+                        <th class="ps-4 py-3">Membro da Equipe</th>
+                        <th class="py-3">E-mail e Contato</th>
+                        <th class="py-3">Nível Hierárquico</th>
+                        <th class="pe-4 py-3 text-end">Ações</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for membro in equipe %}
                     <tr class="{% if membro.role == 'candidato' %}bg-warning bg-opacity-10{% endif %}">
-                        <td class="ps-4">
-                            <div class="fw-bold text-dark d-flex align-items-center">
-                                {{ membro.nome }}
-                                {% if membro.status == 'ativo' %}
-                                    <span class="ms-2 text-success" title="Online/Ativo"><i class="fa-solid fa-circle" style="font-size: 8px;"></i></span>
-                                {% endif %}
+                        <td class="ps-4 py-4">
+                            <div class="d-flex align-items-center">
+                                <div class="avatar-circle {% if membro.role == 'candidato' %}bg-warning bg-opacity-25 text-warning{% else %}bg-indigo-light text-indigo{% endif %} me-3">
+                                    {{ membro.nome[0]|upper }}
+                                </div>
+                                <div>
+                                    <div class="fw-bolder text-dark d-flex align-items-center fs-6">
+                                        {{ membro.nome }}
+                                        {% if membro.status == 'ativo' %}
+                                            <span class="ms-2 bg-success status-indicator" title="Ativo no sistema"></span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="small text-muted fw-bold">ID: {{ membro.id[:8] }}</div>
+                                </div>
                             </div>
-                            <div class="small text-muted">ID: {{ membro.id[:8] }}...</div>
                         </td>
-                        <td>
-                            <div class="fw-semibold text-dark">{{ membro.email }}</div>
-                            <div class="small text-muted">{{ membro.telefone or 'Sem telefone' }}</div>
+                        <td class="py-4">
+                            <div class="fw-bold text-dark">{{ membro.email }}</div>
+                            <div class="small text-muted fw-medium"><i class="fa-solid fa-phone-flip me-1"></i> {{ membro.telefone or 'Não cadastrado' }}</div>
                         </td>
-                        <td>
+                        <td class="py-4">
                             {% if membro.role == 'candidato' %}
-                                <span class="badge bg-warning text-dark role-badge px-3 py-2 rounded-pill shadow-sm border border-warning">
-                                    <i class="fa-solid fa-star me-1"></i> Líder da Campanha
+                                <span class="badge role-badge-premium bg-warning text-dark border border-warning shadow-sm">
+                                    <i class="fa-solid fa-crown me-1"></i> Líder da Campanha
                                 </span>
                             {% else %}
-                                <span class="badge bg-primary bg-opacity-10 text-primary role-badge px-3 py-2 rounded-pill">
-                                    {{ membro.role }}
+                                <span class="badge role-badge-premium bg-indigo-light text-indigo border border-indigo border-opacity-25">
+                                    <i class="fa-solid fa-user-tie me-1"></i> {{ membro.role|upper }}
                                 </span>
                             {% endif %}
                         </td>
-                        <td class="text-end pe-4">
-                            <a href="/crm/chat/{{ membro.id }}" class="btn btn-sm btn-primary btn-chat rounded-pill px-4 shadow-sm fw-bold">
-                                <i class="fa-solid fa-comment-dots me-1"></i> Mensagem
+                        <td class="text-end pe-4 py-4">
+                            <a href="/crm/chat/{{ membro.id }}" class="btn btn-sm btn-outline-indigo rounded-pill px-4 shadow-sm fw-bolder">
+                                <i class="fa-solid fa-comment-dots me-1"></i> Abrir Chat
                             </a>
                         </td>
                     </tr>
                     {% else %}
                     <tr>
                         <td colspan="4" class="text-center py-5">
-                            <div class="text-muted opacity-50 mb-3">
-                                <i class="fa-solid fa-user-group fa-3x"></i>
+                            <div class="text-muted opacity-25 mb-3">
+                                <i class="fa-solid fa-user-group fa-4x"></i>
                             </div>
-                            <h5 class="fw-bold text-dark">Nenhum membro encontrado</h5>
-                            <p class="text-muted mb-0">Não há outros usuários atrelados a esta campanha.</p>
+                            <h5 class="fw-bolder text-dark">Nenhum membro vinculado</h5>
+                            <p class="text-muted small">Não há outros usuários ativos nesta campanha.</p>
                         </td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
+        </div>
+    </div>
+
+    <div class="mt-4 p-4 bg-light rounded-4 border-start border-indigo border-5">
+        <div class="d-flex align-items-center">
+            <div class="text-indigo me-3">
+                <i class="fa-solid fa-circle-info fs-3"></i>
+            </div>
+            <div>
+                <h6 class="fw-bolder text-dark mb-1">Dica de Gestão</h6>
+                <p class="text-muted small mb-0">Utilize o chat interno para despachar demandas e garantir que todas as missões do Dashboard sejam cumpridas no prazo.</p>
+            </div>
         </div>
     </div>
 </div>

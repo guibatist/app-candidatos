@@ -4,63 +4,62 @@
 <style>
     /* === VOTAHUB PREMIUM PROFILE DESIGN === */
     :root { 
-        --indigo-primary: #4f46e5; 
-        --indigo-hover: #4338ca; 
+        --vh-primary: #4f46e5; 
+        --vh-primary-dark: #3730a3;
         --slate-200: #e2e8f0;
     }
     
-    .text-indigo { color: var(--indigo-primary) !important; }
-    .bg-indigo { background-color: var(--indigo-primary) !important; }
-    .btn-indigo { background-color: var(--indigo-primary); color: white; border: none; transition: all 0.2s; }
-    .btn-indigo:hover { background-color: var(--indigo-hover) !important; color: white !important; transform: translateY(-1px); }
+    .text-indigo { color: var(--vh-primary) !important; }
+    .bg-indigo-light { background-color: rgba(79, 70, 229, 0.1) !important; }
     
-    .card-profile { border: none; border-radius: 20px; height: 100%; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-    .info-label { font-size: 0.65rem; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 2px; }
-    .info-value { font-weight: 700; color: #1e293b; font-size: 0.95rem; }
-
-    /* Botão Voltar SaaS */
     .btn-back-hub { 
         background: #fff; border: 1px solid var(--slate-200); color: #64748b; 
         font-weight: 700; padding: 10px 20px; border-radius: 12px; transition: all 0.2s;
         display: inline-flex; align-items: center; text-decoration: none; font-size: 0.85rem;
     }
-    .btn-back-hub:hover { border-color: var(--indigo-primary); color: var(--indigo-primary); transform: translateX(-4px); }
+    .btn-back-hub:hover { border-color: var(--vh-primary); color: var(--vh-primary); transform: translateX(-4px); }
 
-    /* Estilo das Notas e Histórico */
-    .modal-scroll, .history-scroll { max-height: 480px; overflow-y: auto; padding-right: 12px; }
-    .note-bubble { background: #f8fafc; border-radius: 16px; padding: 15px; border-left: 5px solid var(--slate-200); margin-bottom: 15px; transition: 0.2s; }
-    .note-bubble:hover { border-left-color: var(--indigo-primary); background: #f1f5f9; }
+    .card-profile { border: none; border-radius: 1.25rem; height: 100%; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+    .info-label { font-size: 0.7rem; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 4px; }
+    .info-value { font-weight: 700; color: #1e293b; font-size: 0.95rem; }
+
+    .note-bubble { background: #f8fafc; border-radius: 16px; padding: 15px; border-left: 5px solid var(--slate-200); margin-bottom: 15px; }
+    .note-bubble:hover { border-left-color: var(--vh-primary); background: #f1f5f9; }
     
     .tag-pauta { background-color: #eef2ff !important; color: #4338ca !important; border: 1px solid #c7d2fe !important; padding: 5px 12px; font-weight: 600; font-size: 0.75rem; border-radius: 30px; }
 
-    /* Estilo Premium para Modais */
-    .modal-content { border-radius: 24px; border: none; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); }
-    .modal-section-title { font-size: 0.75rem; font-weight: 800; color: var(--indigo-primary); text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; margin-top: 1.5rem; margin-bottom: 1rem; }
-    .modal-section-title::after { content: ""; flex: 1; height: 1px; background: #e2e8f0; margin-left: 15px; }
-    
-    .form-control-premium { background-color: #f1f5f9 !important; border: 2px solid transparent !important; border-radius: 12px; padding: 12px 15px; font-weight: 500; transition: all 0.2s; }
-    .form-control-premium:focus { background-color: #ffffff !important; border-color: var(--indigo-primary) !important; box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1) !important; }
+    /* Estilo do Card Roxo Gradiente (Potencial de Votos) */
+    .card-gradient-votos {
+        background: linear-gradient(135deg, var(--vh-primary), var(--vh-primary-dark));
+        color: white;
+        border: none;
+        border-radius: 1.25rem;
+        position: relative;
+        overflow: hidden;
+    }
 
-    /* Lista de Tarefas do Modal */
-    .task-card { transition: all 0.2s; border-radius: 16px; border: 1px solid var(--slate-200); }
-    .task-card:hover { border-color: var(--indigo-primary); transform: translateY(-2px); box-shadow: 0 10px 25px -5px rgba(79, 70, 229, 0.15); }
+    .form-control-premium { background-color: #f1f5f9 !important; border: 2px solid transparent !important; border-radius: 12px; padding: 12px 15px; font-weight: 600; }
+    .form-control-premium:focus { border-color: var(--vh-primary) !important; background-color: #fff !important; }
+    
+    .btn-indigo { background-color: var(--vh-primary); color: white; border: none; font-weight: 700; }
+    .btn-indigo:hover { background-color: var(--vh-primary-dark); color: white; }
 </style>
 
 <div class="container-fluid py-4">
     
-    <div class="d-flex justify-content-between align-items-center mb-5">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-end mb-4 pb-3 border-bottom" style="border-color: #e2e8f0 !important;">
         <div>
-            <a href="{{ url_for('crm.listar_apoiadores') }}" class="btn-back-hub mb-3">
-                <i class="fa-solid fa-arrow-left me-2"></i> Base Geral de Apoio
+            <a href="{{ url_for('crm.listar_apoiadores') }}" class="btn-back-hub mb-3 shadow-sm">
+                <i class="fa-solid fa-arrow-left me-2"></i> Voltar à Base
             </a>
-            <h2 class="fw-bold text-dark mb-0">{{ apoiador.nome }}</h2>
+            <h2 class="fw-bolder text-dark mb-0" style="letter-spacing: -1px;">{{ apoiador.nome }}</h2>
             <div class="d-flex align-items-center gap-3 mt-2">
                 {% if apoiador.grau_apoio == 'Liderança' %}
                     <span class="badge rounded-pill px-3 py-2 fw-bold" style="background-color: #f3e8ff; color: #7c3aed;">
                         <i class="fa-solid fa-crown me-1"></i> Liderança
                     </span>
                 {% elif apoiador.grau_apoio == 'Apoiador' %}
-                    <span class="badge bg-info bg-opacity-10 text-info rounded-pill px-3 py-2 fw-bold" style="color: #0ea5e9 !important;">
+                    <span class="badge bg-info bg-opacity-10 text-info rounded-pill px-3 py-2 fw-bold">
                         Apoiador
                     </span>
                 {% else %}
@@ -68,14 +67,14 @@
                         Simpatizante
                     </span>
                 {% endif %}
-                <span class="text-muted small fw-bold">• Origem: {{ apoiador.origem_cadastro or 'Direto' }}</span>
+                <span class="text-muted small fw-bold"><i class="fa-solid fa-bullseye me-1"></i> Origem: {{ apoiador.origem_cadastro or 'Direto' }}</span>
             </div>
         </div>
-        <div class="d-flex gap-3">
-            <button class="btn btn-white border-2 border-light shadow-sm rounded-pill px-4 fw-bold" data-bs-toggle="modal" data-bs-target="#modalEditarPerfil">
+        <div class="d-flex gap-2 mt-3 mt-md-0">
+            <button class="btn btn-outline-secondary rounded-pill px-4 fw-bold shadow-sm bg-white" data-bs-toggle="modal" data-bs-target="#modalEditarPerfil">
                 <i class="fa-solid fa-user-pen me-2 text-primary"></i> Editar Perfil
             </button>
-            <a href="https://wa.me/55{{ apoiador.telefone|replace('(', '')|replace(')', '')|replace('-', '')|replace(' ', '') }}" target="_blank" class="btn btn-success rounded-pill px-4 fw-bold shadow-lg">
+            <a href="https://wa.me/55{{ apoiador.telefone|replace('(', '')|replace(')', '')|replace('-', '')|replace(' ', '') }}" target="_blank" class="btn btn-success rounded-pill px-4 fw-bold shadow-sm">
                 <i class="fa-brands fa-whatsapp me-2"></i> WhatsApp
             </a>
         </div>
@@ -84,58 +83,88 @@
     <div class="row g-4 mb-4">
         <div class="col-lg-4">
             <div class="card card-profile p-4 bg-white">
-                <h6 class="fw-bold text-dark mb-4"><i class="fa-solid fa-id-card text-indigo me-2"></i>Demografia</h6>
+                <h6 class="fw-bolder text-dark mb-4 text-uppercase"><i class="fa-solid fa-id-card text-indigo me-2"></i>Perfil Pessoal</h6>
                 <div class="row g-3">
-                    <div class="col-6"><label class="info-label">WhatsApp</label><div class="info-value">{{ apoiador.telefone or '-' }}</div></div>
-                    <div class="col-6"><label class="info-label">Sexo/Idade</label><div class="info-value">{{ apoiador.sexo or '-' }}/{{ apoiador.faixa_etaria or '-' }}</div></div>
-                    <div class="col-12"><label class="info-label">Renda/Instrução</label><div class="info-value">{{ apoiador.renda_familiar or '-' }} • {{ apoiador.grau_instrucao or '-' }}</div></div>
+                    <div class="col-6">
+                        <label class="info-label">WhatsApp</label>
+                        <div class="info-value">{{ apoiador.telefone or '-' }}</div>
+                    </div>
+                    <div class="col-6">
+                        <label class="info-label">Sexo / Idade</label>
+                        <div class="info-value">{{ apoiador.sexo or '-' }} • {{ apoiador.faixa_etaria or '-' }}</div>
+                    </div>
+                    <div class="col-12">
+                        <label class="info-label">Renda / Instrução</label>
+                        <div class="info-value">{{ apoiador.renda_familiar or '-' }} • {{ apoiador.grau_instrucao or '-' }}</div>
+                    </div>
+                    <div class="col-12">
+                        <label class="info-label">Posicionamento Político</label>
+                        <div class="info-value"><span class="badge bg-light text-dark border">{{ apoiador.posicionamento_politico or 'Não informado' }}</span></div>
+                    </div>
                 </div>
             </div>
         </div>
 
         <div class="col-lg-4">
-            <div class="card card-profile p-4 bg-white border-top border-4 border-danger">
-                <h6 class="fw-bold text-dark mb-4"><i class="fa-solid fa-map-location-dot text-danger me-2"></i>Endereço</h6>
-                <div class="info-value mb-1">{{ apoiador.logradouro or 'Não informado' }}, {{ apoiador.numero }}</div>
-                <small class="text-muted d-block mb-3">{{ apoiador.bairro }} | {{ apoiador.cidade }}-{{ apoiador.uf }}</small>
-                <label class="info-label">Indicado por</label>
-                <div class="info-value text-indigo small"><i class="fa-solid fa-handshake-angle me-1"></i> {{ apoiador.indicado_por or 'Direto' }}</div>
+            <div class="card card-profile p-4 bg-white border-start border-danger border-5">
+                <h6 class="fw-bolder text-dark mb-4 text-uppercase"><i class="fa-solid fa-map-location-dot text-danger me-2"></i>Localização</h6>
+                <div class="info-value mb-1 fs-5">{{ apoiador.logradouro or 'Não informado' }}, {{ apoiador.numero }}</div>
+                <div class="info-value text-muted mb-3">{{ apoiador.bairro }} | {{ apoiador.cidade }}-{{ apoiador.uf }}</div>
+                
+                <hr class="opacity-10">
+                
+                <label class="info-label">Indicado por (Referência)</label>
+                <div class="info-value text-indigo fw-bold"><i class="fa-solid fa-handshake-angle me-1"></i> {{ apoiador.indicado_por or 'Direto / Próprio' }}</div>
             </div>
         </div>
 
         <div class="col-lg-4">
-            <div class="card card-profile p-4 bg-white border-top border-4 border-warning">
-                <h6 class="fw-bold text-dark mb-3"><i class="fa-solid fa-fire text-warning me-2"></i>Ativos & Pautas</h6>
-                <div class="d-flex flex-wrap gap-2 mb-3">
-                    {% if apoiador.oferece_muro %}<span class="badge bg-success rounded-pill px-3 py-2 fw-bold"><i class="fa-solid fa-paint-roller me-2"></i>Muro</span>{% endif %}
-                    {% if apoiador.oferece_carro %}<span class="badge bg-primary rounded-pill px-3 py-2 fw-bold"><i class="fa-solid fa-car me-2"></i>Carro</span>{% endif %}
+            <div class="card card-gradient-votos p-4 h-100 shadow-sm">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <span class="fw-bold text-uppercase text-white-50" style="font-size: 0.7rem; letter-spacing: 0.5px;">Potencial de Votos</span>
+                        <h1 class="display-2 fw-bolder text-white mt-2 mb-0">{{ (apoiador.votos_familia or 0) + 1 }}</h1>
+                        <p class="small text-white-50 mt-1 fw-bold">Influência total estimada</p>
+                    </div>
+                    <div class="p-3 rounded-4 bg-white bg-opacity-20 text-white">
+                        <i class="fa-solid fa-users fs-3"></i>
+                    </div>
                 </div>
-                <div class="d-flex flex-wrap gap-1">
-                    {% if apoiador.tags %}
-                        {% set pautas = apoiador.tags if apoiador.tags is iterable and apoiador.tags is not string else apoiador.tags.split(',') %}
-                        {% for tag in pautas %}{% if tag %}<span class="badge tag-pauta">{{ tag }}</span>{% endif %}{% endfor %}
-                    {% endif %}
-                </div>
+                <i class="fa-solid fa-users position-absolute end-0 bottom-0 opacity-10" style="font-size: 7rem; margin-right: -15px; margin-bottom: -15px;"></i>
             </div>
         </div>
     </div>
 
     <div class="row g-4 mb-4">
         <div class="col-lg-4">
-            <div class="card card-profile p-4 bg-indigo text-white position-relative overflow-hidden">
-                <label class="small fw-bold text-uppercase opacity-75">Potencial de Votos na Casa</label>
-                <h1 class="display-2 fw-bold mb-0">{{ apoiador.votos_familia or 1 }}</h1>
-                <i class="fa-solid fa-users position-absolute end-0 bottom-0 opacity-25" style="font-size: 8rem; margin-right: -10px; margin-bottom: -10px;"></i>
+            <div class="card card-profile p-4 bg-white border-start border-warning border-5">
+                <h6 class="fw-bolder text-dark mb-3 text-uppercase"><i class="fa-solid fa-fire text-warning me-2"></i>Ativos & Pautas</h6>
+                <label class="info-label d-block mb-2">Estrutura de Apoio</label>
+                <div class="d-flex flex-wrap gap-2 mb-4">
+                    {% if apoiador.oferece_muro %}<span class="badge bg-success rounded-pill px-3 py-2 fw-bold"><i class="fa-solid fa-paint-roller me-1"></i> Muro</span>{% endif %}
+                    {% if apoiador.oferece_carro %}<span class="badge bg-primary rounded-pill px-3 py-2 fw-bold"><i class="fa-solid fa-car me-1"></i> Carro</span>{% endif %}
+                    {% if not apoiador.oferece_muro and not apoiador.oferece_carro %}<span class="text-muted small italic">Nenhum ativo físico.</span>{% endif %}
+                </div>
+                
+                <label class="info-label d-block mb-2">Temas de Interesse</label>
+                <div class="d-flex flex-wrap gap-1">
+                    {% if apoiador.tags %}
+                        {% set pautas = apoiador.tags if apoiador.tags is iterable and apoiador.tags is not string else apoiador.tags.split(',') %}
+                        {% for tag in pautas %}{% if tag %}<span class="badge tag-pauta">{{ tag }}</span>{% endif %}{% endfor %}
+                    {% else %}
+                        <span class="text-muted small">Nenhuma pauta marcada.</span>
+                    {% endif %}
+                </div>
             </div>
         </div>
         
         <div class="col-lg-8">
             <div class="card card-profile p-4 bg-white">
                 <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h5 class="fw-bold text-dark mb-0">Gestão de Missões</h5>
+                    <h5 class="fw-bolder text-dark mb-0">Gestão de Missões Operacionais</h5>
                     <div class="d-flex gap-2">
-                        <button class="btn btn-white border-2 fw-bold rounded-pill px-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#modalHistoricoTarefas">
-                            <i class="fa-solid fa-list-check me-2 text-primary"></i> Ver Lista
+                        <button class="btn btn-outline-secondary fw-bold rounded-pill px-3 shadow-sm bg-white" data-bs-toggle="modal" data-bs-target="#modalHistoricoTarefas">
+                            <i class="fa-solid fa-list-check me-2 text-indigo"></i> Ver Lista
                         </button>
                         <button class="btn btn-indigo rounded-pill px-4 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#modalNovaTarefa">
                             <i class="fa-solid fa-plus me-2"></i> Criar Tarefa
@@ -143,9 +172,24 @@
                     </div>
                 </div>
                 <div class="row g-3">
-                    <div class="col-md-4"><div class="p-3 bg-light rounded-4 text-center"><label class="info-label d-block mb-1">Total</label><h4 class="fw-bold mb-0 text-dark">{{ resumo.total or 0 }}</h4></div></div>
-                    <div class="col-md-4"><div class="p-3 bg-light rounded-4 text-center border-start border-primary border-4"><label class="info-label d-block mb-1 text-primary">Pendentes</label><h4 class="fw-bold text-primary mb-0">{{ resumo.pendentes or 0 }}</h4></div></div>
-                    <div class="col-md-4"><div class="p-3 bg-light rounded-4 text-center border-start border-danger border-4"><label class="info-label d-block mb-1 text-danger">Atrasadas</label><h4 class="fw-bold text-danger mb-0">{{ resumo.atrasadas or 0 }}</h4></div></div>
+                    <div class="col-md-4">
+                        <div class="p-3 bg-light rounded-4 text-center">
+                            <label class="info-label d-block mb-1">Total</label>
+                            <h4 class="fw-bolder mb-0 text-dark">{{ resumo.total or 0 }}</h4>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-3 bg-indigo-light rounded-4 text-center border-start border-primary border-5">
+                            <label class="info-label d-block mb-1 text-primary">Pendentes</label>
+                            <h4 class="fw-bolder text-primary mb-0">{{ resumo.pendentes or 0 }}</h4>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-3 bg-danger bg-opacity-10 rounded-4 text-center border-start border-danger border-5">
+                            <label class="info-label d-block mb-1 text-danger">Atrasadas</label>
+                            <h4 class="fw-bolder text-danger mb-0">{{ resumo.atrasadas or 0 }}</h4>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -155,13 +199,13 @@
         <div class="col-12">
             <div class="card card-profile p-4 bg-white shadow-sm">
                 <div class="d-flex justify-content-between align-items-center mb-5">
-                    <h5 class="fw-bold text-dark mb-0">Linha do Tempo de Contatos</h5>
-                    <button class="btn btn-indigo btn-sm rounded-pill px-4 fw-bold" data-bs-toggle="collapse" data-bs-target="#collapseNota"><i class="fa-solid fa-pen me-2"></i>Nova Nota</button>
+                    <h5 class="fw-bolder text-dark mb-0">Linha do Tempo de Contatos</h5>
+                    <button class="btn btn-indigo btn-sm rounded-pill px-4 fw-bolder" data-bs-toggle="collapse" data-bs-target="#collapseNota"><i class="fa-solid fa-pen me-2"></i>Nova Nota</button>
                 </div>
                 
                 <div class="collapse mb-4" id="collapseNota">
                     <form action="{{ url_for('crm.registrar_interacao', apoiador_id=apoiador.id) }}" method="POST" class="p-4 bg-light rounded-4 border">
-                        <textarea name="conteudo" class="form-control border-0 mb-3 shadow-sm" rows="3" placeholder="O que foi conversado?" required></textarea>
+                        <textarea name="conteudo" class="form-control border-0 mb-3 shadow-sm py-3" rows="3" placeholder="O que foi conversado ou qual a demanda?" required></textarea>
                         <div class="d-flex justify-content-between align-items-center">
                             <select name="tipo" class="form-select form-select-sm w-auto border-0 bg-white shadow-sm rounded-pill px-4">
                                 <option value="Nota">📝 Nota Geral</option>
@@ -173,11 +217,11 @@
                     </form>
                 </div>
 
-                <div class="history-scroll pe-2">
+                <div class="history-scroll pe-2" style="max-height: 500px; overflow-y: auto;">
                     {% for item in interacoes %}
                     <div class="note-bubble shadow-sm">
                         <div class="d-flex justify-content-between align-items-center mb-2">
-                            <span class="small fw-bold text-indigo"><i class="fa-solid fa-user-circle me-1"></i> {{ item.usuario_nome or 'Sistema' }}</span>
+                            <span class="small fw-bolder text-indigo"><i class="fa-solid fa-user-circle me-1"></i> {{ item.usuario_nome or 'Sistema' }}</span>
                             <span class="text-muted" style="font-size: 0.75rem;">{{ item.data_registro.strftime('%d/%m/%Y %H:%M') }}</span>
                         </div>
                         <div class="note-text fw-medium text-dark">{{ item.conteudo }}</div>
@@ -186,133 +230,7 @@
                     {% else %}
                     <div class="text-center py-5 text-muted opacity-50">
                         <i class="fa-solid fa-comment-slash fa-3x mb-3"></i>
-                        <p>Nenhum histórico registrado para este apoiador.</p>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" id="modalNovaTarefa" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content overflow-hidden">
-            <div class="modal-header bg-indigo text-white border-0 p-4">
-                <h5 class="fw-bold mb-0">Nova Tarefa</h5>
-                <button type="button" class="btn-close btn-close-white shadow-none" data-bs-dismiss="modal"></button>
-            </div>
-            <form action="{{ url_for('crm.criar_tarefa_perfil', apoiador_id=apoiador.id) }}" method="POST">
-                <div class="modal-body p-4">
-                    <div class="mb-3">
-                        <label class="info-label">Tipo de Ação</label>
-                        <select name="tipo" class="form-select form-control-premium" required>
-                            <option value="Visita Técnica">Visita Presencial</option>
-                            <option value="Entrega de Material">Entrega de Material</option>
-                            <option value="Ligação / WhatsApp">Ligação / WhatsApp</option>
-                            <option value="Reunião">Reunião / Café</option>
-                            <option value="Convite Evento">Convite para Evento</option>
-                        </select>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label class="info-label">Delegar para Assessor</label>
-                        <select name="assessor_id" class="form-select form-control-premium" required>
-                            <option value="" disabled selected>Escolha o responsável...</option>
-                            {% for u in assessores %}
-                                <option value="{{ u.id }}">{{ u.nome }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="info-label">Data Limite (Prazo)</label>
-                        <input type="date" name="data_limite" class="form-control form-control-premium" required value="{{ agora.strftime('%Y-%m-%d') if agora else '' }}">
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="info-label">Instruções / Detalhes</label>
-                        <textarea name="descricao" class="form-control form-control-premium" rows="3" placeholder="O que o assessor precisa saber para cumprir essa missão?"></textarea>
-                    </div>
-
-                    <button type="submit" class="btn btn-indigo w-100 rounded-pill py-3 fw-bold mt-2 shadow-lg">
-                        <i class="fa-solid fa-paper-plane me-2"></i>Enviar para o Radar do Assessor
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" id="modalHistoricoTarefas" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content bg-light">
-            <div class="modal-header border-0 p-4 pb-0">
-                <h4 class="fw-bold text-dark d-flex align-items-center">
-                    <i class="fa-solid fa-list-check text-indigo me-2"></i> Lista de Missões
-                </h4>
-                <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body p-4 pt-3">
-                <div class="modal-scroll pe-2">
-                    {% for t in tarefas_vinculadas %}
-                    <div class="task-card bg-white p-4 mb-3 position-relative overflow-hidden">
-                        
-                        <div class="position-absolute top-0 bottom-0 start-0" style="width: 6px; background-color: 
-                            {% if t.status == 'concluida' %}
-                                #10b981
-                            {% elif t.status == 'pendente' and t.data_limite and agora and t.data_limite|string < agora.strftime('%Y-%m-%d') %}
-                                #ef4444
-                            {% else %}
-                                #3b82f6
-                            {% endif %};">
-                        </div>
-
-                        <div class="d-flex justify-content-between align-items-start mb-2 ms-2">
-                            <div>
-                                <h6 class="fw-bold text-dark mb-1 fs-5">{{ t.tipo }}</h6>
-                                <span class="badge 
-                                    {% if t.status == 'concluida' %}
-                                        bg-success
-                                    {% elif t.status == 'pendente' and t.data_limite and agora and t.data_limite|string < agora.strftime('%Y-%m-%d') %}
-                                        bg-danger
-                                    {% else %}
-                                        bg-primary
-                                    {% endif %} 
-                                    bg-opacity-10 text-dark border rounded-pill px-3 py-1 fw-bold small">
-                                    {{ t.status|upper }}
-                                </span>
-                            </div>
-                            <a href="{{ url_for('crm.detalhe_tarefa', tarefa_id=t.id) }}" class="btn btn-sm btn-outline-secondary rounded-pill px-3 fw-bold border-2">
-                                Ver Detalhes <i class="fa-solid fa-arrow-right ms-1"></i>
-                            </a>
-                        </div>
-                        
-                        <div class="ms-2 mt-3 text-muted small" style="line-height: 1.5; max-height: 40px; overflow: hidden; text-overflow: ellipsis;">
-                            {{ t.descricao or 'Nenhuma descrição detalhada fornecida.' }}
-                        </div>
-                        
-                        <hr class="ms-2 my-3 text-muted opacity-25">
-                        
-                        <div class="ms-2 d-flex justify-content-between align-items-center">
-                            <div class="d-flex align-items-center text-muted small fw-bold">
-                                <div class="bg-light rounded-circle d-flex justify-content-center align-items-center me-2" style="width: 28px; height: 28px;">
-                                    <i class="fa-solid fa-user-helmet text-indigo"></i>
-                                </div>
-                                Responsável: <span class="text-dark ms-1">{{ t.assessor_nome or 'Não Atribuído' }}</span>
-                            </div>
-                            
-                            <div class="text-muted small fw-bold">
-                                <i class="fa-regular fa-calendar-xmark me-1 text-danger"></i> 
-                                Prazo: <span class="text-dark">{{ t.data_limite.strftime('%d/%m/%Y') if t.data_limite else 'Sem data' }}</span>
-                            </div>
-                        </div>
-                    </div>
-                    {% else %}
-                    <div class="text-center py-5">
-                        <i class="fa-solid fa-ghost fa-3x text-muted opacity-25 mb-3"></i>
-                        <h6 class="fw-bold text-muted">Nenhuma missão operacional</h6>
-                        <p class="small text-muted mb-0">Esta base ainda não possui tarefas ou despachos registrados.</p>
+                        <p class="fw-bold">Nenhum histórico registrado para este apoiador.</p>
                     </div>
                     {% endfor %}
                 </div>
@@ -323,42 +241,113 @@
 
 <div class="modal fade" id="modalEditarPerfil" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content overflow-hidden">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 1.5rem;">
             <div class="modal-header bg-dark text-white p-4 border-0">
-                <h5 class="fw-bold mb-0"><i class="fa-solid fa-user-pen me-2 text-primary"></i>Edição Estratégica</h5>
+                <h5 class="fw-bolder mb-0"><i class="fa-solid fa-user-pen me-2 text-primary"></i>Edição Estratégica</h5>
                 <button type="button" class="btn-close btn-close-white shadow-none" data-bs-dismiss="modal"></button>
             </div>
             <form action="{{ url_for('crm.editar_apoiador', apoiador_id=apoiador.id) }}" method="POST">
-                <div class="modal-body p-4 pt-0">
-                    <div class="modal-scroll mt-4">
-                        <div class="modal-section-title">Identificação</div>
+                <div class="modal-body p-4">
+                    <div style="max-height: 60vh; overflow-y: auto; padding-right: 5px;">
+                        <h6 class="info-label text-indigo mb-3">Identificação</h6>
                         <div class="row g-3 mb-4">
                             <div class="col-md-7"><label class="info-label">Nome Completo</label><input type="text" name="nome" class="form-control form-control-premium" value="{{ apoiador.nome }}" required></div>
                             <div class="col-md-5"><label class="info-label">WhatsApp</label><input type="text" name="telefone" class="form-control form-control-premium" value="{{ apoiador.telefone }}"></div>
                         </div>
 
-                        <div class="modal-section-title">Endereço</div>
+                        <h6 class="info-label text-indigo mb-3">Endereço</h6>
                         <div class="row g-3 mb-4">
                             <div class="col-md-3"><label class="info-label">CEP</label><input type="text" name="cep" class="form-control form-control-premium" value="{{ apoiador.cep }}"></div>
                             <div class="col-md-9"><label class="info-label">Rua</label><input type="text" name="logradouro" class="form-control form-control-premium" value="{{ apoiador.logradouro }}"></div>
                             <div class="col-md-3"><label class="info-label">Nº</label><input type="text" name="numero" class="form-control form-control-premium" value="{{ apoiador.numero }}"></div>
-                            <div class="col-md-5"><label class="info-label">Bairro</label><input type="text" name="bairro" class="form-control form-control-premium" value="{{ apoiador.bairro }}"></div>
+                            <div class="col-md-9"><label class="info-label">Bairro</label><input type="text" name="bairro" class="form-control form-control-premium" value="{{ apoiador.bairro }}"></div>
                         </div>
 
-                        <div class="modal-section-title">Fidelidade e Potencial</div>
-                        <div class="row g-3 mb-4">
+                        <h6 class="info-label text-indigo mb-3">Influência</h6>
+                        <div class="row g-3">
                             <div class="col-12">
-                                <label class="info-label d-block">Potencial de Votos na Casa</label>
-                                <p class="text-muted" style="font-size: 0.75rem; margin-bottom: 8px;">A classificação (Liderança, Apoiador ou Simpatizante) será calculada automaticamente.</p>
-                                <input type="number" name="votos_familia" class="form-control form-control-premium w-50" value="{{ apoiador.votos_familia or 1 }}" min="1">
+                                <label class="info-label">Votos extras (Família)</label>
+                                <input type="number" name="votos_familia" class="form-control form-control-premium w-50" value="{{ apoiador.votos_familia or 0 }}" min="0">
                             </div>
                         </div>
                     </div>
                 </div>
                 <div class="p-4 border-top">
-                    <button type="submit" class="btn btn-indigo w-100 rounded-pill py-3 fw-bold shadow-lg">Confirmar Atualização</button>
+                    <button type="submit" class="btn btn-indigo w-100 rounded-pill py-3 fw-bolder shadow-lg">Confirmar Alterações</button>
                 </div>
             </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalNovaTarefa" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0" style="border-radius: 1.5rem;">
+            <div class="modal-header bg-indigo-light border-0 p-4">
+                <h5 class="fw-bolder mb-0 text-indigo">Nova Missão</h5>
+                <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{{ url_for('crm.criar_tarefa_perfil', apoiador_id=apoiador.id) }}" method="POST">
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="info-label">Tipo de Ação</label>
+                        <select name="tipo" class="form-select form-control-premium" required>
+                            <option value="Visita Técnica">Visita Presencial</option>
+                            <option value="Entrega de Material">Entrega de Material</option>
+                            <option value="Ligação / WhatsApp">Ligação / WhatsApp</option>
+                            <option value="Reunião">Reunião / Café</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="info-label">Responsável</label>
+                        <select name="assessor_id" class="form-select form-control-premium" required>
+                            <option value="" disabled selected>Escolha o assessor...</option>
+                            {% for u in assessores %}
+                                <option value="{{ u.id }}">{{ u.nome }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="info-label">Prazo Limite</label>
+                        <input type="date" name="data_limite" class="form-control form-control-premium" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="info-label">Instruções</label>
+                        <textarea name="descricao" class="form-control form-control-premium" rows="3"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-indigo w-100 rounded-pill py-3 shadow-lg">Despachar Missão</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalHistoricoTarefas" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content bg-light" style="border-radius: 1.5rem;">
+            <div class="modal-header border-0 p-4 pb-0">
+                <h4 class="fw-bolder text-dark"><i class="fa-solid fa-list-check text-indigo me-2"></i> Missões Ativas</h4>
+                <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div style="max-height: 50vh; overflow-y: auto;">
+                    {% for t in tarefas_vinculadas %}
+                    <div class="bg-white p-3 rounded-4 mb-3 shadow-sm border-start border-5 {% if t.status == 'concluida' %}border-success{% else %}border-primary{% endif %}">
+                        <div class="d-flex justify-content-between">
+                            <h6 class="fw-bolder mb-1">{{ t.tipo }}</h6>
+                            <span class="badge {% if t.status == 'concluida' %}bg-success{% else %}bg-primary{% endif %} rounded-pill">{{ t.status|upper }}</span>
+                        </div>
+                        <p class="small text-muted mb-2">{{ t.descricao or 'Sem detalhes.' }}</p>
+                        <div class="d-flex justify-content-between align-items-center mt-2 border-top pt-2">
+                            <span class="small fw-bold text-dark"><i class="fa-solid fa-user-tie text-indigo me-1"></i> {{ t.assessor_nome or 'Assessor' }}</span>
+                            <span class="small fw-bold text-muted"><i class="fa-regular fa-calendar-check me-1"></i> {{ t.data_limite.strftime('%d/%m/%Y') if t.data_limite else 'S/P' }}</span>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4"><p class="text-muted">Nenhuma missão vinculada.</p></div>
+                    {% endfor %}
+                </div>
+            </div>
         </div>
     </div>
 </div>
