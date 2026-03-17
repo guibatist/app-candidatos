@@ -19,6 +19,15 @@ from flask_login import login_required
 crm_bp = Blueprint('crm', __name__)
 
 # ==========================================
+# RELATÓRIO DASHBOARD PRINCIPAL
+# ==========================================
+import pandas as pd
+from io import BytesIO
+from flask import send_file
+from app.services.crm_service import CRMService
+from app.utils.db import get_db_connection
+
+# ==========================================
 # BLOCO 1: HELPERS INTERNOS E CONTEXTO
 # ==========================================
 
@@ -1642,3 +1651,77 @@ def radar_notificacoes():
         return jsonify({'total': 0})
     finally:
         conn.close()
+
+@crm_bp.route('/dashboard/exportar-bi')
+def exportar_relatorio_bi():
+    cliente_id = session.get('cliente_id')
+    if not cliente_id:
+        return redirect(url_for('auth.login'))
+
+    # 1. Puxa os KPIs já calculados do nosso B.I.
+    resumo = CRMService.gerar_resumo_dashboard(cliente_id)
+    
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            # 2. Busca lista de Apoiadores (com a matemática correta de votos)
+            cursor.execute("""
+                SELECT 
+                    nome, telefone, bairro, 
+                    (COALESCE(votos_familia, 0) + 1) as potencial_votos,
+                    TO_CHAR(created_at, 'DD/MM/YYYY') as data_cadastro
+                FROM apoiadores 
+                WHERE cliente_id = %s
+                ORDER BY created_at DESC
+            """, (cliente_id,))
+            colunas_ap = ["Nome", "Telefone", "Bairro", "Potencial de Votos", "Data de Cadastro"]
+            df_apoiadores = pd.DataFrame(cursor.fetchall(), columns=colunas_ap)
+
+            # 3. Busca lista de Tarefas/Missões (Convertendo texto para data para o TO_CHAR funcionar)
+            cursor.execute("""
+                SELECT 
+                    tipo, 
+                    descricao, 
+                    status, 
+                    TO_CHAR(data_limite::DATE, 'DD/MM/YYYY') as prazo
+                FROM tarefas 
+                WHERE cliente_id = %s
+                ORDER BY data_limite ASC
+            """, (cliente_id,))
+            
+            colunas_tar = ["Tipo de Missão", "Descrição", "Status", "Prazo Limite"]
+            df_tarefas = pd.DataFrame(cursor.fetchall(), columns=colunas_tar)
+    finally:
+        conn.close()
+
+    # 4. Monta a tabela da primeira aba (Resumo do B.I.)
+    dados_bi = [
+        {'Métrica': 'Total de Apoiadores', 'Valor': resumo['kpis'].get('total', 0)},
+        {'Métrica': 'Potencial de Votos', 'Valor': resumo['kpis'].get('potencial_votos', 0)},
+        {'Métrica': 'Missões Concluídas', 'Valor': resumo['kpis'].get('tarefas_concluidas', 0)},
+        {'Métrica': 'Missões Pendentes', 'Valor': resumo['kpis'].get('tarefas_pendentes', 0)},
+        {'Métrica': 'Missões Atrasadas', 'Valor': resumo['kpis'].get('tarefas_atrasadas', 0)}
+    ]
+    df_bi = pd.DataFrame(dados_bi)
+
+    # 5. Escreve tudo em um único arquivo Excel com várias abas na Memória RAM
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df_bi.to_excel(writer, sheet_name='1. Resumo B.I.', index=False)
+        
+        if not df_apoiadores.empty:
+            df_apoiadores.to_excel(writer, sheet_name='2. Apoiadores', index=False)
+            
+        if not df_tarefas.empty:
+            df_tarefas.to_excel(writer, sheet_name='3. Missões', index=False)
+
+    # Rebobina o arquivo na memória para o começo
+    output.seek(0)
+    
+    # 6. Dispara o Download automaticamente para o usuário
+    return send_file(
+        output,
+        download_name='Relatorio_Inteligencia_Campanha.xlsx',
+        as_attachment=True,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
