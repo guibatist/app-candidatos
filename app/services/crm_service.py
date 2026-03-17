@@ -3,7 +3,7 @@ import uuid
 import json
 import requests
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from psycopg2.extras import RealDictCursor
 from app.utils.db import get_db_connection
 from app.utils.mailer import Mailer
@@ -500,3 +500,94 @@ class CRMService:
             return False
         finally:
             if conn: conn.close()
+        
+    @staticmethod
+    def gerar_resumo_dashboard(cliente_id):
+        conn = get_db_connection()
+        resumo = {
+            'kpis': {'total': 0, 'potencial_votos': 0, 'multiplicadores': 0, 'ativos_total': 0,
+                     'demandas_novas': 0, 'demandas_total': 0,
+                     'tarefas_pendentes': 0, 'tarefas_concluidas': 0, 'tarefas_atrasadas': 0},
+            'grafico_crescimento': {}, 'grafico_missoes': {}, 'grafico_bairros': {}, 'grafico_demografia': {}
+        }
+
+        try:
+            with conn.cursor() as cursor:
+                # 1. KPIs Base e Potencial de Votos REAIS
+                # Lógica: Soma (votos_familia + 1) para cada apoiador. COALESCE garante que vazio vire 0.
+                cursor.execute("""
+                    SELECT 
+                        COUNT(id) as total, 
+                        SUM(COALESCE(votos_familia, 0) + 1) as votos
+                    FROM apoiadores 
+                    WHERE cliente_id = %s
+                """, (cliente_id,))
+                
+                row = cursor.fetchone()
+                resumo['kpis']['total'] = row[0] or 0
+                resumo['kpis']['potencial_votos'] = int(row[1] or 0)
+
+                # 2. Missões (Pizza) - Tradução rigorosa para as cores baterem
+                cursor.execute("SELECT status, COUNT(*) FROM tarefas WHERE cliente_id = %s GROUP BY status", (cliente_id,))
+                for row in cursor.fetchall():
+                    status_raw = str(row[0]).lower().strip()
+                    qtd = int(row[1])
+                    if status_raw == 'concluida':
+                        resumo['grafico_missoes']['Concluídas'] = qtd
+                        resumo['kpis']['tarefas_concluidas'] = qtd
+                    elif status_raw == 'atrasada':
+                        resumo['grafico_missoes']['Atrasadas'] = qtd
+                        resumo['kpis']['tarefas_atrasadas'] = qtd
+                    else: # pendente ou qualquer outro
+                        resumo['grafico_missoes']['Pendentes'] = qtd
+                        resumo['kpis']['tarefas_pendentes'] = qtd
+
+                # 3. Bairros (Voltando a busca flexível para não sumir)
+                cursor.execute("""
+                    SELECT bairro, COUNT(*) FROM apoiadores 
+                    WHERE cliente_id = %s AND bairro IS NOT NULL AND bairro != '' 
+                    GROUP BY bairro ORDER BY COUNT(*) DESC LIMIT 10
+                """, (cliente_id,))
+                resumo['grafico_bairros'] = {str(r[0]): int(r[1]) for r in cursor.fetchall()}
+
+                # 4. Demografia
+                cursor.execute("""
+                    SELECT faixa_etaria, sexo, COUNT(*) FROM apoiadores 
+                    WHERE cliente_id = %s AND faixa_etaria != '' AND sexo != ''
+                    GROUP BY faixa_etaria, sexo
+                """, (cliente_id,))
+                for row in cursor.fetchall():
+                    faixa, sexo, qtd = str(row[0]), str(row[1]).lower(), int(row[2])
+                    if faixa not in resumo['grafico_demografia']: resumo['grafico_demografia'][faixa] = [0, 0]
+                    if sexo in ['masculino', 'm']: resumo['grafico_demografia'][faixa][0] += qtd
+                    if sexo in ['feminino', 'f']: resumo['grafico_demografia'][faixa][1] += qtd
+
+                # ==========================================
+                # 5. Crescimento (Com a coluna correta: created_at)
+                # ==========================================
+                hoje = datetime.now()
+                # Cria a base de 7 dias zerados para o gráfico nunca sumir da tela
+                dias_zerados = {(hoje - timedelta(days=i)).strftime('%d/%m'): 0 for i in range(6, -1, -1)}
+                resumo['grafico_crescimento'] = dias_zerados
+
+                # Se a sua coluna for data_cadastro, troque as 4 palavras 'created_at' abaixo por 'data_cadastro'
+                cursor.execute("""
+                    SELECT TO_CHAR(created_at, 'DD/MM') as dia, COUNT(*) 
+                    FROM apoiadores 
+                    WHERE cliente_id = %s 
+                      AND created_at >= CURRENT_DATE - INTERVAL '6 days'
+                    GROUP BY dia, DATE_TRUNC('day', created_at)
+                    ORDER BY DATE_TRUNC('day', created_at) ASC
+                """, (cliente_id,))
+                
+                for row in cursor.fetchall():
+                    dia_banco = str(row[0])
+                    if dia_banco in resumo['grafico_crescimento']:
+                        resumo['grafico_crescimento'][dia_banco] = int(row[1])
+
+            return resumo
+        except Exception as e:
+            print(f"Erro B.I.: {e}")
+            return resumo
+        finally:
+            conn.close()

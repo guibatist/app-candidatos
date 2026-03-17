@@ -1,139 +1,250 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="fw-bold text-dark">Painel B.I. Estratégico</h2>
-    <button class="btn btn-outline-primary btn-sm"><i class="fa-solid fa-download me-2"></i>Exportar Relatório</button>
-</div>
 
-<div class="row mb-4">
-    <div class="col-md-3">
-        <div class="card p-3 shadow-sm border-start border-4 border-primary h-100">
-            <span class="text-muted fw-bold text-uppercase" style="font-size: 0.75rem;">Total de Apoiadores</span>
-            <h2 class="mt-2 mb-0 fw-bold">{{ resumo.kpis.total }}</h2>
-        </div>
+{% set t_concluidas = resumo.kpis.tarefas_concluidas | default(0) | int %}
+{% set t_pendentes = resumo.kpis.tarefas_pendentes | default(0) | int %}
+{% set t_atrasadas = resumo.kpis.tarefas_atrasadas | default(0) | int %}
+{% set total_missoes = t_concluidas + t_pendentes + t_atrasadas %}
+
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-end mb-4 pb-2 border-bottom" style="border-color: #e2e8f0 !important;">
+    <div>
+        <h2 class="fw-bolder text-dark mb-1" style="letter-spacing: -0.5px;">Painel de Inteligência</h2>
+        <span class="text-muted" style="font-size: 0.95rem;">Visão tática e operacional da campanha em tempo real.</span>
     </div>
-    <div class="col-md-3">
-        <div class="card p-3 shadow-sm border-start border-4 border-info h-100 bg-info bg-opacity-10">
-            <span class="text-info fw-bold text-uppercase" style="font-size: 0.75rem;"><i class="fa-solid fa-users-rays me-1"></i> Potencial de Votos</span>
-            <h2 class="mt-2 mb-0 fw-bold text-info">{{ resumo.kpis.potencial_votos }}</h2>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card p-3 shadow-sm border-start border-4 border-success h-100">
-            <span class="text-muted fw-bold text-uppercase" style="font-size: 0.75rem;">Multiplicadores (Forte)</span>
-            <h2 class="mt-2 mb-0 fw-bold">{{ resumo.kpis.multiplicadores }}</h2>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card p-3 shadow-sm border-start border-4 border-warning h-100">
-            <span class="text-muted fw-bold text-uppercase" style="font-size: 0.75rem;">Ativos Mapeados</span>
-            <h2 class="mt-2 mb-0 fw-bold">{{ resumo.kpis.ativos_total }}</h2>
-        </div>
+    <div class="mt-3 mt-md-0">
+        <button class="btn btn-premium rounded-pill px-4 shadow-sm">
+            <i class="fa-solid fa-file-export me-2"></i>Exportar Relatório
+        </button>
     </div>
 </div>
 
-<div class="row mb-4">
-    <div class="col-md-6">
-        <div class="card p-4 h-100 shadow-sm">
-            <h5 class="fw-bold mb-4">Densidade por Bairros</h5>
-            <canvas id="graficoBairros"></canvas>
-        </div>
-    </div>
-    <div class="col-md-6">
-        <div class="card p-4 h-100 shadow-sm">
-            <h5 class="fw-bold mb-4">Patrimônio da Campanha (Ativos)</h5>
-            <canvas id="graficoAtivos"></canvas>
-        </div>
-    </div>
-</div>
-
-<div class="row">
-    <div class="col-md-6">
-        <div class="card p-4 h-100 shadow-sm">
-            <h5 class="fw-bold mb-3"><i class="fa-solid fa-ranking-star text-warning me-2"></i>Maiores Multiplicadores</h5>
-            <p class="text-muted small mb-3">Apoiadores que trouxeram mais pessoas para a base.</p>
-            <ul class="list-group list-group-flush">
-                {% for nome, quantidade in resumo.top_influenciadores.items() %}
-                <li class="list-group-item d-flex justify-content-between align-items-center px-0">
-                    <span class="fw-bold text-dark">{{ nome }}</span>
-                    <span class="badge bg-primary rounded-pill">{{ quantidade }} indicados</span>
-                </li>
-                {% else %}
-                <li class="list-group-item text-muted px-0 text-center border-0">Ainda não há dados de indicações.</li>
-                {% endfor %}
-            </ul>
-        </div>
-    </div>
-
-    <div class="col-md-6">
-        <div class="card p-4 h-100 shadow-sm">
-            <h5 class="fw-bold mb-3"><i class="fa-regular fa-clock text-info me-2"></i>Últimas Interações (Timeline)</h5>
-            <div class="border-start border-2 border-info ms-2 ps-3 mt-3">
-                {% for t in resumo.timeline %}
-                <div class="mb-3">
-                    <div class="fw-bold text-dark" style="font-size: 0.9rem;">
-                        {{ t.tipo }} com {{ t.apoiador_nome }}
-                    </div>
-                    <div class="text-muted small">{{ t.descricao }}</div>
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card p-4 border-start-saas h-100">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <span class="text-muted fw-bold text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">Total na Base</span>
+                    <h2 class="mt-2 mb-0 fw-bolder text-dark">{{ resumo.kpis.total | default('0') }}</h2>
                 </div>
+                <div class="p-2 rounded-3 bg-primary bg-opacity-10 text-primary">
+                    <i class="fa-solid fa-users fs-5"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card p-4 h-100" style="background: linear-gradient(135deg, var(--vh-primary), var(--vh-primary-dark)); color: white;">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <span class="fw-bold text-uppercase text-white-50" style="font-size: 0.7rem; letter-spacing: 0.5px;">Potencial de Votos</span>
+                    <h2 class="mt-2 mb-0 fw-bolder text-white">{{ resumo.kpis.potencial_votos | default('0') }}</h2>
+                </div>
+                <div class="p-2 rounded-3 bg-white bg-opacity-25 text-white">
+                    <i class="fa-solid fa-box-archive fs-5"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card p-4 h-100 border-0">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <span class="text-muted fw-bold text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">Gabinete Digital</span>
+                    <h2 class="mt-2 mb-0 fw-bolder text-dark">{{ resumo.kpis.demandas_total | default('0') }}</h2>
+                </div>
+                <div class="p-2 rounded-3 text-danger" style="background-color: #ffe4e6;">
+                    <i class="fa-solid fa-bullhorn fs-5"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card p-4 h-100 border-0">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <span class="text-muted fw-bold text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">Missões Concluídas</span>
+                    <h2 class="mt-2 mb-0 fw-bolder text-dark">{{ t_concluidas }}</h2>
+                </div>
+                <div class="p-2 rounded-3 text-success" style="background-color: #dcfce7;">
+                    <i class="fa-solid fa-check-double fs-5"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-lg-8">
+        <div class="card p-4 h-100 border-0">
+            <h5 class="fw-bolder text-dark mb-1">Crescimento da Base</h5>
+            <span class="text-muted small mb-4 d-block">Evolução de novos apoiadores cadastrados no sistema.</span>
+            <div style="height: 280px; position: relative;">
+                {% if resumo.grafico_crescimento %}
+                    <canvas id="graficoCrescimento"></canvas>
                 {% else %}
-                <div class="text-muted small">Nenhuma interação registrada recentemente.</div>
-                {% endfor %}
+                    <div class="d-flex flex-column align-items-center justify-content-center h-100 text-muted">
+                        <i class="fa-solid fa-chart-line fs-1 mb-3 opacity-25"></i>
+                        <span class="small fw-medium">Não há dados suficientes nos últimos 7 dias.</span>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card p-4 h-100 border-0">
+            <h5 class="fw-bolder text-dark mb-1">Raio-X Operacional</h5>
+            <span class="text-muted small mb-4 d-block">Status atual das missões da equipe.</span>
+            <div style="height: 240px; position: relative; display: flex; justify-content: center;">
+                {% if total_missoes > 0 %}
+                    <canvas id="graficoMissoes"></canvas>
+                {% else %}
+                    <div class="d-flex flex-column align-items-center justify-content-center h-100 text-muted w-100">
+                        <i class="fa-solid fa-list-check fs-1 mb-3 opacity-25"></i>
+                        <span class="small fw-medium">Nenhuma missão registrada.</span>
+                    </div>
+                {% endif %}
+            </div>
+            
+            {% if total_missoes > 0 %}
+            <div class="d-flex justify-content-center gap-3 mt-3 small fw-bold">
+                <span class="text-success"><i class="fa-solid fa-circle me-1"></i>Concluídas</span>
+                <span class="text-warning text-dark"><i class="fa-solid fa-circle me-1"></i>Rua</span>
+                <span class="text-danger"><i class="fa-solid fa-circle me-1"></i>Atraso</span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-lg-6">
+        <div class="card p-4 h-100 border-0">
+            <h5 class="fw-bolder text-dark mb-4">Densidade Geográfica</h5>
+            <div style="height: 300px; position: relative;">
+                {% if resumo.grafico_bairros %}
+                    <canvas id="graficoBairros"></canvas>
+                {% else %}
+                    <div class="d-flex flex-column align-items-center justify-content-center h-100 text-muted">
+                        <i class="fa-solid fa-map-location-dot fs-1 mb-3 opacity-25"></i>
+                        <span class="small fw-medium">Nenhum apoiador com bairro cadastrado.</span>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-6">
+        <div class="card p-4 h-100 border-0">
+            <h5 class="fw-bolder text-dark mb-4">Perfil Demográfico (Idade e Sexo)</h5>
+            <div style="height: 300px; position: relative;">
+                {% if resumo.grafico_demografia %}
+                    <canvas id="graficoDemografia"></canvas>
+                {% else %}
+                    <div class="d-flex flex-column align-items-center justify-content-center h-100 text-muted">
+                        <i class="fa-solid fa-chart-simple fs-1 mb-3 opacity-25"></i>
+                        <span class="small fw-medium">Faltam dados de idade e sexo na base.</span>
+                    </div>
+                {% endif %}
             </div>
         </div>
     </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
 <script>
-    // INJETANDO DADOS DO PYTHON PARA O JAVASCRIPT
-    const dadosBairros = {{ resumo.grafico_bairros | tojson }};
-    const dadosAtivos = {{ resumo.grafico_ativos | tojson }};
+    const rootStyles = getComputedStyle(document.documentElement);
+    const cPrimary = rootStyles.getPropertyValue('--vh-primary').trim() || '#7c3aed';
+    const cPrimaryGlow = 'rgba(124, 58, 237, 0.15)';
+    const cSuccess = '#10b981';
+    const cWarning = '#f59e0b';
+    const cDanger = '#ef4444';
+    const cGray = '#e2e8f0';
 
-    // 1. Configurando Gráfico de Bairros (Rosca / Doughnut)
-    const ctxBairros = document.getElementById('graficoBairros').getContext('2d');
-    new Chart(ctxBairros, {
-        type: 'doughnut',
-        data: {
-            labels: Object.keys(dadosBairros),
-            datasets: [{
-                data: Object.values(dadosBairros),
-                backgroundColor: ['#4f46e5', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'],
-                borderWidth: 0,
-                cutout: '70%'
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: { position: 'right' }
-            }
-        }
-    });
+    Chart.defaults.font.family = "'Inter', sans-serif";
+    Chart.defaults.color = '#64748b';
 
-    // 2. Configurando Gráfico de Ativos Físicos (Barras / Bar)
-    const ctxAtivos = document.getElementById('graficoAtivos').getContext('2d');
-    new Chart(ctxAtivos, {
-        type: 'bar',
-        data: {
-            labels: Object.keys(dadosAtivos),
-            datasets: [{
-                label: 'Quantidade Cadastrada',
-                data: Object.values(dadosAtivos),
-                backgroundColor: '#4f46e5',
-                borderRadius: 6
-            }]
-        },
-        options: {
-            responsive: true,
-            scales: {
-                y: { beginAtZero: true, ticks: { stepSize: 1 } }
+    {% if resumo.grafico_crescimento %}
+        const dadosCrescimento = {{ resumo.grafico_crescimento | tojson }};
+        new Chart(document.getElementById('graficoCrescimento'), {
+            type: 'line',
+            data: {
+                labels: Object.keys(dadosCrescimento),
+                datasets: [{
+                    label: 'Novos Apoiadores',
+                    data: Object.values(dadosCrescimento),
+                    borderColor: cPrimary,
+                    backgroundColor: cPrimaryGlow,
+                    borderWidth: 3, pointBackgroundColor: '#fff', pointBorderColor: cPrimary,
+                    pointBorderWidth: 2, pointRadius: 4, pointHoverRadius: 6, fill: true, tension: 0.4 
+                }]
             },
-            plugins: {
-                legend: { display: false }
+            options: {
+                responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+                scales: { x: { grid: { display: false } }, y: { grid: { color: cGray, borderDash: [5, 5] }, beginAtZero: true, ticks: { stepSize: 1 } } }
             }
-        }
-    });
+        });
+    {% endif %}
+
+    {% if total_missoes > 0 %}
+        const dadosRaw = {{ resumo.grafico_missoes | tojson }};
+        // Forçamos a ordem para as cores baterem sempre: Verde, Amarelo, Vermelho
+        const labelsOrdenados = ['Concluídas', 'Pendentes', 'Atrasadas'];
+        const valoresOrdenados = labelsOrdenados.map(l => dadosRaw[l] || 0);
+
+        new Chart(document.getElementById('graficoMissoes'), {
+            type: 'doughnut',
+            data: {
+                labels: labelsOrdenados,
+                datasets: [{
+                    data: valoresOrdenados,
+                    backgroundColor: [cSuccess, cWarning, cDanger], // Verde, Amarelo, Vermelho
+                    borderWidth: 0, 
+                    cutout: '75%' 
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+        });
+    {% endif %}
+
+    {% if resumo.grafico_bairros %}
+        const dadosBairros = {{ resumo.grafico_bairros | tojson }};
+        new Chart(document.getElementById('graficoBairros'), {
+            type: 'bar',
+            data: {
+                labels: Object.keys(dadosBairros),
+                datasets: [{
+                    label: 'Apoiadores', data: Object.values(dadosBairros),
+                    backgroundColor: cPrimary, borderRadius: 4, barThickness: 15
+                }]
+            },
+            options: {
+                indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+                scales: { x: { grid: { display: false } }, y: { grid: { color: cGray, drawBorder: false } } }
+            }
+        });
+    {% endif %}
+
+    {% if resumo.grafico_demografia %}
+        const dadosDemografia = {{ resumo.grafico_demografia | tojson }};
+        new Chart(document.getElementById('graficoDemografia'), {
+            type: 'bar',
+            data: {
+                labels: Object.keys(dadosDemografia),
+                datasets: [
+                    { label: 'Homens', data: Object.values(dadosDemografia).map(v => v[0]), backgroundColor: '#3b82f6', borderRadius: 4 },
+                    { label: 'Mulheres', data: Object.values(dadosDemografia).map(v => v[1]), backgroundColor: '#ec4899', borderRadius: 4 }
+                ]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 8 } } },
+                scales: { x: { grid: { display: false } }, y: { grid: { color: cGray, borderDash: [5, 5] }, beginAtZero: true, ticks: { stepSize: 1 } } }
+            }
+        });
+    {% endif %}
 </script>
 {% endblock %}

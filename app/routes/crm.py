@@ -15,6 +15,7 @@ from io import BytesIO
 from flask import send_file
 from datetime import datetime
 from app.utils.mailer import Mailer
+from flask_login import login_required
 crm_bp = Blueprint('crm', __name__)
 
 # ==========================================
@@ -129,13 +130,20 @@ def inject_sidebar_notificacoes():
 # BLOCO 2: DASHBOARD E GEOINTELIGÊNCIA
 # ==========================================
 
-@crm_bp.route('/dashboard') 
+@crm_bp.route('/dashboard')
 def dashboard_index():
-    ctx = obter_contexto_acesso()
-    if not ctx: return redirect(url_for('auth.login'))
-        
-    resumo = CRMService.get_dashboard_data(ctx['cliente_id'])
-    return render_template('crm/dashboard.html', resumo=resumo, permissoes=ctx['permissoes'])
+    # Verifica se o usuário está logado usando sua lógica de sessão
+    user_id = session.get('user_id')
+    cliente_id = session.get('cliente_id')
+    
+    if not user_id or not cliente_id:
+        # Se não tiver sessão, manda pro login
+        return redirect(url_for('auth.login'))
+
+    # Agora sim, chama o serviço que tem os prints de DEBUG
+    resumo = CRMService.gerar_resumo_dashboard(cliente_id)
+    
+    return render_template('crm/dashboard.html', resumo=resumo)
 
 @crm_bp.route('/mapa')
 def mapa_calor():
