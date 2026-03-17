@@ -26,6 +26,7 @@ from io import BytesIO
 from flask import send_file
 from app.services.crm_service import CRMService
 from app.utils.db import get_db_connection
+import random
 
 # ==========================================
 # BLOCO 1: HELPERS INTERNOS E CONTEXTO
@@ -1658,70 +1659,140 @@ def exportar_relatorio_bi():
     if not cliente_id:
         return redirect(url_for('auth.login'))
 
-    # 1. Puxa os KPIs já calculados do nosso B.I.
-    resumo = CRMService.gerar_resumo_dashboard(cliente_id)
+    from app.services.crm_service import CRMService
+    from app.utils.db import get_db_connection
     
+    # Puxa os KPIs (Total e Potencial de Votos)
+    resumo = CRMService.gerar_resumo_dashboard(cliente_id)
     conn = get_db_connection()
+    
     try:
         with conn.cursor() as cursor:
-            # 2. Busca lista de Apoiadores (com a matemática correta de votos)
-            cursor.execute("""
-                SELECT 
-                    nome, telefone, bairro, 
-                    (COALESCE(votos_familia, 0) + 1) as potencial_votos,
-                    TO_CHAR(created_at, 'DD/MM/YYYY') as data_cadastro
-                FROM apoiadores 
-                WHERE cliente_id = %s
-                ORDER BY created_at DESC
-            """, (cliente_id,))
-            colunas_ap = ["Nome", "Telefone", "Bairro", "Potencial de Votos", "Data de Cadastro"]
-            df_apoiadores = pd.DataFrame(cursor.fetchall(), columns=colunas_ap)
+            # 1. Nome do Candidato (Coluna: nome_candidato)
+            cursor.execute("SELECT nome_candidato FROM clientes WHERE id = %s", (cliente_id,))
+            res_nome = cursor.fetchone()
+            nome_candidato = res_nome[0] if res_nome else "Candidato"
 
-            # 3. Busca lista de Tarefas/Missões (Convertendo texto para data para o TO_CHAR funcionar)
+            # 2. Dados de Bairros (Densidade Geográfica)
             cursor.execute("""
-                SELECT 
-                    tipo, 
-                    descricao, 
-                    status, 
-                    TO_CHAR(data_limite::DATE, 'DD/MM/YYYY') as prazo
-                FROM tarefas 
-                WHERE cliente_id = %s
-                ORDER BY data_limite ASC
+                SELECT bairro, COUNT(*) as qtd 
+                FROM apoiadores 
+                WHERE cliente_id = %s AND bairro IS NOT NULL AND bairro != '' 
+                GROUP BY bairro ORDER BY qtd DESC
             """, (cliente_id,))
-            
-            colunas_tar = ["Tipo de Missão", "Descrição", "Status", "Prazo Limite"]
-            df_tarefas = pd.DataFrame(cursor.fetchall(), columns=colunas_tar)
+            df_bairros = pd.DataFrame(cursor.fetchall(), columns=["Bairro", "Total"])
+
+            # 3. Dados de Tarefas (Status - O B.I. de Missões)
+            cursor.execute("""
+                SELECT status, COUNT(*) as qtd 
+                FROM tarefas 
+                WHERE cliente_id = %s 
+                GROUP BY status
+            """, (cliente_id,))
+            df_tarefas_status = pd.DataFrame(cursor.fetchall(), columns=["Status", "Qtd"])
+
+            # 4. Dados de Demografia (Sexo)
+            cursor.execute("""
+                SELECT sexo, COUNT(*) as qtd 
+                FROM apoiadores 
+                WHERE cliente_id = %s AND sexo IS NOT NULL AND sexo != '' 
+                GROUP BY sexo
+            """, (cliente_id,))
+            df_sexo = pd.DataFrame(cursor.fetchall(), columns=["Sexo", "Total"])
+
+            # 5. Dados de Demografia (Faixa Etária)
+            cursor.execute("""
+                SELECT faixa_etaria, COUNT(*) as qtd 
+                FROM apoiadores 
+                WHERE cliente_id = %s AND faixa_etaria IS NOT NULL AND faixa_etaria != '' 
+                GROUP BY faixa_etaria ORDER BY faixa_etaria
+            """, (cliente_id,))
+            df_idade = pd.DataFrame(cursor.fetchall(), columns=["Faixa Etária", "Total"])
+
     finally:
         conn.close()
 
-    # 4. Monta a tabela da primeira aba (Resumo do B.I.)
-    dados_bi = [
-        {'Métrica': 'Total de Apoiadores', 'Valor': resumo['kpis'].get('total', 0)},
-        {'Métrica': 'Potencial de Votos', 'Valor': resumo['kpis'].get('potencial_votos', 0)},
-        {'Métrica': 'Missões Concluídas', 'Valor': resumo['kpis'].get('tarefas_concluidas', 0)},
-        {'Métrica': 'Missões Pendentes', 'Valor': resumo['kpis'].get('tarefas_pendentes', 0)},
-        {'Métrica': 'Missões Atrasadas', 'Valor': resumo['kpis'].get('tarefas_atrasadas', 0)}
-    ]
-    df_bi = pd.DataFrame(dados_bi)
-
-    # 5. Escreve tudo em um único arquivo Excel com várias abas na Memória RAM
     output = BytesIO()
-    with pd.ExcelWriter(output, engine='openpyxl') as writer:
-        df_bi.to_excel(writer, sheet_name='1. Resumo B.I.', index=False)
-        
-        if not df_apoiadores.empty:
-            df_apoiadores.to_excel(writer, sheet_name='2. Apoiadores', index=False)
-            
-        if not df_tarefas.empty:
-            df_tarefas.to_excel(writer, sheet_name='3. Missões', index=False)
+    writer = pd.ExcelWriter(output, engine='xlsxwriter')
+    workbook = writer.book
 
-    # Rebobina o arquivo na memória para o começo
+    # --- ABA 1: DASHBOARD (A PRIMEIRA PAGINA) ---
+    dashboard = workbook.add_worksheet('📊 B.I. ESTRATÉGICO')
+    dashboard.activate()
+    dashboard.set_column('A:Z', 20)
+
+    # --- DEMAIS ABAS: DADOS BASE ---
+    df_bairros.to_excel(writer, sheet_name='DB_Bairros', index=False)
+    df_tarefas_status.to_excel(writer, sheet_name='DB_Tarefas', index=False)
+    df_sexo.to_excel(writer, sheet_name='DB_Sexo', index=False)
+    df_idade.to_excel(writer, sheet_name='DB_Idade', index=False)
+
+    # Estilos
+    fmt_header = workbook.add_format({'bold': True, 'font_size': 18, 'font_color': 'white', 'bg_color': '#4F46E5', 'align': 'center', 'valign': 'vcenter'})
+    fmt_kpi_label = workbook.add_format({'bold': True, 'bg_color': '#F1F5F9', 'border': 1, 'align': 'center'})
+    fmt_kpi_val = workbook.add_format({'bold': True, 'font_size': 16, 'align': 'center', 'border': 1, 'font_color': '#4F46E5'})
+
+    # Título e Cards de KPI
+    dashboard.merge_range('B2:J3', f'RELATÓRIO DE INTELIGÊNCIA: {nome_candidato.upper()}', fmt_header)
+    dashboard.write('B5', 'TOTAL APOIADORES', fmt_kpi_label)
+    dashboard.write('B6', resumo['kpis'].get('total', 0), fmt_kpi_val)
+    dashboard.write('D5', 'POTENCIAL VOTOS', fmt_kpi_label)
+    dashboard.write('D6', resumo['kpis'].get('potencial_votos', 0), fmt_kpi_val)
+
+    # GRÁFICO 1: MISSÕES (PIZZA)
+    if not df_tarefas_status.empty:
+        c1 = workbook.add_chart({'type': 'pie'})
+        c1.add_series({
+            'name': 'Status das Missões',
+            'categories': '=DB_Tarefas!$A$2:$A$' + str(len(df_tarefas_status)+1),
+            'values':     '=DB_Tarefas!$B$2:$B$' + str(len(df_tarefas_status)+1),
+            'points': [{'fill': {'color': '#10B981'}}, {'fill': {'color': '#F59E0B'}}, {'fill': {'color': '#EF4444'}}],
+        })
+        c1.set_title({'name': 'Raio-X das Missões'})
+        dashboard.insert_chart('B8', c1, {'x_scale': 1.1, 'y_scale': 1.1})
+
+    # GRÁFICO 2: BAIRROS (BARRAS)
+    if not df_bairros.empty:
+        c2 = workbook.add_chart({'type': 'bar'})
+        c2.add_series({
+            'name': 'Apoiadores por Bairro',
+            'categories': '=DB_Bairros!$A$2:$A$11', # Top 10
+            'values':     '=DB_Bairros!$B$2:$B$11',
+            'fill': {'color': '#4F46E5'}
+        })
+        c2.set_title({'name': 'Top 10 Bairros'})
+        dashboard.insert_chart('F8', c2, {'x_scale': 1.1, 'y_scale': 1.1})
+
+    # GRÁFICO 3: SEXO (COLUNAS)
+    if not df_sexo.empty:
+        c3 = workbook.add_chart({'type': 'column'})
+        c3.add_series({
+            'name': 'Distribuição por Sexo',
+            'categories': '=DB_Sexo!$A$2:$A$5',
+            'values':     '=DB_Sexo!$B$2:$B$5',
+            'fill': {'color': '#EC4899'}
+        })
+        c3.set_title({'name': 'Perfil por Sexo'})
+        dashboard.insert_chart('B25', c3, {'x_scale': 1.1, 'y_scale': 1.1})
+
+    # GRÁFICO 4: IDADE (LINHA OU COLUNA)
+    if not df_idade.empty:
+        c4 = workbook.add_chart({'type': 'column'})
+        c4.add_series({
+            'name': 'Faixa Etária',
+            'categories': '=DB_Idade!$A$2:$A$10',
+            'values':     '=DB_Idade!$B$2:$B$10',
+            'fill': {'color': '#3B82F6'}
+        })
+        c4.set_title({'name': 'Faixa Etária'})
+        dashboard.insert_chart('F25', c4, {'x_scale': 1.1, 'y_scale': 1.1})
+
+    writer.close()
     output.seek(0)
+
+    # Geração do Nome do Arquivo
+    data_hoje = datetime.now().strftime('%d-%m-%Y')
+    random_id = random.randint(1000, 9999)
+    filename = f"Relatorio de Campanha - {nome_candidato} - {data_hoje} - {random_id}.xlsx"
     
-    # 6. Dispara o Download automaticamente para o usuário
-    return send_file(
-        output,
-        download_name='Relatorio_Inteligencia_Campanha.xlsx',
-        as_attachment=True,
-        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    )
+    return send_file(output, download_name=filename, as_attachment=True)
