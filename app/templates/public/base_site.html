@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VotoImpacto | Inteligência Tática e Governança Territorial</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+
+    <style>
+        :root {
+            /* PALETA VOTOIMPACTO: ROXO VIBRANTE & DARK ENTERPRISE */
+            --vi-primary: #7c3aed; 
+            --vi-primary-light: #a78bfa;
+            --vi-primary-dark: #6d28d9;
+            --vi-primary-glow: rgba(124, 58, 237, 0.4);
+            --vi-black: #020617;
+            --vi-dark: #0f172a;
+            --vi-slate: #64748b;
+            --radius-bento: 2.5rem;
+            --radius-pill: 5rem;
+        }
+
+        body { 
+            font-family: 'Inter', sans-serif; 
+            color: var(--vi-dark); 
+            background-color: #fff;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+        }
+
+        /* TEXT UTILS */
+        .fw-black { font-weight: 900 !important; }
+        .text-primary { color: var(--vi-primary) !important; }
+        .letter-spacing-1 { letter-spacing: 1px; }
+
+        /* NAVBAR REFINADA (FLOATING GLASS) */
+        .navbar { 
+            background: transparent;
+            padding: 35px 0;
+            transition: all 0.5s cubic-bezier(0.19, 1, 0.22, 1);
+            z-index: 1050;
+        }
+
+        .navbar.scrolled { padding: 15px 0; }
+
+        .nav-container-glass {
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            border-radius: 1.5rem;
+            padding: 10px 15px 10px 30px;
+            transition: all 0.5s ease;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.04);
+        }
+
+        .scrolled .nav-container-glass {
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid rgba(124, 58, 237, 0.15);
+            box-shadow: 0 20px 50px rgba(124, 58, 237, 0.1);
+            border-radius: var(--radius-pill);
+        }
+
+        .navbar-brand {
+            font-weight: 900 !important;
+            font-size: 1.5rem !important;
+            letter-spacing: -1.5px;
+            color: var(--vi-black) !important;
+        }
+        .navbar-brand span { color: var(--vi-primary); }
+
+        .nav-link { 
+            font-weight: 800 !important; 
+            color: var(--vi-black) !important; 
+            text-transform: uppercase; 
+            font-size: 0.7rem !important; 
+            letter-spacing: 1.2px;
+            margin: 0 12px;
+            opacity: 0.6;
+            transition: 0.3s ease;
+            position: relative;
+        }
+        .nav-link:hover { opacity: 1; color: var(--vi-primary) !important; }
+        
+        /* Botão Central de Comando na Nav */
+        .btn-command-nav {
+            background: var(--vi-black);
+            color: #fff !important;
+            border-radius: 1.2rem;
+            padding: 12px 26px !important;
+            font-weight: 800;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border: none;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .btn-command-nav i { color: var(--vi-primary); font-size: 0.9rem; transition: 0.3s; }
+        .btn-command-nav:hover {
+            background: var(--vi-primary);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px var(--vi-primary-glow);
+        }
+        .btn-command-nav:hover i { color: #fff; transform: rotate(15deg); }
+
+        /* FOOTER MONUMENTAL */
+        footer { 
+            background: var(--vi-black); 
+            color: #94a3b8; 
+            padding: 120px 0 60px; 
+            margin-top: 100px;
+            border-top: 5px solid var(--vi-primary);
+        }
+        .footer-brand { 
+            font-weight: 900; 
+            color: #fff; 
+            font-size: 2.2rem; 
+            letter-spacing: -2px; 
+            text-decoration: none;
+            display: inline-block;
+            margin-bottom: 1.5rem;
+        }
+        .footer-brand span { color: var(--vi-primary); }
+        
+        .footer-title {
+            color: #fff;
+            font-weight: 800;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 2rem;
+        }
+        .footer-link {
+            color: #64748b;
+            text-decoration: none;
+            display: block;
+            margin-bottom: 1rem;
+            font-size: 0.95rem;
+            transition: 0.3s;
+        }
+        .footer-link:hover { color: var(--vi-primary-light); transform: translateX(5px); }
+        
+        .legal-box {
+            background: rgba(124, 58, 237, 0.04);
+            padding: 35px;
+            border-radius: 2rem;
+            border: 1px solid rgba(124, 58, 237, 0.15);
+        }
+
+        /* SCROLLBAR CUSTOM */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f8fafc; }
+        ::-webkit-scrollbar-thumb { background: var(--vi-primary); border-radius: 10px; }
+
+        @media (max-width: 991px) {
+            .nav-container-glass { padding: 15px; border-radius: 1.5rem !important; }
+            .navbar-collapse { padding-top: 20px; }
+            .btn-command-nav { width: 100%; justify-content: center; }
+        }
+
+        {% block extra_css %}{% endblock %}
+    </style>
+</head>
+<body>
+
+    <nav class="navbar navbar-expand-lg fixed-top" id="mainNav">
+        <div class="container">
+            <div class="container-fluid nav-container-glass d-flex align-items-center justify-content-between">
+                
+                <a class="navbar-brand d-flex align-items-center" href="/">
+                    Voto<span>Impacto</span>
+                </a>
+
+                <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                    <i class="fa-solid fa-bars-staggered text-primary"></i>
+                </button>
+
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav ms-auto align-items-center">
+                        <li class="nav-item"><a class="nav-link" href="/quem-somos">Doutrina</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/tecnologia">Ecossistema</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/planos">Modelos de Comando</a></li>
+                        <li class="nav-item ms-lg-3">
+                            <a href="{{ url_for('auth.login') }}" class="btn btn-command-nav">
+                                <i class="fa-solid fa-bolt-lightning"></i>
+                                Central de Comando
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+            </div>
+        </div>
+    </nav>
+
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer>
+        <div class="container">
+            <div class="row g-5">
+                <div class="col-lg-4">
+                    <a href="/" class="footer-brand">Voto<span>Impacto</span></a>
+                    <p class="pe-lg-5 mb-4 fs-6">
+                        Líderes não reagem ao território. Eles o antecipam. Fornecemos a infraestrutura de inteligência tática para governanças que exigem o controle absoluto dos dados.
+                    </p>
+                    <div class="d-flex gap-3 mt-4">
+                        <a href="#" class="footer-link fs-4"><i class="fa-brands fa-linkedin"></i></a>
+                        <a href="#" class="footer-link fs-4"><i class="fa-brands fa-instagram"></i></a>
+                        <a href="#" class="footer-link fs-4"><i class="fa-brands fa-x-twitter"></i></a>
+                    </div>
+                </div>
+
+                <div class="col-6 col-lg-2">
+                    <h5 class="footer-title">Ecossistema</h5>
+                    <a href="#" class="footer-link">Governança Digital</a>
+                    <a href="#" class="footer-link">Inteligência de Dados</a>
+                    <a href="#" class="footer-link">Gabinete 360º</a>
+                    <a href="#" class="footer-link">Geoprocessamento</a>
+                </div>
+
+                <div class="col-6 col-lg-2">
+                    <h5 class="footer-title">Institucional</h5>
+                    <a href="/quem-somos" class="footer-link">Nossa Doutrina</a>
+                    <a href="/planos" class="footer-link">Modelos de Comando</a>
+                    <a href="/tecnologia" class="footer-link">Tecnologia</a>
+                    <a href="#" class="footer-link">Suporte Elite</a>
+                </div>
+
+                <div class="col-lg-4">
+                    <div class="legal-box">
+                        <h5 class="footer-title" style="margin-bottom: 1rem; font-size: 0.75rem;">Segurança e Conformidade</h5>
+                        <p class="small mb-3">Operação 100% criptografada e em total conformidade com a LGPD e as normas do TSE para 2026.</p>
+                        <div class="row g-2">
+                            <div class="col-6"><a href="#" class="footer-link small mb-0">Privacidade</a></div>
+                            <div class="col-6"><a href="#" class="footer-link small mb-0">Termos de Uso</a></div>
+                            <div class="col-12 mt-2"><a href="#" class="footer-link small mb-0"><i class="fa-solid fa-shield-check me-1 text-primary"></i> Certificação de Dados</a></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pt-5 mt-5 border-top border-white border-opacity-10 text-center">
+                <p class="small opacity-50 mb-0">
+                    © 2026 <strong>VotoImpacto</strong>. A tecnologia por trás da vitória. <br>
+                    Desenvolvido por Batista & Batista Strategy Design.
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script>
+        AOS.init({ duration: 800, once: true, easing: 'ease-out-quart' });
+        
+        // Efeito de Scroll na Navbar
+        window.addEventListener('scroll', function() {
+            const nav = document.getElementById('mainNav');
+            if (window.scrollY > 40) {
+                nav.classList.add('scrolled');
+            } else {
+                nav.classList.remove('scrolled');
+            }
+        });
+    </script>
+</body>
+</html>

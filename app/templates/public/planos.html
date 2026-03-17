@@ -1,0 +1,293 @@
+{% extends "public/base_site.html" %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --vi-primary: #7c3aed;
+        --vi-primary-light: #a78bfa;
+        --vi-dark: #0f172a;
+        --vi-black: #020617;
+        --vi-bg: #f8fafc;
+        --radius-bento: 2.5rem;
+    }
+
+    body { font-family: 'Inter', sans-serif !important; background-color: var(--vi-bg); color: var(--vi-dark); }
+
+    /* Hero Section - Foco em Vitória e Controle */
+    .pricing-hero {
+        padding: 160px 0 100px;
+        background: radial-gradient(circle at 50% 0%, rgba(124, 58, 237, 0.08) 0%, transparent 75%);
+    }
+
+    .hero-title {
+        font-size: clamp(2.5rem, 6vw, 5rem);
+        font-weight: 900;
+        letter-spacing: -0.05em;
+        line-height: 0.95;
+        color: var(--vi-black);
+    }
+
+    /* Grid de Planos Estilo Bento */
+    .plans-container { padding-bottom: 120px; }
+
+    .plan-card {
+        background: #fff;
+        border: 1px solid rgba(124, 58, 237, 0.1);
+        border-radius: var(--radius-bento);
+        padding: 60px 45px;
+        transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+        position: relative;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .plan-card:hover {
+        transform: translateY(-12px);
+        box-shadow: 0 40px 80px rgba(124, 58, 237, 0.12);
+        border-color: var(--vi-primary);
+    }
+
+    /* Plano Comando (Destaque Central) */
+    .plan-card.featured {
+        background: var(--vi-black);
+        color: #fff;
+        border: none;
+        box-shadow: 0 35px 70px rgba(124, 58, 237, 0.3);
+        transform: scale(1.03);
+        z-index: 2;
+    }
+
+    .plan-card.featured .text-muted { color: #94a3b8 !important; }
+    .plan-card.featured .feature-item { border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .plan-card.featured .feature-item i { color: var(--vi-primary-light); }
+
+    /* Tipografia de Preço Executive */
+    .price-wrap { margin: 40px 0; }
+    .price-currency { font-size: 1.1rem; font-weight: 800; vertical-align: top; margin-top: 10px; display: inline-block; color: var(--vi-primary); }
+    .price-value { font-size: 5.5rem; font-weight: 900; letter-spacing: -5px; line-height: 0.8; }
+    .price-period { font-size: 0.9rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 1px; }
+
+    /* Features List */
+    .feature-list { margin-bottom: 45px; flex-grow: 1; }
+    .feature-item {
+        padding: 18px 0;
+        display: flex;
+        align-items: center;
+        border-bottom: 1px solid #f1f5f9;
+        font-weight: 600;
+        font-size: 0.95rem;
+    }
+    .feature-item i { color: var(--vi-primary); font-size: 1.2rem; width: 35px; }
+
+    /* Botões de Comando */
+    .btn-command {
+        border-radius: 1.25rem;
+        padding: 22px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        font-size: 0.8rem;
+        transition: all 0.4s ease;
+        width: 100%;
+        border: none;
+    }
+    .btn-command-outline { background: #f1f5f9; color: var(--vi-black); }
+    .btn-command-outline:hover { background: var(--vi-black); color: #fff; transform: translateY(-3px); }
+    
+    .btn-command-primary { 
+        background: var(--vi-primary); 
+        color: #fff; 
+        box-shadow: 0 15px 30px rgba(124, 58, 237, 0.3); 
+    }
+    .btn-command-primary:hover { 
+        background: var(--vi-primary-dark); 
+        transform: translateY(-3px) scale(1.02); 
+        box-shadow: 0 20px 40px rgba(124, 58, 237, 0.45);
+    }
+
+    /* Comparativo Enterprise */
+    .comparison-wrap {
+        background: #fff;
+        border-radius: var(--radius-bento);
+        padding: 80px 50px;
+        margin-top: 60px;
+        border: 1px solid rgba(0,0,0,0.05);
+        box-shadow: 0 25px 50px rgba(0,0,0,0.02);
+    }
+    .table-header-pill {
+        background: var(--vi-bg);
+        border-radius: 50px;
+        padding: 10px 24px;
+        font-weight: 800;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        color: var(--vi-black);
+    }
+
+    .bg-gradient-voto {
+        background: linear-gradient(135deg, var(--vi-primary), var(--vi-black));
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="pricing-hero text-center">
+    <div class="container" data-aos="fade-up">
+        <span class="badge bg-primary bg-opacity-10 text-primary px-4 py-2 rounded-pill fw-bold mb-4" style="color: var(--vi-primary) !important; background-color: rgba(124, 58, 237, 0.1) !important;">
+            INFRAESTRUTURA TÁTICA 2026
+        </span>
+        <h1 class="hero-title mb-4">Invista na sua <br><span class="text-primary" style="color: var(--vi-primary) !important;">Soberania.</span></h1>
+        <p class="lead text-muted mx-auto" style="max-width: 700px; font-weight: 500;">
+            O VotoImpacto não oferece apenas dados. Entregamos a arquitetura de comando necessária para dominar o território e antecipar o eleitorado.
+        </p>
+    </div>
+</section>
+
+<section class="plans-container">
+    <div class="container">
+        <div class="row g-4 justify-content-center align-items-stretch">
+            
+            <div class="col-lg-4" data-aos="fade-up" data-aos-delay="100">
+                <div class="plan-card">
+                    <div>
+                        <h3 class="fw-900 text-dark mb-2">Operacional</h3>
+                        <p class="text-muted small">Essencial para vereadores e lideranças locais.</p>
+                    </div>
+                    
+                    <div class="price-wrap">
+                        <span class="price-currency">R$</span>
+                        <span class="price-value">197</span>
+                        <span class="price-period">/mês</span>
+                    </div>
+
+                    <div class="feature-list">
+                        <div class="feature-item"><i class="fa-solid fa-layer-group"></i> 02 Estratégias Táticas/mês</div>
+                        <div class="feature-item"><i class="fa-solid fa-map-location-dot"></i> Governança Territorial</div>
+                        <div class="feature-item"><i class="fa-solid fa-database"></i> CRM Político de Base</div>
+                        <div class="feature-item"><i class="fa-solid fa-chart-pie"></i> Dashboard de Indicadores</div>
+                    </div>
+
+                    <a href="https://wa.me/5511950543257" class="btn btn-command btn-command-outline text-decoration-none text-center">Assumir Controle</a>
+                </div>
+            </div>
+
+            <div class="col-lg-4" data-aos="fade-up">
+                <div class="plan-card featured">
+                    <div class="position-absolute top-0 start-50 translate-middle">
+                        <span class="badge bg-primary px-4 py-2 rounded-pill shadow-lg" style="background-color: var(--vi-primary) !important;">PADRÃO ESTRATÉGICO</span>
+                    </div>
+                    <div>
+                        <h3 class="fw-900 mb-2">Comando</h3>
+                        <p class="text-white-50 small">O núcleo tático para pré-campanhas de alto impacto.</p>
+                    </div>
+                    
+                    <div class="price-wrap">
+                        <span class="price-currency" style="color: var(--vi-primary-light);">R$</span>
+                        <span class="price-value">497</span>
+                        <span class="price-period text-white-50">/mês</span>
+                    </div>
+
+                    <div class="feature-list">
+                        <div class="feature-item"><i class="fa-solid fa-bolt"></i> 04 Estratégias + 20 Copys IA</div>
+                        <div class="feature-item"><i class="fa-solid fa-microchip"></i> Big Data de Eleitorado Local</div>
+                        <div class="feature-item"><i class="fa-solid fa-satellite-dish"></i> Geolocalização de Equipes</div>
+                        <div class="feature-item"><i class="fa-solid fa-brain"></i> IA Generativa de Discurso</div>
+                        <div class="feature-item"><i class="fa-solid fa-headset"></i> Suporte Prioritário 24/7</div>
+                    </div>
+
+                    <a href="https://wa.me/5511950543257" class="btn btn-command btn-command-primary text-decoration-none text-center">Blindar Operação</a>
+                </div>
+            </div>
+
+            <div class="col-lg-4" data-aos="fade-up" data-aos-delay="200">
+                <div class="plan-card">
+                    <div>
+                        <h3 class="fw-900 text-dark mb-2">Vitória</h3>
+                        <p class="text-muted small">Para Prefeituras e Campanhas Majoritárias.</p>
+                    </div>
+                    
+                    <div class="price-wrap">
+                        <span class="price-currency">R$</span>
+                        <span class="price-value">997</span>
+                        <span class="price-period">/mês</span>
+                    </div>
+
+                    <div class="feature-list">
+                        <div class="feature-item" style="color: var(--vi-primary);"><i class="fa-solid fa-gem"></i> <strong>Site Institucional Premium</strong></div>
+                        <div class="feature-item"><i class="fa-solid fa-wand-magic-sparkles"></i> 04 Estratégias + 80 Copys</div>
+                        <div class="feature-item"><i class="fa-solid fa-server"></i> Engine de Dados Ilimitada</div>
+                        <div class="feature-item"><i class="fa-solid fa-shield-halved"></i> Criptografia e Segurança TSE</div>
+                    </div>
+
+                    <a href="https://wa.me/5511950543257" class="btn btn-command btn-command-outline text-decoration-none text-center">Domínio Absoluto</a>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+<section class="container pb-5" data-aos="fade-up">
+    <div class="comparison-wrap">
+        <div class="text-center mb-5">
+            <h2 class="fw-900 h1">Comparativo de <span class="text-primary" style="color: var(--vi-primary) !important;">Infraestrutura.</span></h2>
+            <p class="text-muted fw-500">Engenharia de dados escalável para suportar decisões em tempo real.</p>
+        </div>
+        
+        <div class="table-responsive">
+            <table class="table align-middle">
+                <thead>
+                    <tr class="text-muted">
+                        <th class="border-0 ps-4">NÚCLEO TÉCNICO</th>
+                        <th class="border-0 text-center"><span class="table-header-pill">Operacional</span></th>
+                        <th class="border-0 text-center"><span class="table-header-pill">Comando</span></th>
+                        <th class="border-0 text-center"><span class="table-header-pill" style="background: rgba(124, 58, 237, 0.1); color: var(--vi-primary);">Vitória</span></th>
+                    </tr>
+                </thead>
+                <tbody class="fw-bold">
+                    <tr>
+                        <td class="ps-4 py-4 text-dark opacity-75">Geoprocessamento Territorial</td>
+                        <td class="text-center text-primary"><i class="fa-solid fa-check" style="color: var(--vi-primary);"></i></td>
+                        <td class="text-center text-primary"><i class="fa-solid fa-check" style="color: var(--vi-primary);"></i></td>
+                        <td class="text-center text-primary"><i class="fa-solid fa-check" style="color: var(--vi-primary);"></i></td>
+                    </tr>
+                    <tr>
+                        <td class="ps-4 py-4 text-dark opacity-75">Inteligência Tática IA</td>
+                        <td class="text-center">02/mês</td>
+                        <td class="text-center">04/mês</td>
+                        <td class="text-center">04/mês</td>
+                    </tr>
+                    <tr>
+                        <td class="ps-4 py-4 text-dark opacity-75">Engenharia de Copywriting IA</td>
+                        <td class="text-center text-muted">—</td>
+                        <td class="text-center">20/mês</td>
+                        <td class="text-center">80/mês</td>
+                    </tr>
+                    <tr>
+                        <td class="ps-4 py-4 text-dark opacity-75">Hub de Demandas (Gabinete Digital)</td>
+                        <td class="text-center text-primary"><i class="fa-solid fa-check" style="color: var(--vi-primary);"></i></td>
+                        <td class="text-center text-primary"><i class="fa-solid fa-check" style="color: var(--vi-primary);"></i></td>
+                        <td class="text-center text-primary"><i class="fa-solid fa-check" style="color: var(--vi-primary);"></i></td>
+                    </tr>
+                    <tr>
+                        <td class="ps-4 py-4 text-dark opacity-75">Infraestrutura Web (Site)</td>
+                        <td class="text-center text-muted">—</td>
+                        <td class="text-center text-muted">—</td>
+                        <td class="text-center text-primary"><i class="fa-solid fa-check" style="color: var(--vi-primary);"></i></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+
+<section class="container py-5">
+    <div class="p-5 rounded-5 bg-gradient-voto text-white text-center shadow-lg" style="border-radius: var(--radius-bento) !important;">
+        <h2 class="display-5 fw-900 mb-3">Sua vitória começa na escolha da infraestrutura.</h2>
+        <p class="text-white-50 mb-5 fs-5">Fale com nossos engenheiros de dados e analistas políticos para um setup personalizado.</p>
+        <a href="https://wa.me/5511950543257" class="btn btn-light btn-lg rounded-4 px-5 py-3 fw-900" style="color: var(--vi-primary); border: none;">Falar com Especialista</a>
+    </div>
+</section>
+{% endblock %}

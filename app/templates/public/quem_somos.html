@@ -1,0 +1,178 @@
+{% extends "public/base_site.html" %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --vi-primary: #7c3aed;
+        --vi-primary-light: #a78bfa;
+        --vi-dark: #0f172a;
+        --vi-black: #020617;
+        --radius-bento: 2.5rem;
+        --radius-profile: 3rem;
+    }
+
+    body { font-family: 'Inter', sans-serif !important; background-color: #fff; }
+    
+    /* Hero Monumental - Escuro, Profundo, Autoritário */
+    .about-hero {
+        padding: 200px 0 120px;
+        background: var(--vi-black);
+        color: #fff;
+        position: relative;
+        overflow: hidden;
+    }
+    .about-hero::before {
+        content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        background: radial-gradient(circle at 50% 50%, rgba(124, 58, 237, 0.18), transparent);
+    }
+
+    /* Seções de Perfil (Grandes e Imersivas) */
+    .profile-section { padding: 140px 0; border-bottom: 1px solid #f1f5f9; }
+    
+    .profile-img-container {
+        position: relative;
+        border-radius: var(--radius-profile);
+        overflow: hidden;
+        box-shadow: 0 60px 120px rgba(0,0,0,0.15);
+        border: 1px solid rgba(124, 58, 237, 0.1);
+    }
+    
+    .profile-label { 
+        color: var(--vi-primary); 
+        font-weight: 900; 
+        text-transform: uppercase; 
+        padding-left: 10px;
+        border-left: 4px solid var(--vi-primary);
+        letter-spacing: 2px; 
+        font-size: 0.75rem; 
+        margin-bottom: 1.5rem; 
+        display: block; 
+    }
+
+    /* DNA e Manifesto */
+    .manifesto-box {
+        background: #fff;
+        border-radius: var(--radius-bento);
+        padding: 100px 60px;
+        text-align: center;
+        margin-top: -100px;
+        z-index: 10;
+        position: relative;
+        border: 1px solid rgba(124, 58, 237, 0.1);
+        box-shadow: 0 40px 100px rgba(0,0,0,0.08);
+    }
+
+    .stat-circle {
+        width: 100px; height: 100px; 
+        border: 2px solid var(--vi-primary);
+        border-radius: 50%; display: flex; align-items: center; justify-content: center;
+        margin: 0 auto 20px; 
+        font-weight: 900; 
+        font-size: 1.5rem; 
+        color: var(--vi-primary);
+        background: rgba(124, 58, 237, 0.03);
+    }
+
+    .display-huge { 
+        font-size: clamp(3rem, 7vw, 5.5rem); 
+        font-weight: 900; 
+        letter-spacing: -0.05em; 
+        line-height: 0.85; 
+    }
+    
+    .fw-black { font-weight: 900 !important; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<section class="about-hero">
+    <div class="container position-relative text-center">
+        <span class="profile-label text-primary border-primary mx-auto d-table" data-aos="fade-up" style="border-left: none; padding-left: 0;">A Linhagem do Poder</span>
+        <h1 class="display-huge mb-5" data-aos="fade-up" data-aos-delay="100">O Legado encontra a <br><span style="color: var(--vi-primary);">Engenharia.</span></h1>
+        <p class="lead mx-auto opacity-75 fs-4" style="max-width: 900px; font-weight: 500;" data-aos="fade-up" data-aos-delay="200">
+            O **VotoImpacto** não é apenas código. É a síntese entre o rigor da Engenharia de Big Data e a precisão da Estratégia Política. Somos a infraestrutura inabalável projetada para líderes que não jogam para perder.
+        </p>
+    </div>
+</section>
+
+<section class="profile-section">
+    <div class="container">
+        <div class="row align-items-center g-5">
+            <div class="col-lg-6" data-aos="fade-right">
+                <div class="profile-img-container">
+                    <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=800" class="img-fluid" alt="Eduardo Batista">
+                </div>
+            </div>
+            <div class="col-lg-6 ps-lg-5" data-aos="fade-left">
+                <span class="profile-label">Fundação e Infraestrutura</span>
+                <h2 class="display-4 fw-black mb-3">Eduardo Batista</h2>
+                <h4 class="text-primary mb-4 fw-bold">Arquiteto de Big Data & Engenharia de Dados</h4>
+                <p class="lead text-muted mb-4 fw-500">
+                    Com uma trajetória forjada no processamento de volumes massivos de informação corporativa, Eduardo é a garantia de robustez da VotoImpacto.
+                </p>
+                <p class="text-muted fs-5">
+                    Sua missão é a blindagem: garantir que cada dado de eleitor, cada mapa de calor e cada métrica de território seja processada com precisão bancária e segurança absoluta. Ele transforma o caos dos dados públicos e privados em uma base sólida, escalável e inabalável para o pleito de 2026.
+                </p>
+                <div class="mt-5 d-flex gap-5">
+                    <div class="text-center">
+                        <div class="stat-circle">25+</div>
+                        <span class="small fw-900 text-uppercase opacity-50 letter-spacing-1">Anos de Dados</span>
+                    </div>
+                    <div class="text-center">
+                        <div class="stat-circle"><i class="fa-solid fa-shield-halved"></i></div>
+                        <span class="small fw-900 text-uppercase opacity-50 letter-spacing-1">Segurança Master</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="profile-section bg-light">
+    <div class="container">
+        <div class="row align-items-center g-5 flex-lg-row-reverse">
+            <div class="col-lg-6" data-aos="fade-left">
+                <div class="profile-img-container">
+                    <img src="https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&q=80&w=800" class="img-fluid" alt="Guilherme Batista">
+                </div>
+            </div>
+            <div class="col-lg-6 pe-lg-5" data-aos="fade-right">
+                <span class="profile-label">Inteligência Tática</span>
+                <h2 class="display-4 fw-black mb-3">Guilherme Batista</h2>
+                <h4 class="text-primary mb-4 fw-bold">Analista Político & Arquiteto de Sistemas</h4>
+                <p class="lead text-muted mb-4 fw-500">
+                    Guilherme é o tradutor da dor do candidato para a lógica do sistema. Ele desenha a estratégia que o código executa.
+                </p>
+                <p class="text-muted fs-5">
+                    Como estrategista, ele projetou a lógica tática do VotoImpacto: como converter um dado geográfico em uma ação de rua vitoriosa e como utilizar IA Generativa para moldar discursos que ressoam. Ele garante que a tecnologia não seja apenas uma ferramenta, mas um motor de conquista de votos.
+                </p>
+                <div class="mt-5 d-flex gap-5">
+                    <div class="text-center">
+                        <div class="stat-circle"><i class="fa-solid fa-microchip"></i></div>
+                        <span class="small fw-900 text-uppercase opacity-50 letter-spacing-1">Lógica Tática</span>
+                    </div>
+                    <div class="text-center">
+                        <div class="stat-circle"><i class="fa-solid fa-code-merge"></i></div>
+                        <span class="small fw-900 text-uppercase opacity-50 letter-spacing-1">Dev. Ágil</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="container mb-5">
+    <div class="manifesto-box" data-aos="zoom-in">
+        <h3 class="display-5 fw-black mb-4">Unidos pela <span style="color: var(--vi-primary);">Vitória Absoluta.</span></h3>
+        <p class="lead text-muted mx-auto mb-5 fs-4" style="max-width: 850px; font-weight: 500;">
+            A Família Batista não entrega apenas um SaaS. Entregamos uma herança de inteligência. Eduardo garante que a plataforma nunca falhe; Guilherme garante que ela conquiste o território. Esta é a nossa promessa para a sua campanha em 2026.
+        </p>
+        <div class="d-flex justify-content-center gap-4 flex-wrap">
+            <a href="/planos" class="btn btn-dark btn-lg rounded-4 px-5 py-3 fw-900 text-uppercase letter-spacing-1" style="font-size: 0.85rem;">Escolher Modelo de Comando</a>
+            <a href="https://wa.me/5511950543257" class="btn btn-outline-primary btn-lg rounded-4 px-5 py-3 fw-900 text-uppercase letter-spacing-1" style="font-size: 0.85rem; border-color: var(--vi-primary); color: var(--vi-primary);">Falar com os Fundadores</a>
+        </div>
+    </div>
+</section>
+
+{% endblock %}

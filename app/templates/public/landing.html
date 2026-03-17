@@ -1,366 +1,203 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VotaHub | Inteligência Tecnológica para Campanhas Vitoriosas</title>
+{% extends "public/base_site.html" %}
+
+{% block extra_css %}
+<style>
+    body { font-family: 'Inter', sans-serif !important; }
     
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    /* Hero: O Impacto da Decisão */
+    .hero-executive {
+        padding: 160px 0 100px;
+        background: radial-gradient(circle at 90% 10%, rgba(79, 70, 229, 0.05), transparent);
+        border-bottom: 1px solid #f1f5f9;
+    }
 
-    <style>
-        :root {
-            --primary: #4f46e5;
-            --primary-hover: #4338ca;
-            --accent: #818cf8;
-            --dark: #0f172a;
-            --slate: #64748b;
-            --light-bg: #f8fafc;
-            --glass: rgba(255, 255, 255, 0.85);
-        }
+    .hero-title {
+        font-size: clamp(2.5rem, 5.5vw, 5rem);
+        font-weight: 900;
+        letter-spacing: -3px;
+        line-height: 0.95;
+        color: #020617;
+    }
 
-        body { 
-            font-family: 'Plus Jakarta Sans', sans-serif; 
-            color: var(--dark); 
-            background-color: #ffffff;
-            overflow-x: hidden;
-            scroll-behavior: smooth;
-        }
+    /* Seção de Resposta: O que nós fazemos? */
+    .solution-grid { padding: 100px 0; background: #fff; }
+    
+    .card-solution {
+        border: 1px solid #e2e8f0;
+        border-radius: 2rem;
+        padding: 50px 40px;
+        height: 100%;
+        transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+    }
+    .card-solution:hover {
+        border-color: #4f46e5;
+        box-shadow: 0 30px 60px rgba(0,0,0,0.05);
+        transform: translateY(-10px);
+    }
 
-        /* --- NAVBAR GLASSMORPHISM --- */
-        .navbar { 
-            background: var(--glass); 
-            backdrop-filter: blur(15px); 
-            border-bottom: 1px solid rgba(0,0,0,0.05);
-            padding: 20px 0;
-            transition: all 0.3s ease;
-        }
-        .navbar.scrolled { padding: 12px 0; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
-        .nav-link { font-weight: 600; color: var(--dark) !important; margin: 0 12px; font-size: 0.95rem; }
-        .btn-login { 
-            background: var(--primary); 
-            color: white !important; 
-            border-radius: 12px; 
-            padding: 10px 24px; 
-            font-weight: 700; 
-            box-shadow: 0 10px 20px rgba(79, 70, 229, 0.2);
-            transition: 0.3s;
-        }
-        .btn-login:hover { transform: translateY(-3px); box-shadow: 0 15px 25px rgba(79, 70, 229, 0.3); }
+    .icon-box {
+        width: 64px; height: 64px;
+        background: rgba(79, 70, 229, 0.1);
+        color: #4f46e5;
+        border-radius: 18px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.6rem; margin-bottom: 30px;
+    }
 
-        /* --- HERO SECTION --- */
-        .hero { 
-            padding: 180px 0 100px;
-            background: 
-                radial-gradient(circle at top right, rgba(79, 70, 229, 0.08), transparent),
-                radial-gradient(circle at bottom left, rgba(129, 140, 248, 0.08), transparent);
-        }
-        .hero h1 { 
-            font-size: clamp(2.5rem, 5vw, 4.5rem); 
-            font-weight: 800; 
-            letter-spacing: -3px; 
-            line-height: 1.1;
-        }
-        .text-gradient {
-            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
+    /* Seção de Autoridade: Pai e Filho */
+    .founders-section {
+        padding: 120px 0;
+        background: #020617;
+        color: #fff;
+        border-radius: 4rem;
+        margin: 0 20px;
+    }
 
-        /* --- FEATURE CARDS --- */
-        .feature-card {
-            border: 1px solid rgba(0,0,0,0.05);
-            border-radius: 24px;
-            padding: 40px;
-            background: #fff;
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-        .feature-card:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 30px 60px rgba(0,0,0,0.06);
-            border-color: var(--primary-light);
-        }
-        .icon-box {
-            width: 56px; height: 56px;
-            background: rgba(79, 70, 229, 0.1);
-            color: var(--primary);
-            border-radius: 14px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 1.4rem; margin-bottom: 20px;
-        }
+    .founder-bio {
+        background: rgba(255,255,255,0.03);
+        border: 1px solid rgba(255,255,255,0.1);
+        padding: 40px;
+        border-radius: 2rem;
+    }
 
-        /* --- IA SECTION (DARK MODE) --- */
-        .ia-section {
-            background: #020617;
-            color: #fff;
-            border-radius: 60px;
-            margin: 0 20px;
-            padding: 100px 0;
-            position: relative;
-        }
-        .ia-card {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 32px;
-            padding: 40px;
-            transition: 0.3s;
-        }
-        .ia-card:hover { background: rgba(255,255,255,0.06); border-color: var(--primary); }
+    /* Seção de Resultados: O que o Candidato Ganha */
+    .roi-section { padding: 120px 0; }
+    .roi-card { background: #f8fafc; border-radius: 2rem; padding: 60px; }
 
-        /* --- PRICING SECTION --- */
-        .pricing-card {
-            border-radius: 32px;
-            padding: 50px 40px;
-            background: #fff;
-            border: 1px solid #e2e8f0;
-            transition: 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
-        }
-        .pricing-card.featured {
-            background: var(--dark);
-            color: #fff;
-            transform: scale(1.05);
-            box-shadow: 0 40px 80px rgba(0,0,0,0.15);
-            border: none;
-        }
-        .price-tag { font-size: 3.8rem; font-weight: 800; letter-spacing: -2px; }
+    .btn-massive {
+        background: #4f46e5;
+        color: white !important;
+        padding: 20px 45px;
+        border-radius: 50px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        font-size: 0.9rem;
+        box-shadow: 0 20px 40px rgba(79, 70, 229, 0.25);
+        transition: 0.3s;
+    }
+    .btn-massive:hover { background: #3730a3; transform: translateY(-3px); }
 
-        /* --- FOUNDER CARDS --- */
-        .founder-card {
-            border-radius: 30px;
-            transition: 0.4s;
-            border: 1px solid #e2e8f0;
-        }
-        .founder-card:hover { transform: translateX(10px); border-color: var(--primary); }
-        .founder-img { width: 100px; height: 100px; border-radius: 25px; object-fit: cover; }
+    .label-accent { color: #4f46e5; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; font-size: 0.75rem; }
+</style>
+{% endblock %}
 
-        /* --- WHATSAPP FLOATING --- */
-        .btn-whatsapp {
-            position: fixed; bottom: 30px; right: 30px;
-            width: 64px; height: 64px; background: #25d366;
-            color: #fff; border-radius: 50%; display: flex;
-            align-items: center; justify-content: center;
-            font-size: 2rem; z-index: 9999;
-            box-shadow: 0 10px 25px rgba(37, 211, 102, 0.3);
-            transition: 0.3s;
-        }
-        .btn-whatsapp:hover { transform: scale(1.1) rotate(8deg); color: #fff; }
-
-        @media (max-width: 991px) {
-            .hero { padding-top: 140px; }
-            .ia-section { border-radius: 0; margin: 0; }
-            .pricing-card.featured { transform: scale(1); margin: 30px 0; }
-        }
-    </style>
-</head>
-<body>
-
-    <a href="https://wa.me/5511950543257?text=Olá!%20Gostaria%20de%20falar%20com%20um%20consultor%20sobre%20o%20VotaHub." 
-       class="btn-whatsapp" target="_blank">
-        <i class="fa-brands fa-whatsapp"></i>
-    </a>
-
-    <nav class="navbar navbar-expand-lg fixed-top" id="mainNavbar">
-        <div class="container">
-            <a class="navbar-brand fw-extrabold fs-3 d-flex align-items-center" href="#">
-                <i class="fa-solid fa-bolt-lightning text-primary me-2"></i>
-                <span style="letter-spacing: -1.5px; font-weight: 800;">VotaHub</span>
-            </a>
-            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
-                <i class="fa-solid fa-bars-staggered"></i>
-            </button>
-            <div class="collapse navbar-collapse" id="navMenu">
-                <ul class="navbar-nav ms-auto align-items-center">
-                    <li class="nav-item"><a class="nav-link" href="#tecnologia">Tecnologia</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#ia">Inteligência</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#planos">Planos</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#quem-somos">DNA</a></li>
-                    <li class="nav-item ms-lg-4">
-                        <a href="{{ url_for('auth.login') }}" class="btn btn-login">Acesso ao Sistema</a>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </nav>
-
-    <section class="hero text-center">
-        <div class="container">
-            <div class="badge bg-primary bg-opacity-10 text-primary px-4 py-2 rounded-pill mb-4 fw-bold" data-aos="fade-down">
-                🚀 O FUTURO DAS CAMPANHAS EM 2026
-            </div>
-            <h1 data-aos="fade-up" data-aos-delay="100">
-                Não dispute. <br> <span class="text-gradient">Domine o território.</span>
-            </h1>
-            <p class="lead text-slate mt-4 mb-5 mx-auto" style="max-width: 800px;" data-aos="fade-up" data-aos-delay="200">
-                Integramos governança territorial georreferenciada, análise preditiva por I.A. e criação automatizada de conteúdo em uma única infraestrutura para candidatos de alto impacto.
-            </p>
-            <div class="d-flex flex-column flex-md-row justify-content-center gap-3" data-aos="fade-up" data-aos-delay="300">
-                <a href="#planos" class="btn btn-dark btn-lg px-5 py-3 rounded-4 fw-bold shadow">Ver Modelos de Comando</a>
-                <a href="https://wa.me/5511950543257?text=Olá!%20Gostaria%20de%20conhecer%20melhor%20o%20ecossistema%20VotaHub." 
-                   class="btn btn-outline-dark btn-lg px-5 py-3 rounded-4 fw-bold" target="_blank">
-                   Falar com Consultor
-                </a>
-            </div>
-        </div>
-    </section>
-
-    <section id="tecnologia" class="py-5">
-        <div class="container py-5">
-            <div class="row g-5 align-items-center">
-                <div class="col-lg-6" data-aos="fade-right">
-                    <h2 class="display-5 fw-bold mb-4" style="letter-spacing: -2px;">Governança Territorial <span class="text-primary">Georreferenciada</span></h2>
-                    <p class="lead text-slate mb-5">Esqueça planilhas. Visualize sua força política em tempo real com mapas de calor e métricas de lealdade por bairro.</p>
-                    
-                    <div class="feature-card d-flex align-items-start gap-4 mb-4">
-                        <div class="icon-box"><i class="fa-solid fa-map-location-dot"></i></div>
-                        <div>
-                            <h5 class="fw-bold">Mapeamento de Influência</h5>
-                            <p class="text-slate mb-0">Identifique zonas de silêncio e territórios dominados com precisão cirúrgica em mapas interativos.</p>
-                        </div>
-                    </div>
-                    <div class="feature-card d-flex align-items-start gap-4">
-                        <div class="icon-box" style="background: rgba(16, 185, 129, 0.1); color: #10b981;"><i class="fa-solid fa-users-gear"></i></div>
-                        <div>
-                            <h5 class="fw-bold">Gestão de Equipe & Metas</h5>
-                            <p class="text-slate mb-0">Monitore a performance dos seus assessores e mobilizadores através de geolocalização e check-ins.</p>
-                        </div>
-                    </div>
+{% block content %}
+<section class="hero-executive">
+    <div class="container">
+        <div class="row align-items-center g-5">
+            <div class="col-lg-7" data-aos="fade-right">
+                <span class="label-accent mb-3 d-block">Estratégia e Dados para 2026</span>
+                <h1 class="hero-title">Vença a eleição <br>antes da <span class="text-primary">apuração.</span></h1>
+                <p class="lead text-muted mt-4 mb-5 pe-lg-5 fs-4">
+                    O VotaHub une a <strong>Engenharia de Big Data</strong> com a <strong>Análise Política</strong> para entregar ao candidato o controle total do território e da narrativa.
+                </p>
+                <div class="d-flex flex-column flex-md-row gap-3">
+                    <a href="/planos" class="btn btn-massive">Blindar minha Campanha</a>
+                    <a href="/tecnologia" class="btn btn-outline-dark rounded-pill px-5 py-3 fw-bold">Ver Infraestrutura</a>
                 </div>
-                <div class="col-lg-6" data-aos="fade-left">
-                    <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=1000" class="img-fluid rounded-5 shadow-lg" alt="Dashboard Hub">
+            </div>
+            <div class="col-lg-5" data-aos="zoom-in">
+                <div class="p-3 bg-white shadow-2xl rounded-5 border">
+                    <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=1000" class="img-fluid rounded-4" alt="Inteligência de Dados">
                 </div>
             </div>
         </div>
-    </section>
+    </div>
+</section>
 
-    <section id="ia" class="ia-section">
-        <div class="container">
-            <div class="text-center mb-5 pb-3">
-                <div class="badge bg-white bg-opacity-10 text-accent px-3 py-2 rounded-pill mb-3 fw-bold">INTELIGÊNCIA ARTIFICIAL PROPRIETÁRIA</div>
-                <h2 class="display-5 fw-bold text-white">Ciência de Dados para a <br><span class="text-accent">Vitória Estratégica</span></h2>
-            </div>
-            
-            <div class="row g-4">
-                <div class="col-lg-6" data-aos="zoom-in" data-aos-delay="100">
-                    <div class="ia-card">
-                        <i class="fa-solid fa-brain-circuit text-primary mb-4" style="font-size: 3rem;"></i>
-                        <h3 class="fw-bold mb-3">I.A. Analisadora Estratégica</h3>
-                        <p class="opacity-75 mb-0">Cruza dados demográficos e históricos eleitorais para prever comportamentos e sugerir mudanças de rota em tempo real na campanha.</p>
-                    </div>
+<section class="solution-grid">
+    <div class="container">
+        <div class="text-center mb-5 pb-5">
+            <h2 class="display-4 fw-black" style="letter-spacing: -2px;">Sua Sala de Guerra <span class="text-primary">Digital.</span></h2>
+            <p class="text-muted lead">Não somos um app de cadastro. Somos a infraestrutura da sua vitória.</p>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-lg-4" data-aos="fade-up">
+                <div class="card-solution">
+                    <div class="icon-box"><i class="fa-solid fa-map-location-dot"></i></div>
+                    <h4 class="fw-bold mb-3">Domínio Territorial</h4>
+                    <p class="text-muted">Chega de "feeling". Saiba exatamente quantos votos você tem em cada bairro e onde sua militância precisa avançar para virar o jogo.</p>
                 </div>
-                <div class="col-lg-6" data-aos="zoom-in" data-aos-delay="200">
-                    <div class="ia-card" style="border-color: var(--primary);">
-                        <i class="fa-solid fa-wand-magic-sparkles text-primary mb-4" style="font-size: 3rem;"></i>
-                        <h3 class="fw-bold mb-3">I.A. Criadora de Conteúdo</h3>
-                        <p class="opacity-75 mb-0">Gera roteiros persuasivos, posts e mensagens de WhatsApp baseados no tom de voz do candidato e nas dores do eleitor local.</p>
-                    </div>
+            </div>
+            <div class="col-lg-4" data-aos="fade-up" data-aos-delay="100">
+                <div class="card-solution">
+                    <div class="icon-box"><i class="fa-solid fa-users-gear"></i></div>
+                    <h4 class="fw-bold mb-3">Controle de Militância</h4>
+                    <p class="text-muted">Monitore sua equipe de rua em tempo real. Saiba quem está produzindo e quem está parado através de geolocalização e metas técnicas.</p>
+                </div>
+            </div>
+            <div class="col-lg-4" data-aos="fade-up" data-aos-delay="200">
+                <div class="card-solution">
+                    <div class="icon-box"><i class="fa-solid fa-bullhorn"></i></div>
+                    <h4 class="fw-bold mb-3">Gabinete Digital</h4>
+                    <p class="text-muted">Receba demandas e pedidos diretamente do seu site oficial para o sistema, garantindo que nenhum eleitor fique sem resposta.</p>
                 </div>
             </div>
         </div>
-    </section>
+    </div>
+</section>
 
-    <section id="planos" class="py-5 bg-light mt-5">
-        <div class="container py-5">
-            <div class="text-center mb-5">
-                <h2 class="display-5 fw-bold mb-4">Planos de <span class="text-primary">Comando</span></h2>
-                <p class="text-slate">Escolha a infraestrutura ideal para o tamanho do seu objetivo político.</p>
-            </div>
-            
-            <div class="row g-4 justify-content-center">
-                <div class="col-lg-4" data-aos="fade-up" data-aos-delay="100">
-                    <div class="pricing-card h-100">
-                        <h4 class="fw-bold mb-2">Estratégico</h4>
-                        <p class="text-slate small mb-4">Foco em governança territorial e análise de dados de rua.</p>
-                        <div class="price-tag mb-4">297<span class="fs-5 text-muted">,90</span><small class="fs-6 text-muted fw-normal">/mês</small></div>
-                        <ul class="list-unstyled mb-5 text-start">
-                            <li class="mb-3 text-primary fw-bold"><i class="fa-solid fa-users-plus me-2"></i> 5 Acessos Gratuitos p/ Equipe</li>
-                            <li class="mb-3"><i class="fa-solid fa-check text-primary me-2"></i> CRM de Governança Master</li>
-                            <li class="mb-3"><i class="fa-solid fa-check text-primary me-2"></i> Mapeamento Territorial Geográfico</li>
-                            <li class="mb-3"><i class="fa-solid fa-check text-primary me-2"></i> I.A. Analisadora de Dados</li>
-                            <li class="mb-3"><i class="fa-solid fa-check text-primary me-2"></i> Gestão de Tarefas & Metas</li>
-                        </ul>
-                        <a href="https://wa.me/5511950543257?text=Olá!%20Gostaria%20de%20contratar%20o%20Plano%20Estratégico%20do%20VotaHub." 
-                           class="btn btn-outline-primary w-100 py-3 rounded-3 fw-bold" target="_blank">Falar com Consultor</a>
+<section class="founders-section">
+    <div class="container py-5">
+        <div class="row align-items-center g-5">
+            <div class="col-lg-6" data-aos="fade-right">
+                <span class="label-accent text-white-50 mb-3 d-block">A ORIGEM</span>
+                <h2 class="display-5 fw-black mb-4">A união entre a <br>Engenharia e a Estratégia.</h2>
+                <p class="opacity-75 lead">O VotaHub nasceu para resolver o maior problema de um candidato: a <strong>incerteza</strong>.</p>
+                
+                <div class="mt-5">
+                    <div class="founder-bio mb-4">
+                        <h6 class="fw-bold text-primary mb-1">EDUARDO NUNES (O PAI)</h6>
+                        <p class="small mb-0 opacity-75">Expert em Engenharia de Dados e Big Data. É quem garante que a infraestrutura suporte milhões de dados com segurança bancária e precisão matemática.</p>
                     </div>
-                </div>
-
-                <div class="col-lg-4" data-aos="fade-up" data-aos-delay="200">
-                    <div class="pricing-card featured h-100">
-                        <div class="badge bg-primary mb-3">SISTEMA COMPLETO</div>
-                        <h4 class="fw-bold mb-2">Digital Master</h4>
-                        <p class="opacity-75 small mb-4">Domínio total das redes sociais e do campo político.</p>
-                        <div class="price-tag mb-4">699<span class="fs-5 opacity-50">,90</span><small class="fs-6 opacity-50 fw-normal">/mês</small></div>
-                        <ul class="list-unstyled mb-5 text-start">
-                            <li class="mb-3 text-warning fw-bold"><i class="fa-solid fa-globe me-2"></i> Site Institucional p/ Lançamento</li>
-                            <li class="mb-3"><i class="fa-solid fa-star text-warning me-2"></i> Tudo do Plano Estratégico</li>
-                            <li class="mb-3"><i class="fa-solid fa-star text-warning me-2"></i> <strong>I.A. Criadora de Conteúdo</strong></li>
-                            <li class="mb-3"><i class="fa-solid fa-star text-warning me-2"></i> Acessos de Equipe Ilimitados</li>
-                            <li class="mb-3"><i class="fa-solid fa-star text-warning me-2"></i> Monitoramento de Sentimento Web</li>
-                        </ul>
-                        <a href="https://wa.me/5511950543257?text=Olá!%20Tenho%20interesse%20no%20Plano%20Digital%20Master.%20Podemos%20conversar?" 
-                           class="btn btn-primary w-100 py-3 rounded-3 fw-bold shadow" target="_blank">Garantir Infraestrutura Master</a>
+                    <div class="founder-bio">
+                        <h6 class="fw-bold text-primary mb-1">GUILHERME ARAUJO (O FILHO)</h6>
+                        <p class="small mb-0 opacity-75">Analista Político e Desenvolvedor. É quem traduz a dor do candidato e a necessidade do território em funcionalidades táticas de software.</p>
                     </div>
                 </div>
             </div>
-            <p class="text-center text-muted mt-5 small">* O Site Institucional do Plano Master é entregue pronto para o dia da divulgação oficial da candidatura.</p>
-        </div>
-    </section>
-
-    <section id="quem-somos" class="py-5">
-        <div class="container py-5">
-            <div class="row g-5 align-items-center">
-                <div class="col-lg-5" data-aos="fade-right">
-                    <div class="badge bg-primary bg-opacity-10 text-primary px-3 py-2 rounded-pill mb-3 fw-bold">NOSSO DNA</div>
-                    <h2 class="display-5 fw-bold mb-4" style="letter-spacing: -2px;">Unindo <span class="text-primary">Legado</span> e <span class="text-primary">Tecnologia</span>.</h2>
-                    <p class="lead text-slate">O VotaHub nasceu da fusão entre a sensibilidade política de décadas e a precisão da ciência de dados preditiva.</p>
-                </div>
-                <div class="col-lg-7">
-                    <div class="row g-4">
-                        <div class="col-12" data-aos="fade-up" data-aos-delay="100">
-                            <div class="founder-card p-4 d-flex align-items-center gap-4 bg-white shadow-sm">
-                                <img src="https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&q=80&w=200" class="founder-img shadow-sm" alt="Guilherme Araujo">
-                                <div>
-                                    <h5 class="fw-bold mb-1">Guilherme Araujo</h5>
-                                    <p class="text-primary small fw-bold mb-2">CEO & ESTRATEGISTA</p>
-                                    <p class="small text-slate mb-0">Arquiteto de lógica de poder e análise situacional de campo.</p>
-                                </div>
+            <div class="col-lg-6" data-aos="fade-left">
+                <div class="roi-card bg-white text-dark">
+                    <h4 class="fw-bold mb-4">O que isso significa para você?</h4>
+                    <ul class="list-unstyled">
+                        <li class="mb-4 d-flex">
+                            <i class="fa-solid fa-circle-check text-success me-3 mt-1"></i>
+                            <div>
+                                <h6 class="fw-bold mb-0">Decisões baseadas em Fatos</h6>
+                                <p class="small text-muted">Pare de ouvir palpites de assessores. Olhe para o mapa de calor e tome a decisão certa.</p>
                             </div>
-                        </div>
-                        <div class="col-12" data-aos="fade-up" data-aos-delay="200">
-                            <div class="founder-card p-4 d-flex align-items-center gap-4 bg-white shadow-sm">
-                                <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200" class="founder-img shadow-sm" alt="Eduardo Nunes">
-                                <div>
-                                    <h5 class="fw-bold mb-1">Eduardo Nunes</h5>
-                                    <p class="text-primary small fw-bold mb-2">CTO & DATA SCIENTIST</p>
-                                    <p class="small text-slate mb-0">Especialista em modelos preditivos e I.A. Generativa aplicada.</p>
-                                </div>
+                        </li>
+                        <li class="mb-4 d-flex">
+                            <i class="fa-solid fa-circle-check text-success me-3 mt-1"></i>
+                            <div>
+                                <h6 class="fw-bold mb-0">Blindagem de Dados</h6>
+                                <p class="small text-muted">Sua base de apoiadores é seu maior tesouro. Nós a protegemos com engenharia de Big Data de ponta.</p>
                             </div>
-                        </div>
-                    </div>
+                        </li>
+                        <li class="d-flex">
+                            <i class="fa-solid fa-circle-check text-success me-3 mt-1"></i>
+                            <div>
+                                <h6 class="fw-bold mb-0">Eficiência Financeira</h6>
+                                <p class="small text-muted">Saiba onde investir seu material de campanha e sua equipe de rua para maximizar cada centavo.</p>
+                            </div>
+                        </li>
+                    </ul>
                 </div>
             </div>
         </div>
-    </section>
+    </div>
+</section>
 
-    <footer class="py-5 bg-dark text-white text-center border-top border-white border-opacity-10">
-        <div class="container">
-            <h3 class="fw-bold mb-4"><i class="fa-solid fa-bolt-lightning text-primary"></i> VotaHub</h3>
-            <p class="text-white text-opacity-25 small mb-0">© 2026 VotaHub Tecnologia Política. Todos os direitos reservados.</p>
+<section class="py-5 text-center">
+    <div class="container py-5">
+        <h2 class="display-3 fw-black mb-4" style="letter-spacing: -3px;">Assuma o comando <br>da sua <span class="text-primary">vitória.</span></h2>
+        <p class="lead text-muted mb-5 mx-auto" style="max-width: 600px;">Em 2026, quem não dominar os dados do território já começa a eleição derrotado. Fale com um de nossos consultores.</p>
+        <div class="d-flex justify-content-center gap-3">
+            <a href="https://wa.me/5511950543257" class="btn btn-massive">Falar com Consultor</a>
+            <a href="/planos" class="btn btn-outline-dark rounded-pill px-5 py-3 fw-bold">Ver Planos</a>
         </div>
-    </footer>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
-    <script>
-        AOS.init({ duration: 1000, once: true });
-        
-        window.onscroll = function() {
-            var nav = document.getElementById('mainNavbar');
-            if (window.pageYOffset > 50) { nav.classList.add("scrolled"); } 
-            else { nav.classList.remove("scrolled"); }
-        };
-    </script>
-</body>
-</html>
+    </div>
+</section>
+{% endblock %}
