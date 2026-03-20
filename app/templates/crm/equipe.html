@@ -27,15 +27,96 @@
 
     /* Avatar Circle */
     .avatar-circle {
-        width: 42px; height: 42px; border-radius: 12px;
+        width: 48px; height: 48px; border-radius: 14px;
         display: flex; align-items: center; justify-content: center;
-        font-weight: 800; font-size: 1.1rem;
+        font-weight: 800; font-size: 1.2rem;
+        flex-shrink: 0; 
+    }
+
+    /* =======================================================
+       1. ESTILO DESKTOP APERFEIÇOADO (Candidato com Fundo)
+       ======================================================= */
+    @media (min-width: 769px) {
+        /* Apenas no desktop, se for candidato, pinta a linha de laranja claro */
+        tr.membro-candidato {
+            background-color: rgba(255, 193, 7, 0.1) !important; /* bg-warning bg-opacity-10 */
+        }
+    }
+
+    /* =======================================================
+       2. RESPONSIVIDADE SAAS MOBILE (< 768px) - CARDS BRANCOS
+       ======================================================= */
+    @media (max-width: 768px) {
+        .cabecalho-responsivo { flex-direction: column; align-items: flex-start !important; }
+        .cabecalho-responsivo > div:last-child { width: 100%; margin-top: 15px !important; }
+        .badge-comando { display: block; text-align: center; }
+
+        /* MATA A TABELA E TRANSFORMA EM GRID DE CARDS BRANCOS */
+        .card-team { background: transparent !important; box-shadow: none !important; }
+        .tabela-saas-mobile { background: transparent !important; border: none !important; display: block; }
+        .tabela-saas-mobile thead, .tabela-saas-mobile tbody { display: block; width: 100%; }
+        .tabela-saas-mobile thead { display: none; } /* Oculta cabeçalho no mobile */
+        
+        .tabela-saas-mobile tr { 
+            display: flex; 
+            flex-direction: column; 
+            position: relative; 
+            background: white !important; /* FORÇA FUNDO BRANCO NO MOBILE PARA TODOS */
+            border-radius: 20px; 
+            padding: 20px; 
+            margin-bottom: 20px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.04); 
+            border: 1px solid #f1f5f9;
+        }
+        
+        .tabela-saas-mobile td { 
+            display: block; width: 100%; padding: 0 !important; border: none !important; text-align: left !important;
+        }
+
+        /* TD 1: AVATAR E NOME (Cabeçalho do Card) */
+        .tabela-saas-mobile td:nth-child(1) {
+            margin-bottom: 15px;
+            padding-right: 90px !important; /* Espaço para não encavalar no badge absolute */
+        }
+        
+        /* TD 3: BADGE DE CARGO (Flutuante no canto superior direito) */
+        .tabela-saas-mobile td:nth-child(3) {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: auto; /* Anula o width 100% */
+        }
+        .tabela-saas-mobile td:nth-child(3) .badge { font-size: 0.65rem; padding: 5px 10px; }
+
+        /* TD 2: CONTATO (Bloco cinza para destacar e organizar) */
+        .tabela-saas-mobile td:nth-child(2) {
+            background-color: #f8fafc;
+            border-radius: 12px;
+            padding: 12px 15px !important;
+            margin-bottom: 20px;
+            border: 1px solid #e2e8f0;
+        }
+
+        /* TD 4: AÇÕES (Botão no rodapé do card) */
+        .tabela-saas-mobile td:last-child { margin-top: auto; }
+        .btn-acao-mobile { 
+            width: 100%; 
+            justify-content: center; 
+            display: flex; 
+            align-items: center; 
+            padding-top: 12px; 
+            padding-bottom: 12px;
+        }
+        
+        /* Dica de Gestão */
+        .dica-gestao-mobile { flex-direction: column; text-align: center; }
+        .dica-gestao-mobile .text-indigo { margin-bottom: 10px; margin-right: 0 !important; }
     }
 </style>
 
 <div class="container-fluid py-4">
     
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-end mb-4 pb-2 border-bottom" style="border-color: #e2e8f0 !important;">
+    <div class="d-flex cabecalho-responsivo justify-content-between align-items-md-end mb-4 pb-2 border-bottom" style="border-color: #e2e8f0 !important;">
         <div>
             <h2 class="fw-bolder text-dark mb-1" style="letter-spacing: -0.5px;">Equipe de Campanha</h2>
             <span class="text-muted" style="font-size: 0.95rem;">
@@ -47,50 +128,53 @@
             </span>
         </div>
         <div class="mt-3 mt-md-0">
-            <span class="badge bg-white text-indigo border shadow-sm px-3 py-2 rounded-pill fw-bolder">
+            <span class="badge bg-white text-indigo border shadow-sm px-3 py-2 rounded-pill fw-bolder badge-comando">
                 <i class="fa-solid fa-signal me-1"></i> Central de Comando Ativa
             </span>
         </div>
     </div>
 
-    <div class="card card-team bg-white">
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
+    <div class="card card-team bg-transparent bg-md-white">
+        <div class="table-responsive" style="overflow-x: visible;">
+            <table class="table table-hover align-middle mb-0 tabela-saas-mobile bg-white">
                 <thead>
                     <tr>
                         <th class="ps-4 py-3">Membro da Equipe</th>
                         <th class="py-3">E-mail e Contato</th>
-                        <th class="py-3">Nível Hierárquico</th>
+                        <th class="py-3 text-center">Nível Hierárquico</th>
                         <th class="pe-4 py-3 text-end">Ações</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for membro in equipe %}
-                    <tr class="{% if membro.role == 'candidato' %}bg-warning bg-opacity-10{% endif %}">
-                        <td class="ps-4 py-4">
+                    <tr class="membro-row {% if membro.role == 'candidato' %}membro-candidato{% endif %}">
+                        
+                        <td class="ps-md-4 py-md-4">
                             <div class="d-flex align-items-center">
-                                <div class="avatar-circle {% if membro.role == 'candidato' %}bg-warning bg-opacity-25 text-warning{% else %}bg-indigo-light text-indigo{% endif %} me-3">
+                                <div class="avatar-circle shadow-sm {% if membro.role == 'candidato' %}bg-warning bg-opacity-25 text-warning{% else %}bg-indigo-light text-indigo{% endif %} me-3">
                                     {{ membro.nome[0]|upper }}
                                 </div>
                                 <div>
-                                    <div class="fw-bolder text-dark d-flex align-items-center fs-6">
+                                    <div class="fw-bolder text-dark d-flex align-items-center fs-6" style="line-height: 1.2;">
                                         {{ membro.nome }}
                                         {% if membro.status == 'ativo' %}
                                             <span class="ms-2 bg-success status-indicator" title="Ativo no sistema"></span>
                                         {% endif %}
                                     </div>
-                                    <div class="small text-muted fw-bold">ID: {{ membro.id[:8] }}</div>
+                                    <div class="small text-muted fw-bold mt-1">ID: {{ membro.id[:8] }}</div>
                                 </div>
                             </div>
                         </td>
-                        <td class="py-4">
-                            <div class="fw-bold text-dark">{{ membro.email }}</div>
-                            <div class="small text-muted fw-medium"><i class="fa-solid fa-phone-flip me-1"></i> {{ membro.telefone or 'Não cadastrado' }}</div>
+                        
+                        <td class="py-md-4">
+                            <div class="fw-bold text-dark text-break" style="font-size: 0.9rem;">{{ membro.email }}</div>
+                            <div class="small text-muted fw-bold mt-1"><i class="fa-solid fa-phone-flip me-1"></i> {{ membro.telefone or 'Não cadastrado' }}</div>
                         </td>
-                        <td class="py-4">
+                        
+                        <td class="py-md-4 text-md-center">
                             {% if membro.role == 'candidato' %}
                                 <span class="badge role-badge-premium bg-warning text-dark border border-warning shadow-sm">
-                                    <i class="fa-solid fa-crown me-1"></i> Líder da Campanha
+                                    <i class="fa-solid fa-crown me-1"></i> Líder
                                 </span>
                             {% else %}
                                 <span class="badge role-badge-premium bg-indigo-light text-indigo border border-indigo border-opacity-25">
@@ -98,9 +182,10 @@
                                 </span>
                             {% endif %}
                         </td>
-                        <td class="text-end pe-4 py-4">
-                            <a href="/crm/chat/{{ membro.id }}" class="btn btn-sm btn-outline-indigo rounded-pill px-4 shadow-sm fw-bolder">
-                                <i class="fa-solid fa-comment-dots me-1"></i> Abrir Chat
+                        
+                        <td class="text-md-end pe-md-4 py-md-4">
+                            <a href="/crm/chat/{{ membro.id }}" class="btn btn-sm btn-outline-indigo btn-acao-mobile rounded-pill px-4 shadow-sm fw-bolder">
+                                <i class="fa-solid fa-comment-dots me-2"></i> Abrir Chat
                             </a>
                         </td>
                     </tr>
@@ -120,8 +205,8 @@
         </div>
     </div>
 
-    <div class="mt-4 p-4 bg-light rounded-4 border-start border-indigo border-5">
-        <div class="d-flex align-items-center">
+    <div class="mt-4 p-4 bg-light rounded-4 border-start border-indigo border-5 shadow-sm">
+        <div class="d-flex align-items-center dica-gestao-mobile">
             <div class="text-indigo me-3">
                 <i class="fa-solid fa-circle-info fs-3"></i>
             </div>

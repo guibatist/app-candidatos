@@ -12,17 +12,51 @@
     .btn-outline-indigo:hover { background-color: var(--vh-primary); color: white; }
     
     .linha-apoiador { transition: opacity 0.2s ease-in-out; }
+
+    /* ==========================================
+       RESPONSIVIDADE SAAS MOBILE (< 768px)
+       ========================================== */
+    @media (max-width: 768px) {
+        /* 1. Botões do topo ocupam a tela toda */
+        .botoes-topo-mobile { flex-direction: column !important; width: 100%; }
+        .botoes-topo-mobile .btn { width: 100%; margin-bottom: 0.5rem; }
+
+        /* 2. Tabela vira uma lista de Cards */
+        .table-responsive { background: transparent !important; }
+        .tabela-saas-mobile { background: transparent !important; border: none !important; }
+        .tabela-saas-mobile thead { display: none; } /* Esconde o cabeçalho no mobile */
+        
+        .tabela-saas-mobile tbody, 
+        .tabela-saas-mobile tr, 
+        .tabela-saas-mobile td { 
+            display: block; width: 100%; text-align: left !important; 
+        }
+        
+        .tabela-saas-mobile tr { 
+            background: white; border-radius: 16px; padding: 16px; margin-bottom: 16px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.03); border: 1px solid #f1f5f9;
+        }
+        
+        /* Limpa bordas e espaçamentos padrão das células */
+        .tabela-saas-mobile td { padding: 10px 0 !important; border: none !important; }
+        .tabela-saas-mobile td:not(:last-child) { border-bottom: 1px solid #f8fafc !important; }
+        
+        /* Ajuste fino dos elementos internos para mobile */
+        .tabela-saas-mobile td .badge { font-size: 0.8rem; width: fit-content; }
+        .tabela-saas-mobile td:last-child { margin-top: 10px; padding-bottom: 0 !important; }
+        .tabela-saas-mobile td:last-child .btn { width: 100%; justify-content: center; }
+    }
 </style>
 
 <div class="container-fluid py-4">
     
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-end mb-4 pb-2 border-bottom" style="border-color: #e2e8f0 !important;">
-        <div>
+        <div class="mb-3 mb-md-0">
             <h2 class="fw-bolder text-dark mb-1" style="letter-spacing: -0.5px;">Base de Apoiadores</h2>
             <span class="text-muted" style="font-size: 0.95rem;">Gestão, microdirecionamento e inteligência de dados.</span>
         </div>
         
-        <div class="d-flex gap-2 mt-3 mt-md-0">
+        <div class="d-flex gap-2 botoes-topo-mobile">
             <button class="btn btn-outline-indigo rounded-pill px-4 shadow-sm fw-bold" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasFiltros" aria-controls="offcanvasFiltros">
                 <i class="fa-solid fa-filter me-2"></i> Filtrar Base
             </button>
@@ -76,9 +110,9 @@
         </div>
     </div>
 
-    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden bg-transparent bg-md-white">
         <div class="table-responsive" style="min-height: 50vh;">
-            <table class="table table-hover align-middle mb-0 bg-white" id="tabela-apoiadores">
+            <table class="table table-hover align-middle mb-0 bg-white tabela-saas-mobile" id="tabela-apoiadores">
                 <thead class="bg-light text-muted small text-uppercase">
                     <tr>
                         <th class="ps-4 py-3 fw-bold border-0">Apoiador</th>
@@ -101,9 +135,9 @@
                         data-apoio="{{ a.grau_apoio or '' }}"
                         data-votos="{{ a.votos_familia or 0 }}">
                         
-                        <td class="ps-4 py-3">
+                        <td class="ps-md-4 py-3">
                             <div class="d-flex align-items-center gap-3">
-                                <div class="bg-light rounded-circle d-flex justify-content-center align-items-center text-indigo" style="width: 40px; height: 40px;">
+                                <div class="bg-light rounded-circle d-flex justify-content-center align-items-center text-indigo" style="width: 40px; height: 40px; flex-shrink: 0;">
                                     <i class="fa-solid fa-user"></i>
                                 </div>
                                 <div>
@@ -114,8 +148,8 @@
                         </td>
                         
                         <td class="py-3">
-                            <a href="https://wa.me/55{{ a.telefone|replace('(', '')|replace(')', '')|replace('-', '')|replace(' ', '') }}" target="_blank" class="text-decoration-none text-dark fw-medium">
-                                <i class="fa-brands fa-whatsapp text-success me-1"></i> {{ a.telefone }}
+                            <a href="https://wa.me/55{{ a.telefone|replace('(', '')|replace(')', '')|replace('-', '')|replace(' ', '') }}" target="_blank" class="text-decoration-none text-dark fw-medium d-flex align-items-center">
+                                <i class="fa-brands fa-whatsapp text-success fs-5 me-2"></i> {{ a.telefone }}
                             </a>
                         </td>
                         
@@ -124,7 +158,7 @@
                             <span class="text-muted small">{{ a.cidade or '-' }}</span>
                         </td>
                         
-                        <td class="py-3 text-center">
+                        <td class="py-3 text-md-center">
                             {% if a.grau_apoio == 'Liderança' %}
                                 <span class="badge rounded-pill px-3 py-2 fw-bold" style="background-color: #f3e8ff; color: #7c3aed;">
                                     <i class="fa-solid fa-crown me-1"></i> Liderança
@@ -140,9 +174,9 @@
                             {% endif %}
                         </td>
                         
-                        <td class="pe-4 py-3 text-end">
-                            <a href="{{ url_for('crm.perfil_apoiador', apoiador_id=a.id) }}" class="btn btn-sm btn-outline-indigo fw-bold rounded-pill px-3 shadow-sm">
-                                Abrir Perfil <i class="fa-solid fa-arrow-right ms-1"></i>
+                        <td class="pe-md-4 py-3 text-md-end">
+                            <a href="{{ url_for('crm.perfil_apoiador', apoiador_id=a.id) }}" class="btn btn-sm btn-outline-indigo fw-bold rounded-pill px-3 shadow-sm d-flex align-items-center justify-content-center">
+                                Abrir Perfil <i class="fa-solid fa-arrow-right ms-2"></i>
                             </a>
                         </td>
                     </tr>
@@ -161,7 +195,7 @@
 
 </div>
 
-<div class="offcanvas offcanvas-end border-0 shadow" tabindex="-1" id="offcanvasFiltros" aria-labelledby="offcanvasLabel" style="width: 380px;">
+<div class="offcanvas offcanvas-end border-0 shadow" tabindex="-1" id="offcanvasFiltros" aria-labelledby="offcanvasLabel" style="width: 380px; max-width: 100vw;">
     <div class="offcanvas-header bg-light border-bottom p-4">
         <h5 class="offcanvas-title fw-bold text-indigo" id="offcanvasLabel">
             <i class="fa-solid fa-filter me-2"></i>Filtros Avançados

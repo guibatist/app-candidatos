@@ -8,59 +8,65 @@
         --sidebar-active-text: #ffffff;
         --sidebar-active-bg: #1f2937; 
         --sidebar-active-border: #7c3aed;
+        --vi-primary: #7c3aed; 
     }
 
+    /* ---------------------------------------------------
+       BRANDING: VotoImpacto
+       --------------------------------------------------- */
+    .footer-brand { 
+        font-weight: 900; color: #fff; font-size: 2.2rem; 
+        letter-spacing: -2px; text-decoration: none; display: inline-block; margin-bottom: 1.5rem;
+    }
+    .footer-brand span { color: var(--vi-primary); }
+
+    /* ---------------------------------------------------
+       TOPBAR MOBILE
+       --------------------------------------------------- */
+    .mobile-topbar {
+        display: none; position: fixed; top: 0; left: 0; width: 100%; height: 65px;
+        background-color: var(--sidebar-bg); z-index: 1040; align-items: center;
+        justify-content: space-between; padding: 0 20px; border-bottom: 1px solid #1f2937;
+    }
+
+    .mobile-topbar .footer-brand { margin-bottom: 0; font-size: 1.8rem; }
+
+    .mobile-menu-btn {
+        background: transparent; border: none; color: var(--sidebar-text); font-size: 1.5rem;
+        cursor: pointer; padding: 5px; transition: color 0.2s;
+    }
+
+    .mobile-menu-btn:hover { color: var(--sidebar-active-text); }
+
+    /* ---------------------------------------------------
+       SIDEBAR DESKTOP
+       --------------------------------------------------- */
     #sidebar {
-        width: var(--sidebar-width);
-        height: calc(100vh - 65px);
-        position: fixed;
-        top: 65px;
-        left: 0;
-        background-color: var(--sidebar-bg);
-        color: var(--sidebar-text);
-        transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        z-index: 1000;
-        display: flex;
-        flex-direction: column;
-        overflow-x: hidden;
-        border-right: 1px solid #1f2937;
+        width: var(--sidebar-width); height: calc(100vh - 65px); position: fixed; top: 65px; left: 0;
+        background-color: var(--sidebar-bg); color: var(--sidebar-text);
+        transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s, left 0.3s;
+        z-index: 1000; display: flex; flex-direction: column; overflow-x: hidden; border-right: 1px solid #1f2937;
     }
 
     #sidebar.collapsed { width: var(--sidebar-collapsed-width); }
-
     .sidebar-nav { flex: 1; padding: 15px 0; overflow-y: auto; overflow-x: hidden; }
 
     .nav-category {
-        font-size: 0.7rem;
-        text-transform: uppercase;
-        letter-spacing: 0.1em;
-        color: #4b5563;
-        margin: 20px 24px 8px;
-        font-weight: 800;
+        font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em;
+        color: #4b5563; margin: 20px 24px 8px; font-weight: 800;
     }
 
     #sidebar.collapsed .nav-category { display: none; }
 
-    /* --- ITEM DE NAVEGAÇÃO --- */
     .nav-item, .nav-link-custom {
-        display: flex;
-        align-items: center;
-        padding: 0 24px; 
-        height: 50px;    
-        color: var(--sidebar-text);
-        text-decoration: none;
-        transition: all 0.2s;
-        border-left: 4px solid transparent;
-        margin-bottom: 2px;
-        cursor: pointer;
-        position: relative;
-        overflow: hidden;
+        display: flex; align-items: center; padding: 0 24px; height: 50px; color: var(--sidebar-text);
+        text-decoration: none; transition: all 0.2s; border-left: 4px solid transparent; margin-bottom: 2px;
+        cursor: pointer; position: relative; overflow: hidden;
     }
 
     .nav-item:hover, .nav-link-custom:hover { background-color: var(--sidebar-hover); color: var(--sidebar-active-text); }
     .nav-item.active { background-color: var(--sidebar-active-bg); color: var(--sidebar-active-text); border-left-color: var(--sidebar-active-border); }
 
-    /* --- ÍCONES --- */
     .nav-icon-wrapper {
         position: relative; width: 24px; min-width: 24px; height: 24px;
         display: flex; align-items: center; justify-content: center;
@@ -70,56 +76,85 @@
     .nav-icon { font-size: 1.1rem; flex-shrink: 0; color: var(--sidebar-text); transition: color 0.2s; }
     .nav-item:hover .nav-icon, .nav-item.active .nav-icon, .nav-link-custom:hover .nav-icon { color: var(--sidebar-active-text); }
 
-    /* --- ESTILOS IA --- */
     .ai-icon-geo { color: #f59e0b !important; filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.4)); }
     .ai-icon-strat { color: #0ea5e9 !important; filter: drop-shadow(0 0 6px rgba(14, 165, 233, 0.4)); }
     .ai-icon-creative { color: #a855f7 !important; filter: drop-shadow(0 0 6px rgba(168, 85, 247, 0.4)); }
     .nav-category-ai { color: #a855f7; }
 
-    /* --- BADGES (CONTROLE DE EXIBIÇÃO) --- */
     .badge-pill-nav {
         margin-left: auto; font-size: 0.65rem; padding: 2px 8px; border-radius: 20px;
-        font-weight: 800; flex-shrink: 0; background-color: #ef4444; color: white;
-        display: inline-block;
+        font-weight: 800; flex-shrink: 0; background-color: #ef4444; color: white; display: inline-block;
     }
 
     .badge-floating {
         position: absolute; top: -5px; right: -7px; background-color: #ef4444; color: white;
-        font-size: 0.6rem; width: 17px; height: 17px; border-radius: 50%;
-        display: flex; align-items: center; justify-content: center; 
+        font-size: 0.6rem; width: 17px; height: 17px; border-radius: 50%; display: flex; align-items: center; justify-content: center; 
         border: 2px solid var(--sidebar-bg); font-weight: 900; z-index: 5;
     }
 
-    /* REGRAS DE VISIBILIDADE CRÍTICAS */
-    
-    /* Quando ABERTA: Esconde o floating, mostra o pill */
     #sidebar:not(.collapsed) .badge-floating { display: none !important; }
     #sidebar:not(.collapsed) .badge-pill-nav { display: inline-block; }
-
-    /* Quando FECHADA: Mostra o floating, esconde o pill e o texto */
     #sidebar.collapsed .badge-floating { display: flex !important; }
     #sidebar.collapsed .badge-pill-nav { display: none !important; }
     #sidebar.collapsed .nav-text { display: none !important; }
-    
-    /* Estado "vazio" controlado por classe para não quebrar o layout */
     .badge-hidden { display: none !important; }
-
     #sidebar.collapsed .nav-icon-wrapper { margin-right: 0; }
     #sidebar.collapsed .nav-item, #sidebar.collapsed .nav-link-custom { justify-content: center; padding: 0; }
-    
     .nav-item.locked { opacity: 0.5; cursor: not-allowed; }
     .nav-item.locked:hover { background-color: transparent; }
-
     .sidebar-nav::-webkit-scrollbar { width: 4px; }
     .sidebar-nav::-webkit-scrollbar-thumb { background: #1f2937; border-radius: 10px; }
 
-    @keyframes pop-notification {
-        0% { transform: scale(1); }
-        50% { transform: scale(1.4); background-color: #ef4444; }
-        100% { transform: scale(1); }
-    }
+    @keyframes pop-notification { 0% { transform: scale(1); } 50% { transform: scale(1.4); background-color: #ef4444; } 100% { transform: scale(1); } }
     .badge-pop { animation: pop-notification 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+
+    /* ---------------------------------------------------
+       RESPONSIVIDADE: SOBREPOSIÇÃO ESTREITA
+       --------------------------------------------------- */
+    @media (max-width: 1024px) {
+        .mobile-topbar { display: flex !important; }
+        
+        /* SIDEBAR FICA FORA DA TELA À ESQUERDA */
+        #sidebar, #sidebar.collapsed {
+            position: fixed !important;
+            top: 65px !important;
+            left: -320px !important; /* Totalmente invisível até clicar */
+            width: 280px !important;
+            min-width: 280px !important;
+            height: calc(100vh - 65px) !important;
+            z-index: 9999 !important; /* Por cima de tudo */
+            background-color: var(--sidebar-bg) !important;
+            transition: left 0.3s ease !important; /* Animação suave para deslizar */
+            box-shadow: none !important;
+            display: flex !important;
+        }
+
+        /* SIDEBAR ENTRA NA TELA DESLIZANDO POR CIMA */
+        #sidebar.mobile-open, #sidebar.collapsed.mobile-open {
+            left: 0 !important;
+            box-shadow: 10px 0 30px rgba(0,0,0,0.6) !important;
+        }
+
+        /* ANULA QUALQUER EFEITO DE ENCOLHIMENTO (COLLAPSED) NO MOBILE */
+        #sidebar .nav-text, #sidebar.collapsed .nav-text,
+        #sidebar .nav-category, #sidebar.collapsed .nav-category { display: block !important; }
+        
+        #sidebar .nav-icon-wrapper, #sidebar.collapsed .nav-icon-wrapper { margin-right: 15px !important; }
+        
+        #sidebar .nav-item, #sidebar.collapsed .nav-item,
+        #sidebar .nav-link-custom, #sidebar.collapsed .nav-link-custom { justify-content: flex-start !important; padding: 0 24px !important; }
+        
+        #sidebar .badge-pill-nav, #sidebar.collapsed .badge-pill-nav { display: inline-block !important; }
+        #sidebar .badge-floating, #sidebar.collapsed .badge-floating { display: none !important; }
+    }
 </style>
+
+<div class="mobile-topbar">
+    <a href="/" class="footer-brand">Voto<span>Impacto</span></a>
+    <button class="mobile-menu-btn" onclick="toggleMenuMobile()" aria-label="Abrir Menu">
+        <i class="fa-solid fa-ellipsis-vertical" style="pointer-events: none;"></i>
+    </button>
+</div>
 
 <nav id="sidebar">
     <div class="sidebar-nav">
@@ -202,7 +237,7 @@
             <span class="nav-text">Meu Perfil</span>
         </a>
         {% if session.role != 'superadmin' %}
-        <a class="nav-item" data-bs-toggle="offcanvas" data-bs-target="#offcanvasChamados">
+        <a class="nav-item" data-bs-toggle="offcanvas" data-bs-target="#offcanvasChamados" style="cursor: pointer;">
             <div class="nav-icon-wrapper"><i class="fa-solid fa-headset nav-icon"></i></div>
             <span class="nav-text">Suporte Técnico</span>
         </a>
@@ -216,6 +251,13 @@
 </nav>
 
 <script>
+    function toggleMenuMobile() {
+        const sidebar = document.getElementById('sidebar');
+        if(sidebar) {
+            sidebar.classList.toggle('mobile-open');
+        }
+    }
+
     function radarNotificacoes() {
         const urlSemCache = '/crm/api/notificacoes/contagem?t=' + new Date().getTime();
 
@@ -234,7 +276,6 @@
                         el.innerText = valorNovo;
                         el.classList.remove('badge-hidden');
                         
-                        // Efeito de pulso se o número subir
                         if (valorNovo > valorAntigo) {
                             el.classList.remove('badge-pop');
                             void el.offsetWidth; 
@@ -252,9 +293,7 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-        // Primeira execução imediata
         radarNotificacoes();
-        // Loop a cada 30 segundos
         setInterval(radarNotificacoes, 30000); 
     });
 </script>

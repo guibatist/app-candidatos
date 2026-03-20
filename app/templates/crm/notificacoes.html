@@ -13,6 +13,7 @@
         margin-right: 10px;
         transition: all 0.3s;
         background-color: transparent; 
+        white-space: nowrap; /* Impede quebra de linha nas abas */
     }
     .nav-pills-custom .nav-link:hover { 
         background-color: #f1f5f9 !important; 
@@ -28,20 +29,16 @@
         background-color: transparent !important;
         border-left: none !important;
     }
-    .nav-pills-custom .nav-item:hover {
-        background-color: transparent !important;
-    }
 
-    a.notification-link {
-        display: block;
-        text-decoration: none;
-        background-color: transparent !important;
+    /* Container das abas com scroll horizontal no mobile */
+    .tabs-mobile-scroll {
+        overflow-x: auto;
+        display: flex;
+        flex-wrap: nowrap;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 5px;
     }
-    a.notification-link:hover, 
-    a.notification-link:focus {
-        background-color: transparent !important;
-        outline: none;
-    }
+    .tabs-mobile-scroll::-webkit-scrollbar { display: none; }
 
     .notification-card {
         transition: all 0.3s ease;
@@ -56,34 +53,14 @@
         background-color: #f8fafc;
     }
     
-    /* Destaque para não lidas */
     .notification-card.unread {
         background-color: #eff6ff;
         border-left-color: #3b82f6;
     }
 
-    .avatar-wrapper { position: relative; }
-    .status-dot {
-        position: absolute;
-        bottom: 0;
-        right: 0;
-        width: 12px;
-        height: 12px;
-        background-color: #22c55e;
-        border: 2px solid #ffffff;
-        border-radius: 50%;
-    }
-
-    .btn-limpar { transition: all 0.3s; }
-    .btn-limpar:hover {
-        background-color: #f1f5f9 !important;
-        color: #4f46e5 !important;
-    }
-    
-    /* Botão de marcar individual */
     .btn-read-single {
-        width: 32px;
-        height: 32px;
+        width: 36px; /* Aumentado levemente para toque mobile */
+        height: 36px;
         padding: 0;
         display: flex;
         align-items: center;
@@ -91,68 +68,82 @@
         border-radius: 50%;
         transition: 0.2s;
         z-index: 10;
-        position: relative;
     }
     .btn-read-single:hover {
         background-color: #22c55e !important;
         color: white !important;
         border-color: #22c55e !important;
     }
+
+    /* ==========================================
+       RESPONSIVIDADE SAAS MOBILE (< 768px)
+       ========================================== */
+    @media (max-width: 768px) {
+        .cabecalho-notificacoes { flex-direction: column; align-items: flex-start !important; }
+        .btn-read-all-mobile { width: 100%; justify-content: center; padding: 12px; }
+        
+        .notification-card { padding: 15px !important; }
+        
+        /* Ajuste do conteúdo do card para não apertar */
+        .notif-content-wrapper { flex-direction: column; align-items: flex-start !important; gap: 15px; }
+        .notif-actions-wrapper { width: 100%; justify-content: flex-end; border-top: 1px solid rgba(0,0,0,0.05); padding-top: 10px; }
+        
+        /* Ajuste do Avatar */
+        .avatar-notif { width: 40px !important; height: 40px !important; font-size: 1rem !important; }
+    }
 </style>
 
 <div class="container-fluid py-4">
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+    <div class="d-flex cabecalho-notificacoes justify-content-between align-items-md-center mb-4 gap-3">
         <div>
             <h2 class="fw-bold mb-0 text-dark">Caixa de Entrada</h2>
             <p class="text-muted mb-0 mt-1">Gira as suas comunicações e obrigações operacionais.</p>
         </div>
         
-        <div class="d-flex align-items-center gap-3">
-            {% if total_notificacoes > 0 %}
-                <button type="button" id="btn-read-all" class="btn btn-light border shadow-sm rounded-pill px-4 fw-bold text-muted btn-limpar">
-                    <i class="fa-solid fa-check-double me-2"></i>Marcar tudo como lido 
-                    (<span id="total-count-badge">{{ total_notificacoes }}</span>)
-                </button>
-            {% endif %}
-        </div>
+        {% if total_notificacoes > 0 %}
+            <button type="button" id="btn-read-all" class="btn btn-light border shadow-sm rounded-pill px-4 fw-bold text-muted btn-read-all-mobile">
+                <i class="fa-solid fa-check-double me-2"></i>Marcar tudo como lido 
+                (<span id="total-count-badge">{{ total_notificacoes }}</span>)
+            </button>
+        {% endif %}
     </div>
 
     <div class="row" id="notif-list">
         <div class="col-lg-8">
             
-            <ul class="nav nav-pills nav-pills-custom mb-4 border-bottom pb-3" id="notificationTabs" role="tablist">
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link active d-flex align-items-center gap-2" id="msg-tab" data-bs-toggle="pill" data-bs-target="#msg-pane" type="button" role="tab" aria-controls="msg-pane" aria-selected="true">
-                        <i class="fa-solid fa-comment-dots"></i> Mensagens
-                        {% if msgs_nao_lidas > 0 %}
-                            <span class="badge bg-danger rounded-pill ms-1" id="badge-count-msg">{{ msgs_nao_lidas }}</span>
-                        {% endif %}
-                    </button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link d-flex align-items-center gap-2" id="tarefas-tab" data-bs-toggle="pill" data-bs-target="#tarefas-pane" type="button" role="tab" aria-controls="tarefas-pane" aria-selected="false">
-                        <i class="fa-solid fa-list-check"></i> Tarefas & Sistema
-                        {% if tarefas_notificacoes|length > 0 %}
-                            <span class="badge bg-warning text-dark rounded-pill ms-1" id="badge-count-tarefas">{{ tarefas_notificacoes|length }}</span>
-                        {% endif %}
-                    </button>
-                </li>
-            </ul>
+            <div class="tabs-mobile-scroll mb-4 border-bottom pb-2">
+                <ul class="nav nav-pills nav-pills-custom" id="notificationTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active d-flex align-items-center gap-2" id="msg-tab" data-bs-toggle="pill" data-bs-target="#msg-pane" type="button" role="tab">
+                            <i class="fa-solid fa-comment-dots"></i> Mensagens
+                            {% if msgs_nao_lidas > 0 %}
+                                <span class="badge bg-danger rounded-pill ms-1" id="badge-count-msg">{{ msgs_nao_lidas }}</span>
+                            {% endif %}
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link d-flex align-items-center gap-2" id="tarefas-tab" data-bs-toggle="pill" data-bs-target="#tarefas-pane" type="button" role="tab">
+                            <i class="fa-solid fa-list-check"></i> Tarefas & Sistema
+                            {% if tarefas_notificacoes|length > 0 %}
+                                <span class="badge bg-warning text-dark rounded-pill ms-1" id="badge-count-tarefas">{{ tarefas_notificacoes|length }}</span>
+                            {% endif %}
+                        </button>
+                    </li>
+                </ul>
+            </div>
 
             <div class="tab-content" id="notificationTabsContent">
                 
-                <div class="tab-pane fade show active" id="msg-pane" role="tabpanel" aria-labelledby="msg-tab" tabindex="0">
+                <div class="tab-pane fade show active" id="msg-pane" role="tabpanel">
                     {% if alertas_chat %}
                         <div class="d-flex flex-column gap-3">
                             {% for alerta in alertas_chat %}
-                            <div class="card border-0 rounded-4 shadow-sm notification-card unread p-3 notification-item">
-                                <a href="{{ url_for('crm.chat', destinatario_id=alerta.remetente_id) }}" class="notification-link text-dark text-decoration-none flex-grow-1">
+                            <div class="card border-0 rounded-4 shadow-sm notification-card unread p-3">
+                                <a href="{{ url_for('crm.chat', destinatario_id=alerta.remetente_id) }}" class="text-dark text-decoration-none">
                                     <div class="d-flex justify-content-between align-items-center">
                                         <div class="d-flex align-items-center gap-3">
-                                            <div class="avatar-wrapper">
-                                                <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width: 50px; height: 50px;">
-                                                    {{ alerta.nome[0] | upper }}
-                                                </div>
+                                            <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center fw-bold avatar-notif" style="width: 50px; height: 50px; flex-shrink: 0;">
+                                                {{ alerta.nome[0] | upper }}
                                             </div>
                                             <div>
                                                 <h6 class="mb-1 fw-bold">{{ alerta.nome }}</h6>
@@ -161,7 +152,7 @@
                                                 </p>
                                             </div>
                                         </div>
-                                        <div class="text-end">
+                                        <div class="ms-2">
                                             <span class="badge bg-danger rounded-pill px-3 py-2 shadow-sm">{{ alerta.qtd }}</span>
                                         </div>
                                     </div>
@@ -175,24 +166,22 @@
                                 <div class="bg-success bg-opacity-10 text-success rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
                                     <i class="fa-solid fa-inbox fa-2x"></i>
                                 </div>
-                                <h4 class="fw-bold text-dark">Zero Inbox Alcançado</h4>
+                                <h4 class="fw-bold text-dark">Zero Inbox</h4>
                                 <p class="text-muted mb-0">Não tem mensagens pendentes da sua equipa.</p>
                             </div>
                         </div>
                     {% endif %}
                 </div>
 
-                <div class="tab-pane fade" id="tarefas-pane" role="tabpanel" aria-labelledby="tarefas-tab" tabindex="0">
+                <div class="tab-pane fade" id="tarefas-pane" role="tabpanel">
                     {% if tarefas_notificacoes %}
                         <div class="d-flex flex-column gap-3">
                             {% for tarefa in tarefas_notificacoes %}
                             <div class="card border-0 rounded-4 shadow-sm p-3 border-start border-4 border-{{ tarefa.cor }} notification-item unread" data-id="{{ tarefa.id }}" style="background-color: #eff6ff;">
-                                <div class="d-flex justify-content-between align-items-center">
+                                <div class="d-flex notif-content-wrapper justify-content-between align-items-center">
                                     <div class="d-flex align-items-center gap-3">
-                                        <div class="avatar-wrapper">
-                                            <div class="bg-{{ tarefa.cor }} bg-opacity-10 text-{{ tarefa.cor }} rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width: 50px; height: 50px; font-size: 1.2rem;">
-                                                <i class="fa-solid {{ tarefa.icone }}"></i>
-                                            </div>
+                                        <div class="bg-{{ tarefa.cor }} bg-opacity-10 text-{{ tarefa.cor }} rounded-circle d-flex align-items-center justify-content-center fw-bold avatar-notif" style="width: 50px; height: 50px; font-size: 1.2rem; flex-shrink: 0;">
+                                            <i class="fa-solid {{ tarefa.icone }}"></i>
                                         </div>
                                         <div>
                                             <h6 class="mb-0 fw-bold text-dark">{{ tarefa.titulo }}</h6>
@@ -204,12 +193,12 @@
                                             </p>
                                         </div>
                                     </div>
-                                    <div class="text-end d-flex align-items-center gap-2" style="z-index: 10;">
+                                    <div class="d-flex align-items-center gap-2 notif-actions-wrapper">
                                         <button type="button" class="btn btn-sm btn-outline-success btn-read-single" data-id="{{ tarefa.id }}" title="Marcar como lido">
                                             <i class="fa-solid fa-check"></i>
                                         </button>
-                                        <a href="/crm/tarefas/{{ tarefa.id }}" class="btn btn-sm btn-outline-primary rounded-pill px-3 shadow-sm">
-                                            <i class="fa-solid fa-arrow-up-right-from-square me-1"></i> Abrir
+                                        <a href="/crm/tarefas/{{ tarefa.id }}" class="btn btn-sm btn-outline-primary rounded-pill px-3 shadow-sm d-flex align-items-center">
+                                            <i class="fa-solid fa-arrow-up-right-from-square me-2"></i> Abrir
                                         </a>
                                     </div>
                                 </div>
@@ -223,7 +212,7 @@
                                     <i class="fa-solid fa-check-double fa-2x"></i>
                                 </div>
                                 <h4 class="fw-bold text-dark">Agenda Limpa</h4>
-                                <p class="text-muted mb-0">Não tem tarefas pendentes ou em atraso para cumprir.</p>
+                                <p class="text-muted mb-0">Não tem tarefas pendentes.</p>
                             </div>
                         </div>
                     {% endif %}
@@ -237,21 +226,16 @@
                 <div class="position-absolute end-0 top-0 opacity-10 p-3" style="font-size: 8rem; margin-top: -30px; margin-right: -20px;">
                     <i class="fa-solid fa-bolt"></i>
                 </div>
-                
                 <div class="card-body p-4 position-relative z-index-1">
                     <h5 class="fw-bold mb-4">Central de Comando</h5>
                     <ul class="list-unstyled mb-0" style="font-size: 0.95rem;">
                         <li class="mb-4 d-flex align-items-center">
                             <div class="bg-white bg-opacity-25 rounded p-3 me-3"><i class="fa-solid fa-users fa-fw"></i></div>
-                            <div>A sua equipa está <strong>ativa no terreno</strong> e a sincronizar dados.</div>
+                            <div>A sua equipa está <strong>ativa no terreno</strong>.</div>
                         </li>
                         <li class="mb-4 d-flex align-items-center">
                             <div class="bg-white bg-opacity-25 rounded p-3 me-3"><i class="fa-solid fa-shield-halved fa-fw"></i></div>
-                            <div>As comunicações estão <strong>encriptadas</strong> ponta a ponta.</div>
-                        </li>
-                        <li class="mb-3 d-flex align-items-center">
-                            <div class="bg-white bg-opacity-25 rounded p-3 me-3"><i class="fa-solid fa-brain fa-fw"></i></div>
-                            <div>A Inteligência Artificial está a <strong>analisar</strong> o território.</div>
+                            <div>Comunicações <strong>encriptadas</strong>.</div>
                         </li>
                     </ul>
                 </div>
@@ -264,7 +248,6 @@
 <script>
 document.addEventListener("DOMContentLoaded", function() {
     
-    // Função para limpar os números da sidebar IMEDIATAMENTE
     function limparBadgesSidebar() {
         const floating = document.getElementById('sidebar-badge-floating');
         const pill = document.getElementById('sidebar-badge-pill');
@@ -287,24 +270,17 @@ document.addEventListener("DOMContentLoaded", function() {
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
-                    // Efeito visual sumindo
                     card.style.transition = "all 0.3s ease";
                     card.style.opacity = "0";
                     card.style.transform = "translateX(20px)";
                     
                     setTimeout(() => {
                         card.remove();
-                        // Se era a última notificação visual, limpa a sidebar e recarrega
                         if (document.querySelectorAll('.notification-item').length === 0) {
                             limparBadgesSidebar();
-                            location.reload();
-                        } else {
-                            // Se ainda tem itens, recarrega para atualizar os contadores globais
-                            location.reload();
                         }
+                        location.reload();
                     }, 300);
-                } else {
-                    console.error("Erro no banco:", data.error);
                 }
             })
             .catch(err => console.error("Erro de rede"));

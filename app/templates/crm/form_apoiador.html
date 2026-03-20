@@ -1,34 +1,54 @@
 {% extends 'base.html' %}
 {% block content %}
 
-<div class="d-flex justify-content-between align-items-center mb-4">
+<style>
+    /* ==========================================
+       RESPONSIVIDADE SAAS MOBILE (< 768px)
+       ========================================== */
+    @media (max-width: 768px) {
+        .btn-mobile-full { width: 100% !important; justify-content: center; margin-top: 10px; }
+        .cabecalho-responsivo { flex-direction: column; align-items: flex-start !important; }
+        
+        /* Reduz um pouco o padding interno dos cards para ganhar espaço na tela */
+        .card-saas-padding { padding: 1.25rem !important; }
+        
+        /* Aumenta a área de toque dos inputs e selects no celular */
+        .form-control, .form-select { padding-top: 0.7rem !important; padding-bottom: 0.7rem !important; }
+        
+        /* Melhora o espaçamento dos botões de tags (pautas) */
+        .tags-container { gap: 8px !important; }
+        .tags-container label { padding: 8px 16px !important; flex-grow: 1; text-align: center; }
+    }
+</style>
+
+<div class="d-flex cabecalho-responsivo justify-content-between align-items-md-center mb-4">
     <div>
         <h2 class="fw-bold text-dark mb-0">Cadastrar Apoiador</h2>
-        <p class="text-muted small">Preencha os dados para adicionar ao CRM da campanha.</p>
+        <p class="text-muted small mb-0">Preencha os dados para adicionar ao CRM da campanha.</p>
     </div>
-    <a href="/crm/apoiadores" class="btn btn-outline-secondary rounded-pill px-4 shadow-sm bg-white fw-medium">
+    <a href="/crm/apoiadores" class="btn btn-outline-secondary rounded-pill px-4 shadow-sm bg-white fw-medium btn-mobile-full">
         <i class="fa-solid fa-arrow-left me-2"></i>Voltar
     </a>
 </div>
 
 <form action="/crm/apoiadores/novo" method="POST">
-    <div class="row">
-        <div class="col-md-8">
+    <div class="row g-4">
+        <div class="col-lg-8">
             
-            <div class="card border-0 shadow-sm rounded-4 mb-4 p-4">
+            <div class="card border-0 shadow-sm rounded-4 mb-4 p-4 card-saas-padding">
                 <h5 class="fw-bold text-dark mb-4"><i class="fa-solid fa-user text-primary me-2"></i>Dados Pessoais</h5>
                 
                 <div class="row g-3">
-                    <div class="col-md-6">
+                    <div class="col-12 col-md-6">
                         <label class="form-label text-muted small fw-bold text-uppercase">Nome Completo</label>
                         <input type="text" name="nome" class="form-control bg-light border-0 py-2" required>
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-12 col-md-6">
                         <label class="form-label text-muted small fw-bold text-uppercase">WhatsApp / Celular</label>
                         <input type="text" name="telefone" id="telefone" class="form-control bg-light border-0 py-2" placeholder="(00) 00000-0000" maxlength="15" required>
                     </div>
                     
-                    <div class="col-md-12 mt-3">
+                    <div class="col-12">
                         <label class="form-label text-muted small fw-bold text-uppercase">Indicado na campanha por (Opcional)</label>
                         <div class="position-relative">
                             <input type="text" name="indicado_por" id="indicado_por" class="form-control bg-light border-0 py-2" placeholder="Digite o nome para buscar..." autocomplete="off">
@@ -39,11 +59,11 @@
                 </div>
             </div>
 
-            <div class="card border-0 shadow-sm rounded-4 mb-4 p-4">
+            <div class="card border-0 shadow-sm rounded-4 mb-4 p-4 card-saas-padding">
                 <h5 class="fw-bold text-dark mb-4"><i class="fa-solid fa-chart-pie text-info me-2"></i>Análise Demográfica e Perfil</h5>
                 
                 <div class="row g-3">
-                    <div class="col-md-4">
+                    <div class="col-12 col-md-4">
                         <label class="form-label text-muted small fw-bold text-uppercase">Sexo</label>
                         <select name="sexo" class="form-select bg-light border-0 py-2">
                             <option value="">Não informado</option>
@@ -52,7 +72,7 @@
                             <option value="Outro">Outro</option>
                         </select>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-12 col-md-4">
                         <label class="form-label text-muted small fw-bold text-uppercase">Faixa Etária</label>
                         <select name="faixa_etaria" class="form-select bg-light border-0 py-2">
                             <option value="">Não informada</option>
@@ -62,7 +82,7 @@
                             <option value="60+">60+</option>
                         </select>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-12 col-md-4">
                         <label class="form-label text-muted small fw-bold text-uppercase">Renda Familiar</label>
                         <select name="renda_familiar" class="form-select bg-light border-0 py-2">
                             <option value="">Não informada</option>
@@ -73,7 +93,7 @@
                         </select>
                     </div>
                     
-                    <div class="col-md-6 mt-3">
+                    <div class="col-12 col-md-6">
                         <label class="form-label text-muted small fw-bold text-uppercase">Grau de Instrução</label>
                         <select name="grau_instrucao" class="form-select bg-light border-0 py-2">
                             <option value="">Não informado</option>
@@ -83,7 +103,7 @@
                             <option value="Pós/Mestrado/Doutorado">Pós/Mestrado/Doutorado</option>
                         </select>
                     </div>
-                    <div class="col-md-6 mt-3">
+                    <div class="col-12 col-md-6">
                         <label class="form-label text-muted small fw-bold text-uppercase">De onde veio?</label>
                         <select name="origem_cadastro" class="form-select bg-light border-0 py-2">
                             <option value="">Selecione...</option>
@@ -95,7 +115,7 @@
                         </select>
                     </div>
                     
-                    <div class="col-md-12 mt-3">
+                    <div class="col-12">
                         <label class="form-label text-muted small fw-bold text-uppercase">Posicionamento Político</label>
                         <select name="posicionamento_politico" class="form-select bg-light border-0 py-2">
                             <option value="">Neutro / Não informado</option>
@@ -109,37 +129,37 @@
                 </div>
             </div>
 
-            <div class="card border-0 shadow-sm rounded-4 mb-4 p-4">
+            <div class="card border-0 shadow-sm rounded-4 mb-4 mb-lg-0 p-4 card-saas-padding">
                 <h5 class="fw-bold text-dark mb-4"><i class="fa-solid fa-map-location-dot text-danger me-2"></i>Base Geográfica</h5>
                 
                 <div class="row g-3">
-                    <div class="col-md-4">
+                    <div class="col-12 col-md-4">
                         <label class="form-label text-muted small fw-bold text-uppercase">CEP</label>
                         <input type="text" name="cep" id="cep" class="form-control bg-light border-0 py-2" placeholder="00000-000" maxlength="9" required>
                     </div>
-                    <div class="col-md-8">
+                    <div class="col-12 col-md-8">
                         <label class="form-label text-muted small fw-bold text-uppercase">Logradouro (Rua, Av.)</label>
                         <input type="text" name="logradouro" id="logradouro" class="form-control bg-light border-0 py-2" required>
                     </div>
                     
-                    <div class="col-md-4 mt-3">
+                    <div class="col-12 col-md-4">
                         <label class="form-label text-muted small fw-bold text-uppercase">Número</label>
                         <input type="text" name="numero" class="form-control bg-light border-0 py-2" required>
                     </div>
-                    <div class="col-md-8 mt-3">
+                    <div class="col-12 col-md-8">
                         <label class="form-label text-muted small fw-bold text-uppercase">Complemento (Opcional)</label>
                         <input type="text" name="complemento" class="form-control bg-light border-0 py-2" placeholder="Apto, Bloco, Casa 2...">
                     </div>
 
-                    <div class="col-md-5 mt-3">
+                    <div class="col-12 col-md-5">
                         <label class="form-label text-muted small fw-bold text-uppercase">Bairro</label>
                         <input type="text" name="bairro" id="bairro" class="form-control bg-light border-0 py-2" required>
                     </div>
-                    <div class="col-md-5 mt-3">
+                    <div class="col-12 col-md-5">
                         <label class="form-label text-muted small fw-bold text-uppercase">Cidade</label>
                         <input type="text" name="cidade" id="cidade" class="form-control bg-light border-0 py-2" readonly required>
                     </div>
-                    <div class="col-md-2 mt-3">
+                    <div class="col-12 col-md-2">
                         <label class="form-label text-muted small fw-bold text-uppercase">UF</label>
                         <input type="text" name="uf" id="uf" class="form-control bg-light border-0 py-2" readonly required>
                     </div>
@@ -148,21 +168,21 @@
 
         </div>
 
-        <div class="col-md-4">
+        <div class="col-lg-4">
             
-            <div class="card border-0 shadow-sm rounded-4 mb-4 p-4">
+            <div class="card border-0 shadow-sm rounded-4 mb-4 p-4 card-saas-padding">
                 <h5 class="fw-bold text-dark mb-4"><i class="fa-solid fa-fire text-warning me-2"></i>Estratégia</h5>
                 
                 <div class="row g-2 mb-4">
                     <div class="col-12">
-                        <label class="form-label text-muted small fw-bold text-uppercase mb-1" title="Quantos votos essa pessoa influencia na própria casa?">Potencial de Votos (Casa/Influência)</label>
+                        <label class="form-label text-muted small fw-bold text-uppercase mb-1" title="Quantos votos essa pessoa influencia na própria casa?">Potencial de Votos (Influência)</label>
                         <p class="text-muted" style="font-size: 0.75rem; margin-bottom: 8px;">Quantos votos ele(a) consegue influenciar?</p>
                         <input type="number" name="votos_familia" class="form-control bg-primary bg-opacity-10 border-primary border-opacity-25 py-3 text-center fw-bold text-primary fs-5 rounded-3" min="1" value="1" required>
                     </div>
                 </div>
 
                 <label class="form-label text-muted small fw-bold text-uppercase mb-2">Pautas / Áreas de Interesse</label>
-                <div class="d-flex flex-wrap gap-2 mb-4">
+                <div class="d-flex flex-wrap gap-2 mb-4 tags-container">
                     <input type="checkbox" class="btn-check" name="tags" id="tag1" value="Saúde">
                     <label class="btn btn-outline-primary btn-sm rounded-pill" for="tag1">Saúde</label>
                     
@@ -184,21 +204,21 @@
 
                 <label class="form-label text-muted small fw-bold text-uppercase mb-3">Ativos da Campanha</label>
                 
-                <div class="form-check form-switch mb-3">
-                    <input class="form-check-input fs-5" type="checkbox" name="oferece_muro" id="muro">
-                    <label class="form-check-label ms-2 mt-1 text-dark" for="muro"><i class="fa-solid fa-paint-roller text-muted me-1"></i> Muro para Placa/Pintura</label>
+                <div class="form-check form-switch d-flex align-items-center mb-3 p-0">
+                    <input class="form-check-input fs-5 m-0" type="checkbox" name="oferece_muro" id="muro">
+                    <label class="form-check-label ms-2 text-dark fw-medium" for="muro"><i class="fa-solid fa-paint-roller text-muted me-1"></i> Muro para Placa/Pintura</label>
                 </div>
                 
-                <div class="form-check form-switch mb-3">
-                    <input class="form-check-input fs-5" type="checkbox" name="oferece_carro" id="carro">
-                    <label class="form-check-label ms-2 mt-1 text-dark" for="carro"><i class="fa-solid fa-car text-muted me-1"></i> Carro para Adesivo</label>
+                <div class="form-check form-switch d-flex align-items-center mb-3 p-0">
+                    <input class="form-check-input fs-5 m-0" type="checkbox" name="oferece_carro" id="carro">
+                    <label class="form-check-label ms-2 text-dark fw-medium" for="carro"><i class="fa-solid fa-car text-muted me-1"></i> Carro para Adesivo</label>
                 </div>
 
                 <label class="form-label text-muted small fw-bold text-uppercase mt-4">Observações / Demandas</label>
-                <textarea name="observacoes" class="form-control bg-light border-0 mb-4" rows="3" placeholder="Reclamações do bairro, pedidos, etc..."></textarea>
+                <textarea name="observacoes" class="form-control bg-light border-0 mb-2" rows="4" placeholder="Reclamações do bairro, pedidos, etc..."></textarea>
             </div>
 
-            <button type="submit" class="btn btn-primary w-100 rounded-pill py-3 fw-bold shadow-sm fs-5">
+            <button type="submit" class="btn btn-primary w-100 rounded-pill py-3 fw-bold shadow-sm fs-5 d-flex justify-content-center align-items-center">
                 <i class="fa-solid fa-check-circle me-2"></i>Salvar no CRM
             </button>
 

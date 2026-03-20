@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VotaHub | Gestão Estratégica</title>
+    <title>VotoImpacto | Gestão Estratégica</title>
     
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -11,26 +11,19 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
-/* ==========================================
+        /* ==========================================
            1. VOTA HUB ULTRA PREMIUM UI (Design Tokens)
            ========================================== */
         :root { 
-            /* Cores Principais */
-            --vh-primary: #7c3aed;      /* Roxo Hub */
-            --vh-primary-dark: #5b21b6; /* Roxo Escuro */
+            --vh-primary: #7c3aed;      
+            --vh-primary-dark: #5b21b6; 
             --vh-primary-glow: rgba(124, 58, 237, 0.2);
-            
-            /* Backgrounds e Textos */
             --vh-bg-app: #f4f5f9;       
             --vh-bg-excel: #f8fafc;
             --vh-text-main: #1f2937;
             --vh-text-muted: #64748b;
-
-            /* Sobrescrevendo o Bootstrap 5 nativo */
             --bs-primary: #7c3aed;
             --bs-primary-rgb: 124, 58, 237;
-
-            /* Medidas Estruturais */
             --sidebar-width: 260px;
             --sidebar-collapsed-width: 70px;
             --topbar-height: 65px;
@@ -48,7 +41,6 @@
             -webkit-font-smoothing: antialiased;
         }
 
-        /* Custom Scrollbar Premium Global */
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
@@ -57,41 +49,26 @@
         /* ==========================================
            3. CARTÕES, BOTÕES E FORMS PREMIUM
            ========================================== */
-        /* Card VotaHub Padrão */
         .card { 
-            border: none; 
-            border-radius: 16px; 
+            border: none; border-radius: 16px; 
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03); 
-            background-color: #ffffff; 
-            transition: all 0.2s ease-in-out;
+            background-color: #ffffff; transition: all 0.2s ease-in-out;
         }
-        
         .card.rounded-4 { border-radius: 20px !important; }
 
-        /* Botões padronizados arredondados */
-        .btn {
-            border-radius: 50rem; /* Pill global */
-            font-weight: 600;
-            padding: 0.5rem 1.25rem;
-            transition: all 0.3s ease;
-        }
+        .btn { border-radius: 50rem; font-weight: 600; padding: 0.5rem 1.25rem; transition: all 0.3s ease; }
 
-        /* Botão Mágico (Exportar / Ações Principais) */
         .btn-premium {
             background: linear-gradient(135deg, var(--vh-primary), var(--vh-primary-dark));
-            color: white; border: none;
-            box-shadow: 0 8px 20px var(--vh-primary-glow);
+            color: white; border: none; box-shadow: 0 8px 20px var(--vh-primary-glow);
         }
         .btn-premium:hover:not(:disabled):not(.disabled) { 
-            transform: translateY(-2px); 
-            box-shadow: 0 12px 25px var(--vh-primary-glow); 
-            color: white;
+            transform: translateY(-2px); box-shadow: 0 12px 25px var(--vh-primary-glow); color: white;
         }
         .btn-premium:disabled, .btn-premium.disabled { 
             background: #e2e8f0; color: #94a3b8; box-shadow: none; transform: none; cursor: not-allowed; 
         }
 
-        /* Selects Premium Globais */
         .form-select-premium, .form-control-premium {
             background-color: #f8fafc; border: 2px solid transparent; border-radius: 12px;
             padding: 12px 15px; font-weight: 500; color: #334155; transition: all 0.2s;
@@ -108,7 +85,7 @@
         .table-excel { width: 100%; font-size: 0.85rem; border-collapse: separate; border-spacing: 0; }
         .table-excel th { 
             position: sticky; top: 0; z-index: 5;
-            background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); /* Efeito Vidro */
+            background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); 
             border-bottom: 1px solid #e2e8f0; color: #64748b; font-weight: 800; text-transform: uppercase; 
             letter-spacing: 0.8px; padding: 15px 25px; font-size: 0.75rem;
         }
@@ -117,8 +94,6 @@
             font-weight: 500; background-color: #fff; transition: background 0.2s;
         }
         .table-excel tr:hover td { background-color: #f8fafc; cursor: default; }
-
-        /* Badges de Status na Tabela */
         .badge-premium-purple { background-color: rgba(124, 58, 237, 0.1); color: var(--vh-primary); border: 1px solid rgba(124, 58, 237, 0.2); }
 
         /* ==========================================
@@ -140,7 +115,14 @@
         }
         #main-content.expanded { margin-left: var(--sidebar-collapsed-width); }
         body.not-logged-in #main-content { margin-left: 0 !important; }
-        @media (max-width: 768px) { #main-content { margin-left: 70px; padding: 15px; } #main-content.expanded { margin-left: 0; } }
+
+        /* AQUI ESTÁ A CORREÇÃO: Reseta a margem no mobile para não empurrar */
+        @media (max-width: 1024px) { 
+            #main-content { margin-left: 0 !important; padding: 15px; width: 100% !important; } 
+            #main-content.expanded { margin-left: 0 !important; } 
+            /* Oculta a topbar do desktop no mobile, pois a sidebar.html já tem a mobile-topbar */
+            .topbar { display: none !important; }
+        }
     </style>
 </head>
 
@@ -155,7 +137,7 @@
                 </button>
                 {% endif %}
                 <a href="/" class="topbar-brand">
-                    <i class="fa-solid fa-chart-pie me-2"></i>VotaHub
+                    <i class="fa-solid fa-chart-pie me-2"></i>VotoImpacto
                 </a>
             </div>
             
@@ -183,7 +165,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
     <script>
-        // === CONTROLE DA SIDEBAR ===
+        // === CONTROLE DA SIDEBAR DESKTOP ===
         document.addEventListener("DOMContentLoaded", function() {
             const toggleBtn = document.getElementById('toggleSidebar');
             const sidebar = document.getElementById('sidebar');

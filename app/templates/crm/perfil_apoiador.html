@@ -21,7 +21,7 @@
 
     .card-profile { border: none; border-radius: 1.25rem; height: 100%; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
     .info-label { font-size: 0.7rem; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 4px; }
-    .info-value { font-weight: 700; color: #1e293b; font-size: 0.95rem; }
+    .info-value { font-weight: 700; color: #1e293b; font-size: 0.95rem; word-break: break-word; }
 
     .note-bubble { background: #f8fafc; border-radius: 16px; padding: 15px; border-left: 5px solid var(--slate-200); margin-bottom: 15px; }
     .note-bubble:hover { border-left-color: var(--vh-primary); background: #f1f5f9; }
@@ -31,11 +31,8 @@
     /* Estilo do Card Roxo Gradiente (Potencial de Votos) */
     .card-gradient-votos {
         background: linear-gradient(135deg, var(--vh-primary), var(--vh-primary-dark));
-        color: white;
-        border: none;
-        border-radius: 1.25rem;
-        position: relative;
-        overflow: hidden;
+        color: white; border: none; border-radius: 1.25rem;
+        position: relative; overflow: hidden;
     }
 
     .form-control-premium { background-color: #f1f5f9 !important; border: 2px solid transparent !important; border-radius: 12px; padding: 12px 15px; font-weight: 600; }
@@ -43,6 +40,23 @@
     
     .btn-indigo { background-color: var(--vh-primary); color: white; border: none; font-weight: 700; }
     .btn-indigo:hover { background-color: var(--vh-primary-dark); color: white; }
+
+    /* ==========================================
+       RESPONSIVIDADE SAAS MOBILE (< 768px)
+       ========================================== */
+    @media (max-width: 768px) {
+        .btn-acao-mobile { width: 100% !important; margin-bottom: 0.5rem; justify-content: center; }
+        .botoes-container-mobile { width: 100%; flex-direction: column; }
+        .botoes-container-mobile .btn { width: 100%; }
+        
+        .card-profile { padding: 1.25rem !important; } /* Reduz o padding interno dos cards */
+        
+        .cabecalho-responsivo { flex-direction: column; align-items: flex-start !important; }
+        .cabecalho-responsivo h5 { margin-bottom: 15px !important; }
+        
+        .w-md-auto { width: 100% !important; }
+        .gap-md-3 { gap: 10px !important; }
+    }
 </style>
 
 <div class="container-fluid py-4">
@@ -53,7 +67,7 @@
                 <i class="fa-solid fa-arrow-left me-2"></i> Voltar à Base
             </a>
             <h2 class="fw-bolder text-dark mb-0" style="letter-spacing: -1px;">{{ apoiador.nome }}</h2>
-            <div class="d-flex align-items-center gap-3 mt-2">
+            <div class="d-flex flex-wrap align-items-center gap-2 gap-md-3 mt-2">
                 {% if apoiador.grau_apoio == 'Liderança' %}
                     <span class="badge rounded-pill px-3 py-2 fw-bold" style="background-color: #f3e8ff; color: #7c3aed;">
                         <i class="fa-solid fa-crown me-1"></i> Liderança
@@ -70,11 +84,12 @@
                 <span class="text-muted small fw-bold"><i class="fa-solid fa-bullseye me-1"></i> Origem: {{ apoiador.origem_cadastro or 'Direto' }}</span>
             </div>
         </div>
-        <div class="d-flex gap-2 mt-3 mt-md-0">
-            <button class="btn btn-outline-secondary rounded-pill px-4 fw-bold shadow-sm bg-white" data-bs-toggle="modal" data-bs-target="#modalEditarPerfil">
+        
+        <div class="d-flex flex-column flex-md-row gap-2 mt-4 mt-md-0 w-100" style="max-width: fit-content;">
+            <button class="btn btn-outline-secondary btn-acao-mobile rounded-pill px-4 fw-bold shadow-sm bg-white" data-bs-toggle="modal" data-bs-target="#modalEditarPerfil">
                 <i class="fa-solid fa-user-pen me-2 text-primary"></i> Editar Perfil
             </button>
-            <a href="https://wa.me/55{{ apoiador.telefone|replace('(', '')|replace(')', '')|replace('-', '')|replace(' ', '') }}" target="_blank" class="btn btn-success rounded-pill px-4 fw-bold shadow-sm">
+            <a href="https://wa.me/55{{ apoiador.telefone|replace('(', '')|replace(')', '')|replace('-', '')|replace(' ', '') }}" target="_blank" class="btn btn-success btn-acao-mobile rounded-pill px-4 fw-bold shadow-sm">
                 <i class="fa-brands fa-whatsapp me-2"></i> WhatsApp
             </a>
         </div>
@@ -85,11 +100,11 @@
             <div class="card card-profile p-4 bg-white">
                 <h6 class="fw-bolder text-dark mb-4 text-uppercase"><i class="fa-solid fa-id-card text-indigo me-2"></i>Perfil Pessoal</h6>
                 <div class="row g-3">
-                    <div class="col-6">
+                    <div class="col-12 col-md-6">
                         <label class="info-label">WhatsApp</label>
                         <div class="info-value">{{ apoiador.telefone or '-' }}</div>
                     </div>
-                    <div class="col-6">
+                    <div class="col-12 col-md-6">
                         <label class="info-label">Sexo / Idade</label>
                         <div class="info-value">{{ apoiador.sexo or '-' }} • {{ apoiador.faixa_etaria or '-' }}</div>
                     </div>
@@ -160,9 +175,9 @@
         
         <div class="col-lg-8">
             <div class="card card-profile p-4 bg-white">
-                <div class="d-flex justify-content-between align-items-center mb-4">
+                <div class="d-flex cabecalho-responsivo justify-content-between align-items-center mb-4">
                     <h5 class="fw-bolder text-dark mb-0">Gestão de Missões Operacionais</h5>
-                    <div class="d-flex gap-2">
+                    <div class="d-flex botoes-container-mobile gap-2">
                         <button class="btn btn-outline-secondary fw-bold rounded-pill px-3 shadow-sm bg-white" data-bs-toggle="modal" data-bs-target="#modalHistoricoTarefas">
                             <i class="fa-solid fa-list-check me-2 text-indigo"></i> Ver Lista
                         </button>
@@ -172,19 +187,19 @@
                     </div>
                 </div>
                 <div class="row g-3">
-                    <div class="col-md-4">
+                    <div class="col-12 col-sm-4">
                         <div class="p-3 bg-light rounded-4 text-center">
                             <label class="info-label d-block mb-1">Total</label>
                             <h4 class="fw-bolder mb-0 text-dark">{{ resumo.total or 0 }}</h4>
                         </div>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-12 col-sm-4">
                         <div class="p-3 bg-indigo-light rounded-4 text-center border-start border-primary border-5">
                             <label class="info-label d-block mb-1 text-primary">Pendentes</label>
                             <h4 class="fw-bolder text-primary mb-0">{{ resumo.pendentes or 0 }}</h4>
                         </div>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-12 col-sm-4">
                         <div class="p-3 bg-danger bg-opacity-10 rounded-4 text-center border-start border-danger border-5">
                             <label class="info-label d-block mb-1 text-danger">Atrasadas</label>
                             <h4 class="fw-bolder text-danger mb-0">{{ resumo.atrasadas or 0 }}</h4>
@@ -198,21 +213,23 @@
     <div class="row g-4">
         <div class="col-12">
             <div class="card card-profile p-4 bg-white shadow-sm">
-                <div class="d-flex justify-content-between align-items-center mb-5">
+                <div class="d-flex cabecalho-responsivo justify-content-between align-items-center mb-5">
                     <h5 class="fw-bolder text-dark mb-0">Linha do Tempo de Contatos</h5>
-                    <button class="btn btn-indigo btn-sm rounded-pill px-4 fw-bolder" data-bs-toggle="collapse" data-bs-target="#collapseNota"><i class="fa-solid fa-pen me-2"></i>Nova Nota</button>
+                    <button class="btn btn-indigo btn-sm rounded-pill px-4 fw-bolder btn-acao-mobile mt-3 mt-md-0" data-bs-toggle="collapse" data-bs-target="#collapseNota">
+                        <i class="fa-solid fa-pen me-2"></i>Nova Nota
+                    </button>
                 </div>
                 
                 <div class="collapse mb-4" id="collapseNota">
                     <form action="{{ url_for('crm.registrar_interacao', apoiador_id=apoiador.id) }}" method="POST" class="p-4 bg-light rounded-4 border">
                         <textarea name="conteudo" class="form-control border-0 mb-3 shadow-sm py-3" rows="3" placeholder="O que foi conversado ou qual a demanda?" required></textarea>
-                        <div class="d-flex justify-content-between align-items-center">
-                            <select name="tipo" class="form-select form-select-sm w-auto border-0 bg-white shadow-sm rounded-pill px-4">
+                        <div class="d-flex flex-column flex-md-row justify-content-between align-items-stretch align-items-md-center gap-3">
+                            <select name="tipo" class="form-select w-md-auto border-0 bg-white shadow-sm rounded-pill px-4 py-2">
                                 <option value="Nota">📝 Nota Geral</option>
                                 <option value="Visita">🏠 Visita Presencial</option>
                                 <option value="Ligação">📞 Ligação / WhatsApp</option>
                             </select>
-                            <button type="submit" class="btn btn-indigo px-5 rounded-pill fw-bold">Salvar Nota</button>
+                            <button type="submit" class="btn btn-indigo px-5 rounded-pill fw-bold py-2">Salvar Nota</button>
                         </div>
                     </form>
                 </div>
@@ -267,7 +284,7 @@
                         <div class="row g-3">
                             <div class="col-12">
                                 <label class="info-label">Votos extras (Família)</label>
-                                <input type="number" name="votos_familia" class="form-control form-control-premium w-50" value="{{ apoiador.votos_familia or 0 }}" min="0">
+                                <input type="number" name="votos_familia" class="form-control form-control-premium w-100 w-md-50" value="{{ apoiador.votos_familia or 0 }}" min="0">
                             </div>
                         </div>
                     </div>
@@ -333,12 +350,12 @@
                 <div style="max-height: 50vh; overflow-y: auto;">
                     {% for t in tarefas_vinculadas %}
                     <div class="bg-white p-3 rounded-4 mb-3 shadow-sm border-start border-5 {% if t.status == 'concluida' %}border-success{% else %}border-primary{% endif %}">
-                        <div class="d-flex justify-content-between">
+                        <div class="d-flex flex-wrap justify-content-between align-items-center">
                             <h6 class="fw-bolder mb-1">{{ t.tipo }}</h6>
-                            <span class="badge {% if t.status == 'concluida' %}bg-success{% else %}bg-primary{% endif %} rounded-pill">{{ t.status|upper }}</span>
+                            <span class="badge {% if t.status == 'concluida' %}bg-success{% else %}bg-primary{% endif %} rounded-pill mb-1">{{ t.status|upper }}</span>
                         </div>
                         <p class="small text-muted mb-2">{{ t.descricao or 'Sem detalhes.' }}</p>
-                        <div class="d-flex justify-content-between align-items-center mt-2 border-top pt-2">
+                        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mt-2 border-top pt-2 gap-1">
                             <span class="small fw-bold text-dark"><i class="fa-solid fa-user-tie text-indigo me-1"></i> {{ t.assessor_nome or 'Assessor' }}</span>
                             <span class="small fw-bold text-muted"><i class="fa-regular fa-calendar-check me-1"></i> {{ t.data_limite.strftime('%d/%m/%Y') if t.data_limite else 'S/P' }}</span>
                         </div>

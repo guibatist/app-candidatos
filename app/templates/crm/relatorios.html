@@ -12,7 +12,7 @@
     
     body { font-family: 'Inter', sans-serif; }
 
-    /* Cards SaaS (DNA Dashboard) */
+    /* Cards SaaS */
     .card-saas {
         border: none !important;
         border-radius: 1.25rem !important;
@@ -33,7 +33,7 @@
     }
     .report-card-input:checked + .report-card-label i { color: var(--vh-primary) !important; }
 
-    /* Inputs e Selects (DNA Dashboard) */
+    /* Inputs e Selects */
     .form-select-saas {
         background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px;
         padding: 12px 15px; font-weight: 600; color: #334155; font-size: 0.9rem;
@@ -56,24 +56,44 @@
     }
     .table-excel td { padding: 12px 25px; border-bottom: 1px solid #f1f5f9; color: #1e293b; font-weight: 500; }
 
-    /* Botão Exportar (Pill Style) */
+    /* Botão Exportar */
     .btn-export-pill {
         background: var(--vh-primary); color: white; border: none; padding: 10px 28px; 
         border-radius: 50px; font-weight: 700; transition: all 0.3s;
+        display: inline-flex; align-items: center; justify-content: center;
     }
     .btn-export-pill:hover:not(.disabled) { background: var(--vh-primary-dark); transform: translateY(-1px); color: white; }
     .btn-export-pill.disabled { background: #e2e8f0; color: #94a3b8; cursor: not-allowed; }
 
     .label-tecnica { font-size: 0.7rem; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px; display: block; }
     .filter-section { display: none; }
+
+    /* ==========================================
+       RESPONSIVIDADE SAAS MOBILE (< 992px)
+       ========================================== */
+    @media (max-width: 991px) {
+        .cabecalho-relatorio { flex-direction: column; align-items: flex-start !important; }
+        
+        /* Ajuste do Preview de Planilha para mobile */
+        .spreadsheet-container { height: 500px; margin-top: 10px; }
+        .spreadsheet-header { flex-direction: column; gap: 15px; align-items: flex-start !important; }
+        .btn-export-pill { width: 100%; padding: 15px; }
+        
+        /* Força a tabela a ter uma largura mínima para habilitar o scroll horizontal limpo */
+        .table-excel { min-width: 800px; }
+        
+        /* Cards de rádio com ícones menores no mobile para caberem lado a lado */
+        .report-card-label { padding: 15px 10px; }
+        .report-card-label i { font-size: 1.2rem !important; }
+    }
 </style>
 
 <div class="container-fluid py-4">
     
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-end mb-4 pb-2 border-bottom" style="border-color: #e2e8f0 !important;">
+    <div class="d-flex cabecalho-relatorio justify-content-between align-items-md-end mb-4 pb-2 border-bottom" style="border-color: #e2e8f0 !important;">
         <div>
             <h2 class="fw-bolder text-dark mb-1" style="letter-spacing: -0.5px;">Relatórios e Exportação</h2>
-            <span class="text-muted" style="font-size: 0.95rem;">Geração de documentos e cruzamento de dados estratégicos.</span>
+            <p class="text-muted mb-0" style="font-size: 0.95rem;">Geração de documentos e cruzamento de dados estratégicos.</p>
         </div>
     </div>
 
@@ -169,7 +189,7 @@
 
         <div class="col-lg-8">
             <div class="spreadsheet-container shadow-sm">
-                <div class="spreadsheet-header d-flex justify-content-between align-items-center p-3 px-4 border-bottom">
+                <div class="spreadsheet-header d-flex justify-content-between align-items-center p-3 px-4 border-bottom bg-white">
                     <div>
                         <h6 class="fw-bold text-dark mb-0">Pré-visualização dos Dados</h6>
                         <span class="small text-muted fw-bold" id="preview-count">Processando base...</span>
@@ -182,7 +202,7 @@
                 <div class="spreadsheet-body flex-grow-1 overflow-auto bg-light" id="preview-body" style="background: #fdfdfd;">
                     </div>
             </div>
-            <div class="d-flex justify-content-between mt-3 px-2">
+            <div class="d-flex flex-column flex-md-row justify-content-between mt-3 px-2 gap-2">
                 <span class="text-muted small fw-bold"><i class="fa-solid fa-lock text-success me-1"></i> Protocolos de LGPD ativos</span>
                 <span class="text-muted small fw-medium">Amostragem limitada para visualização prévia</span>
             </div>
@@ -229,7 +249,7 @@
             })
             .then(response => response.json())
             .then(data => {
-                if (data.total === 0) {
+                if (!data.linhas || data.total === 0) {
                     previewBody.innerHTML = '<div class="h-100 d-flex flex-column align-items-center justify-content-center text-muted"><i class="fa-solid fa-magnifying-glass fs-2 mb-2"></i><p class="fw-bold">Nenhum registro encontrado</p></div>';
                     previewCount.innerHTML = '<span class="text-danger">0 registros</span>';
                     return;
